@@ -1,0 +1,24 @@
+# Netlify configuration for the TruthMarket frontend (web/).
+# The repo root holds both the Hardhat contracts and the Next.js app — this
+# tells Netlify where the app lives.
+
+[build]
+  base = "web/"
+  command = "npm install --legacy-peer-deps && npx next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+# Cross-Origin headers required for the Zama relayer-sdk Web Worker + WASM.
+# next.config.ts already emits these on dev, but explicit headers here cover
+# all Netlify-served responses (incl. static assets).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "require-corp"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
