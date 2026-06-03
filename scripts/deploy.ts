@@ -1,45 +1,66 @@
 import { ethers, network, run } from "hardhat";
 import fs from "fs";
 import path from "path";
+import { ZAMA_SEPOLIA } from "../config/zama";
 
+// Deploys the TruthMarket protocol.
+//   - On Sepolia: only MarketFactory is deployed, wired to Zama's OFFICIAL
+//     confidential USDC wrapper. No tokens are deployed by us.
+//   - On a local/mock network: deploys mock token fixtures first (the official
+//     Zama tokens only exist on Sepolia), then the factory.
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const bal = await ethers.provider.getBalance(deployer.address);
-  console.log(`network : ${network.name} (chainId ${(await ethers.provider.getNetwork()).chainId})`);
+  const chainId = Number((await ethers.provider.getNetwork()).chainId);
+  console.log(`network : ${network.name} (chainId ${chainId})`);
   console.log(`deployer: ${deployer.address}`);
-  console.log(`balance : ${ethers.formatEther(bal)} ETH\n`);
+  console.log(`balance : ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} ETH\n`);
 
-  console.log("[1/3] MockUSDC...");
-  const MockUSDC = await ethers.getContractFactory("MockUSDC");
-  const usdc = await MockUSDC.deploy();
-  await usdc.waitForDeployment();
-  const usdcAddr = await usdc.getAddress();
-  console.log(`      ${usdcAddr}  tx=${usdc.deploymentTransaction()?.hash}`);
+  const isSepolia = chainId === 11155111;
 
-  console.log("[2/3] ConfidentialUSDC...");
-  const ConfidentialUSDC = await ethers.getContractFactory("ConfidentialUSDC");
-  const cusdc = await ConfidentialUSDC.deploy(usdcAddr);
-  await cusdc.waitForDeployment();
-  const cusdcAddr = await cusdc.getAddress();
-  console.log(`      ${cusdcAddr}  tx=${cusdc.deploymentTransaction()?.hash}`);
+  let underlyingUSDC: string;
+  let confidentialUSDC: string;
 
-  console.log("[3/3] MarketFactory...");
+  if (isSepolia) {
+    underlyingUSDC = ZAMA_SEPOLIA.underlyingUSDC;
+    confidentialUSDC = ZAMA_SEPOLIA.confidentialUSDC;
+    console.log("Using Zama official tokens on Sepolia:");
+    console.log(`  underlying USDC  : ${underlyingUSDC}`);
+    console.log(`  confidential USDC: ${confidentialUSDC} (cUSDCMock)\n`);
+  } else {
+    console.log("Local network — deploying mock token fixtures...");
+    const ERC20Mintable = await ethers.getContractFactory("ERC20Mintable");
+    const usdc = await ERC20Mintable.deploy();
+    await usdc.waitForDeployment();
+    underlyingUSDC = await usdc.getAddress();
+    console.log(`  underlying USDC  : ${underlyingUSDC}`);
+
+    const Wrapper = await ethers.getContractFactory("ConfidentialWrapperMock");
+    const cusdc = await Wrapper.deploy(underlyingUSDC);
+    await cusdc.waitForDeployment();
+    confidentialUSDC = await cusdc.getAddress();
+    console.log(`  confidential USDC: ${confidentialUSDC}\n`);
+  }
+
+  console.log("Deploying MarketFactory...");
   const MarketFactory = await ethers.getContractFactory("MarketFactory");
-  const factory = await MarketFactory.deploy(cusdcAddr);
+  const factory = await MarketFactory.deploy(confidentialUSDC);
   await factory.waitForDeployment();
   const factoryAddr = await factory.getAddress();
-  console.log(`      ${factoryAddr}  tx=${factory.deploymentTransaction()?.hash}`);
+  console.log(`  MarketFactory    : ${factoryAddr}  tx=${factory.deploymentTransaction()?.hash}`);
 
   const out = {
     network: network.name,
-    chainId: Number((await ethers.provider.getNetwork()).chainId),
+    chainId,
     deployer: deployer.address,
     deployedAt: new Date().toISOString(),
     contracts: {
-      MockUSDC: usdcAddr,
-      ConfidentialUSDC: cusdcAddr,
+      underlyingUSDC,
+      confidentialUSDC,
       MarketFactory: factoryAddr,
     },
+    note: isSepolia
+      ? "underlyingUSDC and confidentialUSDC are Zama official Sepolia tokens (not deployed by us)."
+      : "all addresses are local mock fixtures.",
   };
   const outDir = path.join(__dirname, "..", "deployments", network.name);
   fs.mkdirSync(outDir, { recursive: true });
@@ -48,30 +69,22 @@ async function main() {
   console.log("\n─────────────────────────────────────────────");
   console.log("  TruthMarket deployed");
   console.log("─────────────────────────────────────────────");
-  console.log(`  MockUSDC          : ${usdcAddr}`);
-  console.log(`  ConfidentialUSDC  : ${cusdcAddr}`);
+  console.log(`  underlying USDC   : ${underlyingUSDC}${isSepolia ? "  (Zama official)" : ""}`);
+  console.log(`  confidential USDC : ${confidentialUSDC}${isSepolia ? "  (Zama official cUSDCMock)" : ""}`);
   console.log(`  MarketFactory     : ${factoryAddr}`);
   console.log("─────────────────────────────────────────────");
   console.log(`  saved to deployments/${network.name}/addresses.json`);
 
-  // Verify on Etherscan (best-effort)
-  if (network.name === "sepolia" && process.env.ETHERSCAN_API_KEY) {
-    console.log("\nVerifying on Etherscan (this may take ~1 min)...");
-    // Wait a few blocks for indexing
-    await new Promise((r) => setTimeout(r, 30_000));
-    for (const [name, addr, args] of [
-      ["MockUSDC", usdcAddr, []],
-      ["ConfidentialUSDC", cusdcAddr, [usdcAddr]],
-      ["MarketFactory", factoryAddr, [cusdcAddr]],
-    ] as const) {
-      try {
-        await run("verify:verify", { address: addr, constructorArguments: args });
-        console.log(`  verified ${name}`);
-      } catch (e: any) {
-        const msg = String(e.message ?? e);
-        if (msg.toLowerCase().includes("already verified")) console.log(`  already verified ${name}`);
-        else console.log(`  verify ${name} skipped: ${msg.split("\n")[0]}`);
-      }
+  if (isSepolia && process.env.ETHERSCAN_API_KEY) {
+    console.log("\nVerifying MarketFactory on Etherscan...");
+    await new Promise((r) => setTimeout(r, 20_000));
+    try {
+      await run("verify:verify", { address: factoryAddr, constructorArguments: [confidentialUSDC] });
+      console.log("  verified MarketFactory");
+    } catch (e: any) {
+      const msg = String(e.message ?? e);
+      if (msg.toLowerCase().includes("already verified")) console.log("  already verified");
+      else console.log(`  verify skipped: ${msg.split("\n")[0]}`);
     }
   }
 }

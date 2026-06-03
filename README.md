@@ -21,15 +21,20 @@ frontend lands in Phase B.
 
 ## Sepolia deployment
 
-| Contract           | Address |
-|--------------------|---------|
-| `MockUSDC`         | [`0xeBc902Cee74345DD23f63E2f132f81E5fBE1D56D`](https://sepolia.etherscan.io/address/0xeBc902Cee74345DD23f63E2f132f81E5fBE1D56D#code) |
-| `ConfidentialUSDC` | [`0x795090A656f472cdddeF8cF367A4ee446b39ea84`](https://sepolia.etherscan.io/address/0x795090A656f472cdddeF8cF367A4ee446b39ea84#code) |
-| `MarketFactory`    | [`0xb10655458F990335b6339d0c95D9755B5CACa168`](https://sepolia.etherscan.io/address/0xb10655458F990335b6339d0c95D9755B5CACa168#code) |
+TruthMarket uses **Zama's official confidential tokens** as collateral — we do
+not deploy our own. The only contract we deploy is `MarketFactory` (which in
+turn deploys each `ConfidentialMarket`).
 
-All three are verified on Etherscan. Three demo markets are seeded in
-`deployments/sepolia/demo-markets.json`. A real confidential bet was placed
-on-chain at block [`10980880`](https://sepolia.etherscan.io/tx/0x7f6ac3ed4a9b12587d759806806dfe7baf9ffb9423f07501c5d9dca4ab843f13).
+| Contract                     | Address | Owner |
+|------------------------------|---------|-------|
+| `MarketFactory` (ours)       | [`0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`](https://sepolia.etherscan.io/address/0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30#code) | TruthMarket |
+| Confidential USDC `cUSDCMock`| [`0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639`](https://sepolia.etherscan.io/address/0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639) | **Zama official** |
+| Underlying USDC (public mint)| [`0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF`](https://sepolia.etherscan.io/address/0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF) | **Zama official** |
+
+`MarketFactory` is verified on Etherscan. Three demo markets are seeded in
+`deployments/sepolia/demo-markets.json`. A real confidential bet — mint official
+USDC → wrap via the official cUSDCMock → encrypted `placeBet` — was placed
+on-chain at block [`10981523`](https://sepolia.etherscan.io/tx/0x083277ca52d074c8af129782dd06129a2bbc0bd7fe9d661ff3abd8e3f3f0426f).
 
 ---
 
@@ -86,8 +91,9 @@ encrypted amount moved" — both side and amount remain hidden.
 ### Collateral UX: USDC in / USDC out
 
 End users never see or hear about ERC-7984. The UI exposes only standard
-USDC: deposit goes in via `ConfidentialUSDC.wrap()`, withdrawal goes out via
-`unwrap()` + `finalizeUnwrap()`. The confidential token layer is the
+USDC: users mint the underlying USDC from Zama's public faucet, deposit goes
+in via the official wrapper's `wrap()`, and withdrawal goes out via `unwrap()`
++ `finalizeUnwrap()`. The confidential token layer (Zama's `cUSDCMock`) is the
 implementation detail that makes encrypted betting possible — not a thing
 users need to understand.
 
@@ -97,11 +103,17 @@ users need to understand.
 
 ```
 contracts/
-├─ MockUSDC.sol            ERC20 6-decimals + public mint faucet
-├─ ConfidentialUSDC.sol    ERC7984 + ERC7984ERC20Wrapper(MockUSDC)
 ├─ ConfidentialMarket.sol  per-market: betting, resolution, claim
-└─ MarketFactory.sol       deploys + indexes markets (registry)
+├─ MarketFactory.sol       deploys + indexes markets (registry)
+└─ mocks/
+   └─ TokenMocks.sol       TEST-ONLY local stand-ins for the official Zama
+                           tokens (the real ones only exist on Sepolia)
 ```
+
+The deployed protocol uses **Zama's official `cUSDCMock` confidential wrapper**
+and its underlying USDC (see addresses above) — it deploys no tokens of its own.
+`ConfidentialMarket` and `MarketFactory` accept any `IERC7984` collateral, so
+they are wired to the official wrapper at deploy time.
 
 Built on:
 - [`@fhevm/solidity ^0.11.1`](https://docs.zama.org/protocol/solidity-guides)

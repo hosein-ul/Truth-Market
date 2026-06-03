@@ -11,12 +11,13 @@ const DAY = 86_400;
 async function deployAll() {
   const [deployer, oracle, alice, bob, carol] = await ethers.getSigners();
 
-  const MockUSDC = await ethers.getContractFactory("MockUSDC");
-  const usdc = await MockUSDC.deploy();
+  // Local stand-ins for Zama's official Sepolia tokens (same interfaces).
+  const ERC20Mintable = await ethers.getContractFactory("ERC20Mintable");
+  const usdc = await ERC20Mintable.deploy();
   await usdc.waitForDeployment();
 
-  const ConfidentialUSDC = await ethers.getContractFactory("ConfidentialUSDC");
-  const cusdc = await ConfidentialUSDC.deploy(await usdc.getAddress());
+  const Wrapper = await ethers.getContractFactory("ConfidentialWrapperMock");
+  const cusdc = await Wrapper.deploy(await usdc.getAddress());
   await cusdc.waitForDeployment();
 
   const MarketFactory = await ethers.getContractFactory("MarketFactory");
@@ -102,7 +103,7 @@ describe("TruthMarket — confidential prediction market", function () {
   });
 
   describe("Wrap / unwrap collateral on-ramp", function () {
-    it("wraps MockUSDC into confidential USDC 1:1", async function () {
+    it("wraps underlying USDC into confidential USDC 1:1", async function () {
       const { usdc, cusdc, alice } = await deployAll();
       await mintAndWrap(usdc, cusdc, alice, USDC(1_000));
       expect(await userBalanceClear(cusdc, alice)).to.eq(USDC(1_000));

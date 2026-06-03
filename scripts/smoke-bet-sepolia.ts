@@ -1,6 +1,6 @@
 // End-to-end smoke test of the live Sepolia deployment.
-//  1. Mint MockUSDC to the deployer
-//  2. Wrap into ConfidentialUSDC
+//  1. Mint the official underlying USDC to the deployer
+//  2. Wrap into the official confidential USDC (cUSDCMock)
 //  3. Set the first demo market as operator
 //  4. Encrypt (amount, side) via the relayer SDK and place a confidential bet
 //
@@ -20,8 +20,8 @@ async function main() {
   const demos = JSON.parse(fs.readFileSync(path.join(dir, "demo-markets.json"), "utf8"));
 
   const [signer] = await ethers.getSigners();
-  const usdc = await ethers.getContractAt("MockUSDC", addrs.contracts.MockUSDC, signer);
-  const cusdc = await ethers.getContractAt("ConfidentialUSDC", addrs.contracts.ConfidentialUSDC, signer);
+  const usdc = await ethers.getContractAt("ERC20Mintable", addrs.contracts.underlyingUSDC, signer);
+  const cusdc = await ethers.getContractAt("ConfidentialWrapperMock", addrs.contracts.confidentialUSDC, signer);
 
   const marketAddr: string = demos[0].address;
   console.log(`market : ${marketAddr}  (${demos[0].question})`);
