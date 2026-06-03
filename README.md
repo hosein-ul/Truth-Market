@@ -164,10 +164,61 @@ npx hardhat tm:claim --market <addr>
 
 ---
 
-## What's next (Phase B)
+## Frontend (`web/`)
 
-Production-grade Next.js frontend modeled on Polymarket / Kalshi: market
-feed with category filters and search, market detail with encrypted bet
-form and countdown, create-market flow, portfolio with self-decryption.
-Frontend abstracts wrapping entirely — users only ever see "Deposit USDC"
-and "Withdraw USDC".
+A production-grade Next.js 15 frontend ships in this same repo under `web/`.
+
+### Design — "Encrypted Terminal"
+
+Dark-first, Bloomberg-density information design. Instrument Serif for
+headlines, JetBrains Mono for data, Inter for body. Electric lime as the
+"sealed / active" signal, warm amber as "decrypted / resolved", a pulled-back
+red for "loss / void". The signature primitive is `EncryptedValue` — animated
+cipher glyphs that visually communicate "sealed on-chain" until the user
+self-decrypts, at which point the glyphs are replaced by cleartext numbers.
+The home page hero uses a custom value-noise field (`CipherCanvas`) that
+steers a population of monospace glyphs with occasional "leaks" — momentary
+digits that briefly resolve out of the cipher.
+
+### Pages
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Market feed, RSC. Hero + grouped status sections (sealed / resolving / settled). |
+| `/markets/[address]` | Market detail: encrypted pools, bet panel, claim, oracle controls (resolve + finalize + void). |
+| `/create` | Open a new sealed market. |
+| `/portfolio` | Positions list. Per-handle user-decryption via EIP-712. |
+
+### Collateral UX
+
+Users only ever see "USDC". Behind the scenes:
+- **Deposit USDC** silently mints from Zama's public faucet on the underlying
+  USDC contract, approves the wrapper, and `wrap()`s into cUSDC — one click.
+- **Place bet** transparently sets the market as operator on the cUSDC
+  wrapper if needed, encrypts `(amount, side)` client-side via the relayer
+  SDK, and submits a single `placeBet` tx.
+- **Decrypt balance / stake** uses `generateKeypair` + EIP-712 sign +
+  `userDecrypt` — the user signs once, glyphs resolve to numbers.
+- The user never sees the words "ERC7984", "cUSDC", or "wrap".
+
+### Run locally
+
+```bash
+cd web
+npm install --legacy-peer-deps
+npm run dev          # http://localhost:3000
+```
+
+Optional env (`web/.env.local`):
+
+```
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<key>
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<your-project-id>
+```
+
+### Deploy on Netlify
+
+A `netlify.toml` at the repo root points Netlify at `web/` with the
+`@netlify/plugin-nextjs` runtime and emits the `Cross-Origin-*` headers
+the Zama relayer-sdk requires for WASM + Web Worker. Connect the GitHub
+repo in the Netlify dashboard and it will build out of the box.
