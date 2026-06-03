@@ -6,9 +6,11 @@ import { countdown } from "@/lib/format";
 export function CountdownClock({
   deadlineSec,
   className = "",
+  compact = false,
 }: {
   deadlineSec: number;
   className?: string;
+  compact?: boolean;
 }) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -17,6 +19,15 @@ export function CountdownClock({
   }, []);
   const txt = countdown(deadlineSec, now);
   const expired = deadlineSec - now <= 0;
+  if (compact) {
+    return (
+      <span
+        className={`chip chip-cat ${expired ? "opacity-50" : ""} ${className}`}
+      >
+        {expired ? "expired" : txt}
+      </span>
+    );
+  }
   return (
     <span
       className={`font-mono num text-[11px] tracking-[0.08em] ${

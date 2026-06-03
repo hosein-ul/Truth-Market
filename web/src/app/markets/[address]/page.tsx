@@ -1,12 +1,15 @@
 import { getMarketDetail } from "@/lib/markets";
+import { getMarketActivity } from "@/lib/activity";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CountdownClock } from "@/components/CountdownClock";
-import { EncryptedValue } from "@/components/EncryptedValue";
 import { BetPanel } from "@/components/BetPanel";
 import { ClaimPanel } from "@/components/ClaimPanel";
 import { OracleControls } from "@/components/OracleControls";
-import { PoolBar } from "@/components/PoolBar";
+import { ProbabilityDisplay } from "@/components/ProbabilityDisplay";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { SettlementRules } from "@/components/SettlementRules";
+import { PositionPanel } from "@/components/PositionPanel";
 import { formatUSDC, shortAddr } from "@/lib/format";
 import Link from "next/link";
 
@@ -18,129 +21,123 @@ export default async function MarketDetailPage({
   params: Promise<{ address: string }>;
 }) {
   const { address } = await params;
-  const m = await getMarketDetail(address as `0x${string}`);
+  const [m, activity] = await Promise.all([
+    getMarketDetail(address as `0x${string}`),
+    getMarketActivity(address as `0x${string}`, 8),
+  ]);
   const status = m.status as MarketStatusValue;
-  const isSealed = status === MARKET_STATUS.OPEN || status === MARKET_STATUS.RESOLVING;
-  const totalPool = m.yesPoolClear + m.noPoolClear;
+  const total = m.yesPoolClear + m.noPoolClear;
+
+  const deadlineDate = new Date(m.deadline * 1000).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 pt-10 pb-24">
-      {/* Breadcrumb */}
-      <div className="font-mono text-[11px] tracking-[0.14em] uppercase text-bone-dim mb-6">
-        <Link href="/" className="hover:text-bone">
-          Markets
-        </Link>{" "}
-        <span className="text-bone-dark">/</span>{" "}
-        <span className="text-bone-dim">{m.category}</span>{" "}
-        <span className="text-bone-dark">/</span>{" "}
-        <span className="text-bone-dim">{shortAddr(m.address)}</span>
+    <div className="mx-auto max-w-[1400px] px-5 pt-6 pb-20">
+      {/* Breadcrumb + status strip */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div className="font-mono text-[10px] tracking-[0.14em] uppercase text-bone-dim flex items-center gap-1.5">
+          <Link href="/" className="hover:text-bone transition-colors">Markets</Link>
+          <span className="text-bone-dark">›</span>
+          <span>{m.category}</span>
+          <span className="text-bone-dark">›</span>
+          <span className="text-bone-dark">{shortAddr(m.address)}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={status} />
+          {status === MARKET_STATUS.OPEN && (
+            <CountdownClock deadlineSec={m.deadline} className="text-[11px]" />
+          )}
+          {status === MARKET_STATUS.RESOLVED && (
+            <span className={`font-mono text-[10px] ${m.outcomeYes ? "text-signal" : "text-bleed"}`}>
+              Resolved {m.outcomeYes ? "YES" : "NO"}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: market identity + pools + meta */}
-        <div className="lg:col-span-7">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone-dim">
-              {m.category}
-            </span>
-            <StatusBadge status={status} />
-          </div>
+      {/* Question */}
+      <h1 className="font-serif text-[32px] md:text-[46px] leading-[1.08] tracking-[-0.02em] text-bone mb-1">
+        {m.question}
+      </h1>
 
-          <h1 className="font-serif text-[44px] md:text-[56px] leading-[1.04] tracking-[-0.02em] text-bone">
-            {m.question}
-          </h1>
+      {/* ASCII separator */}
+      <div className="font-mono text-[9px] text-bone-dark flex items-center gap-2 mt-3 mb-8 select-none">
+        <span className="flex-1 border-t border-wire" />
+        <span>◆</span>
+        <span className="flex-1 border-t border-wire" />
+      </div>
 
-          {m.description && (
-            <p className="mt-6 text-bone-dim leading-relaxed max-w-[68ch]">
-              {m.description}
-            </p>
-          )}
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* Pools panel */}
-          <div className="mt-10 hairline p-6 bg-ink-800/40">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone">
-                Pools
-              </h3>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-bone-dim">
-                {isSealed
-                  ? "encrypted on-chain · revealed on resolution"
-                  : "decrypted · final"}
-              </span>
-            </div>
+        {/* LEFT: market data (7/12) */}
+        <div className="lg:col-span-7 space-y-4">
 
-            <div className="grid grid-cols-2 gap-6">
-              <PoolSide
-                label="YES"
-                isSealed={isSealed}
-                amount={m.yesPoolClear}
-                tone="signal"
-                isWinner={
-                  status === MARKET_STATUS.RESOLVED && m.outcomeYes
-                }
-              />
-              <PoolSide
-                label="NO"
-                isSealed={isSealed}
-                amount={m.noPoolClear}
-                tone="bleed"
-                isWinner={
-                  status === MARKET_STATUS.RESOLVED && !m.outcomeYes
-                }
-              />
-            </div>
+          {/* Probability / Odds display */}
+          <ProbabilityDisplay
+            status={status}
+            yesPoolClear={m.yesPoolClear}
+            noPoolClear={m.noPoolClear}
+            outcomeYes={m.outcomeYes}
+          />
 
-            {status === MARKET_STATUS.RESOLVED && totalPool > 0n && (
-              <div className="mt-6">
-                <PoolBar yes={m.yesPoolClear} no={m.noPoolClear} />
-                <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-bone-dim">
-                  <span>YES {percent(m.yesPoolClear, totalPool)}%</span>
-                  <span>NO {percent(m.noPoolClear, totalPool)}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Meta grid */}
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-px bg-wire hairline">
-            <Meta
-              label="Status"
-              value={
-                status === MARKET_STATUS.OPEN ? (
-                  <CountdownClock deadlineSec={m.deadline} className="text-[13px]" />
-                ) : (
-                  <span className="font-mono text-[13px] text-bone">
-                    {labelOf(status)}
-                  </span>
-                )
-              }
-            />
-            <Meta
+          {/* Market stats grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px" style={{ boxShadow: "inset 0 0 0 0.5px rgba(46,52,65,1)" }}>
+            <MetaCell
               label="Deadline"
-              value={new Date(m.deadline * 1000).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              value={deadlineDate}
             />
-            <Meta label="Creator" value={shortAddr(m.creator)} />
-            <Meta label="Oracle" value={shortAddr(m.oracle)} />
+            <MetaCell
+              label="Pool (cUSDC)"
+              value={
+                status === MARKET_STATUS.RESOLVED || status === MARKET_STATUS.VOIDED
+                  ? `$${formatUSDC(total)}`
+                  : "Sealed"
+              }
+              tone={status === MARKET_STATUS.RESOLVED ? "reveal" : undefined}
+            />
+            <MetaCell label="Creator" value={shortAddr(m.creator)} />
+            <MetaCell label="Oracle" value={shortAddr(m.oracle)} />
           </div>
+
+          {/* Activity feed */}
+          <ActivityFeed items={activity} />
+
+          {/* Settlement rules */}
+          <SettlementRules
+            description={m.description}
+            oracle={m.oracle}
+            deadline={m.deadline}
+            disputeWindow={m.disputeWindow}
+          />
         </div>
 
-        {/* Right: action column */}
+        {/* RIGHT: action column (5/12) */}
         <div className="lg:col-span-5">
-          <div className="sticky top-20 space-y-4">
+          <div className="sticky top-16 space-y-3">
+
+            {/* Bet ticket */}
             {status === MARKET_STATUS.OPEN && (
               <BetPanel marketAddress={m.address} deadline={m.deadline} />
             )}
-            {(status === MARKET_STATUS.RESOLVED || status === MARKET_STATUS.VOIDED) && (
+
+            {/* Claim panel */}
+            {(status === MARKET_STATUS.RESOLVED ||
+              status === MARKET_STATUS.VOIDED) && (
               <ClaimPanel
                 marketAddress={m.address}
                 voided={status === MARKET_STATUS.VOIDED}
                 outcomeYes={m.outcomeYes}
               />
             )}
+
+            {/* My position */}
+            <PositionPanel marketAddress={m.address} />
+
+            {/* Oracle controls */}
             <OracleControls
               marketAddress={m.address}
               oracle={m.oracle}
@@ -148,6 +145,19 @@ export default async function MarketDetailPage({
               disputeWindow={m.disputeWindow}
               status={status}
             />
+
+            {/* Privacy note */}
+            <div className="panel p-4">
+              <div className="font-mono text-[9px] text-bone-dark leading-[1.7] space-y-1">
+                <div className="text-signal uppercase tracking-[0.16em] mb-2">
+                  ◈ Privacy guarantee
+                </div>
+                <div>▸ All bets encrypted at submission via Zama FHEVM</div>
+                <div>▸ Amount and side never appear in plaintext on-chain</div>
+                <div>▸ Position decryptable only by your wallet (EIP-712)</div>
+                <div>▸ Payout delivered as confidential cUSDC</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -155,72 +165,29 @@ export default async function MarketDetailPage({
   );
 }
 
-function PoolSide({
+function MetaCell({
   label,
-  isSealed,
-  amount,
+  value,
   tone,
-  isWinner,
 }: {
   label: string;
-  isSealed: boolean;
-  amount: bigint;
-  tone: "signal" | "bleed";
-  isWinner: boolean;
+  value: React.ReactNode;
+  tone?: "signal" | "reveal";
 }) {
   return (
-    <div className={`hairline p-4 ${isWinner ? "bg-signal/5" : ""}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span
-          className={`font-mono text-[12px] uppercase tracking-[0.2em] ${
-            tone === "signal" ? "text-signal" : "text-bleed"
-          }`}
-        >
-          {label}
-        </span>
-        {isWinner && (
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-signal">
-            ◆ outcome
-          </span>
-        )}
-      </div>
-      {isSealed ? (
-        <EncryptedValue revealed={false} width={9} className="text-[20px]" />
-      ) : (
-        <div className="font-mono num text-[24px] text-reveal">
-          ${formatUSDC(amount)}
-        </div>
-      )}
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-bone-dark mt-2">
-        cUSDC
+    <div className="stat-cell">
+      <div className="stat-label">{label}</div>
+      <div
+        className={`font-mono text-[13px] num ${
+          tone === "signal"
+            ? "text-signal"
+            : tone === "reveal"
+              ? "text-reveal"
+              : "text-bone"
+        }`}
+      >
+        {value}
       </div>
     </div>
   );
-}
-
-function Meta({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="p-4 bg-ink-900">
-      <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-dark mb-1">
-        {label}
-      </div>
-      <div className="font-mono text-[13px] text-bone">{value}</div>
-    </div>
-  );
-}
-
-function percent(part: bigint, total: bigint): string {
-  if (total === 0n) return "0";
-  const n = Number((part * 1000n) / total) / 10;
-  return n.toFixed(1);
-}
-
-function labelOf(s: MarketStatusValue) {
-  return s === MARKET_STATUS.OPEN
-    ? "Open"
-    : s === MARKET_STATUS.RESOLVING
-      ? "Resolving"
-      : s === MARKET_STATUS.RESOLVED
-        ? "Resolved"
-        : "Voided";
 }
