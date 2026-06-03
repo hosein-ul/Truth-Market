@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-03 (Session 5)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -264,4 +264,10 @@ sign + `userDecrypt`.
   feed, market detail, create, portfolio; `EncryptedValue` + `CipherCanvas`
   primitives; hidden wrap/unwrap UX; `netlify.toml` + COOP/COEP. Created the
   Netlify project; set the RPC env var. GitHub link left as a manual step.
-- **Session 4 (this one).** Created `MEMORY.md` and `CLAUDE.md`.
+- **Session 4.** Created `MEMORY.md` and `CLAUDE.md`.
+- **Session 5 (this one).** Full production-grade frontend redesign. 19 files changed.
+  - New: `ActivityFeed`, `ProbabilityDisplay`, `SettlementRules`, `MarketsFeed` (client-side filters), `PositionPanel`, `lib/activity.ts`, `lib/utils.ts`.
+  - Redesigned: `MarketCard` (Polymarket probability bars + FHE sealed animation), `BetPanel` (professional bet ticket with inline privacy proof), `Header`, `Footer`, `StatusBadge` (chip system), `CountdownClock` (compact prop).
+  - Pages: Home (data-dense, no hero, stat cells, filter feed, protocol pillars), Market detail (two-column: left = probability/activity/rules; right = bet/position/oracle/privacy note), Portfolio (table view + empty states), Create (cleaner layout + info grid).
+  - Design system: `.panel`, `.chip-*`, `.prob-track/fill-*`, `.activity-row`, `.stat-cell`, `.market-card`, `.filter-pill`, `.bet-side-btn`, `.fade-in`.
+  - Build passes cleanly: `npm run build` ✓ (19 static pages generated).
