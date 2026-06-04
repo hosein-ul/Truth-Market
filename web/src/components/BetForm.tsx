@@ -193,7 +193,7 @@ export function BetForm({
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-display text-lg font-bold tracking-tight">Place a bet</h3>
-        <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
+        <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-300">
           <Lock className="h-3 w-3" strokeWidth={2.5} />
           Sealed
         </span>
@@ -273,7 +273,7 @@ export function BetForm({
       </div>
 
       {/* Privacy note */}
-      <div className="mt-4 flex items-start gap-2 rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-relaxed text-violet-700">
+      <div className="mt-4 flex items-start gap-2 rounded-xl bg-blue-500/10 px-3 py-2.5 text-xs leading-relaxed text-blue-300">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
         <span>
           Your amount and side are encrypted before they leave your browser.
@@ -315,7 +315,7 @@ export function BetForm({
             <p className="text-center text-xs text-muted-foreground">
               Wallet balance: ${formatUSDC((publicBal as bigint | undefined) ?? 0n)} USDC
               {fhevmStatus === "ready" && (
-                <span className="ml-1.5 inline-flex items-center gap-1 text-violet-600">
+                <span className="ml-1.5 inline-flex items-center gap-1 text-blue-400">
                   · <Lock className="h-3 w-3" /> encryption ready
                 </span>
               )}

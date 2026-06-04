@@ -21,7 +21,7 @@ export function ActivityList({ items }: { items: ActivityItem[] }) {
             {items.map((item, i) => (
               <li key={i} className="flex items-center justify-between py-2.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-50 text-violet-600">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-blue-500/10 text-blue-400">
                     <Lock className="h-3.5 w-3.5" strokeWidth={2.5} />
                   </span>
                   <div className="text-sm">

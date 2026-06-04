@@ -110,12 +110,12 @@ export function OraclePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5">
+    <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-600 text-white">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-500 text-white">
           <Gavel className="h-4 w-4" />
         </span>
-        <h3 className="font-display text-base font-bold tracking-tight text-violet-900">
+        <h3 className="font-display text-base font-bold tracking-tight text-foreground">
           {isOracle ? "Resolver controls" : "Resolution"}
         </h3>
       </div>
@@ -143,7 +143,7 @@ export function OraclePanel({
           </Button>
         )}
         {isOracle && status === MARKET_STATUS.OPEN && now < deadline && (
-          <p className="text-xs text-violet-700">
+          <p className="text-xs text-blue-300">
             You're the resolver. You can record the outcome once the market deadline passes.
           </p>
         )}

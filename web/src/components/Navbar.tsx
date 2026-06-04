@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Lock, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 const NAV = [
   { href: "/", label: "Markets" },
@@ -22,32 +22,46 @@ export function Navbar() {
     href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
+    <header
+      className="sticky top-0 z-40 border-b border-white/5 backdrop-blur-xl"
+      style={{ background: "rgba(8,12,22,0.85)" }}
+    >
       <div className="container flex h-16 items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-soft">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 group">
+          <motion.span
+            whileHover={{ scale: 1.08 }}
+            transition={{ type: "spring", damping: 12 }}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-blue-glow"
+          >
             <Lock className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </span>
-          <span className="font-display text-lg font-extrabold tracking-tight">
+          </motion.span>
+          <span className="font-display text-lg font-extrabold tracking-tight text-white">
             Truth<span className="text-gradient">Market</span>
           </span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-0.5 md:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors",
+                "relative rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-150",
                 isActive(item.href)
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {item.label}
+              {isActive(item.href) && (
+                <motion.span
+                  layoutId="nav-active"
+                  className="absolute inset-0 rounded-lg bg-white/6 border border-white/8"
+                  transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                />
+              )}
+              <span className="relative">{item.label}</span>
             </Link>
           ))}
         </nav>
@@ -62,7 +76,7 @@ export function Navbar() {
             />
           </div>
           <button
-            className="grid h-10 w-10 place-items-center rounded-lg hover:bg-secondary md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
           >
@@ -72,30 +86,39 @@ export function Navbar() {
       </div>
 
       {/* Mobile drawer */}
-      {open && (
-        <div className="border-t border-border bg-background px-4 py-3 md:hidden">
-          <nav className="flex flex-col gap-1">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "rounded-lg px-3 py-2.5 text-sm font-semibold",
-                  isActive(item.href)
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="mt-3 sm:hidden">
-            <ConnectButton showBalance={false} chainStatus="icon" />
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden border-t border-white/5 px-4 py-3 md:hidden"
+            style={{ background: "rgba(8,12,22,0.95)" }}
+          >
+            <nav className="flex flex-col gap-1">
+              {NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "rounded-lg px-3 py-2.5 text-sm font-semibold",
+                    isActive(item.href)
+                      ? "bg-white/6 text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="mt-3 sm:hidden">
+              <ConnectButton showBalance={false} chainStatus="icon" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

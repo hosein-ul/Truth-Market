@@ -83,10 +83,10 @@ export default async function MarketDetailPage({
                         Implied probability
                       </div>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <span className="font-display text-2xl font-extrabold text-violet-700">
+                        <span className="font-display text-2xl font-extrabold text-blue-300">
                           Hidden
                         </span>
-                        <Lock className="h-5 w-5 text-violet-500" strokeWidth={2.5} />
+                        <Lock className="h-5 w-5 text-blue-400" strokeWidth={2.5} />
                       </div>
                     </div>
                     {isOpen ? (

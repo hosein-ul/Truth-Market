@@ -1,9 +1,8 @@
 import type { Config } from "tailwindcss";
 
 /*
- * TruthMarket design system — "Sealed Markets"
- * Light, premium, vibrant. Violet/indigo brand = privacy & cryptography.
- * Emerald = YES, Rose = NO. shadcn/ui token layer on top.
+ * TruthMarket design system — Dark Navy + Electric Blue
+ * No purple. Premium dark crypto-tech. Emerald=YES, Rose=NO.
  */
 
 const config: Config = {
@@ -53,27 +52,54 @@ const config: Config = {
         // Semantic brand colors
         yes: {
           DEFAULT: "#10b981",
-          fg: "#047857",
-          bg: "#ecfdf5",
-          ring: "#6ee7b7",
+          fg: "#34d399",
+          bg: "#022c22",
+          ring: "#059669",
         },
         no: {
           DEFAULT: "#f43f5e",
-          fg: "#be123c",
-          bg: "#fff1f2",
-          ring: "#fda4af",
+          fg: "#fb7185",
+          bg: "#2d0a14",
+          ring: "#e11d48",
         },
-        violet: {
-          50: "#f5f3ff",
-          100: "#ede9fe",
-          200: "#ddd6fe",
-          300: "#c4b5fd",
-          400: "#a78bfa",
-          500: "#8b5cf6",
-          600: "#7c3aed",
-          700: "#6d28d9",
-          800: "#5b21b6",
-          900: "#4c1d95",
+        // Electric blue palette (replaces violet)
+        blue: {
+          50: "#eff6ff",
+          100: "#dbeafe",
+          200: "#bfdbfe",
+          300: "#93c5fd",
+          400: "#60a5fa",
+          500: "#3b82f6",
+          600: "#2563eb",
+          700: "#1d4ed8",
+          800: "#1e40af",
+          900: "#1e3a8a",
+          950: "#172554",
+        },
+        cyan: {
+          50: "#ecfeff",
+          100: "#cffafe",
+          200: "#a5f3fc",
+          300: "#67e8f9",
+          400: "#22d3ee",
+          500: "#06b6d4",
+          600: "#0891b2",
+          700: "#0e7490",
+          800: "#155e75",
+          900: "#164e63",
+        },
+        gold: {
+          300: "#fcd34d",
+          400: "#fbbf24",
+          500: "#f59e0b",
+          600: "#d97706",
+        },
+        navy: {
+          900: "#080c16",
+          800: "#0d1422",
+          700: "#111927",
+          600: "#162035",
+          500: "#1d2d45",
         },
       },
       borderRadius: {
@@ -86,21 +112,29 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "Fira Code", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        soft: "0 1px 3px 0 rgb(16 24 40 / 0.06), 0 1px 2px -1px rgb(16 24 40 / 0.04)",
-        card: "0 2px 8px -2px rgb(16 24 40 / 0.08), 0 4px 16px -4px rgb(16 24 40 / 0.05)",
-        lift: "0 8px 24px -6px rgb(16 24 40 / 0.12), 0 2px 8px -2px rgb(16 24 40 / 0.06)",
-        glow: "0 0 0 4px hsl(var(--primary) / 0.12)",
+        soft: "0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3)",
+        card: "0 2px 8px -2px rgb(0 0 0 / 0.4), 0 4px 16px -4px rgb(0 0 0 / 0.3)",
+        lift: "0 8px 24px -6px rgb(0 0 0 / 0.5), 0 2px 8px -2px rgb(0 0 0 / 0.3)",
+        "blue-glow": "0 0 0 1px rgba(59,130,246,0.2), 0 4px 20px rgba(59,130,246,0.12)",
+        "cyan-glow": "0 0 0 1px rgba(34,211,238,0.2), 0 4px 20px rgba(34,211,238,0.12)",
+        "gold-glow": "0 0 0 1px rgba(245,158,11,0.3), 0 4px 20px rgba(245,158,11,0.15)",
       },
       backgroundImage: {
         "brand-gradient":
-          "linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #2563eb 100%)",
+          "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 40%, #22d3ee 100%)",
+        "brand-gradient-subtle":
+          "linear-gradient(135deg, rgba(29,78,216,0.8) 0%, rgba(59,130,246,0.8) 50%, rgba(34,211,238,0.8) 100%)",
         "sealed-gradient":
-          "linear-gradient(135deg, #ede9fe 0%, #e0e7ff 50%, #dbeafe 100%)",
+          "linear-gradient(135deg, #0d1829 0%, #0e1f35 50%, #0a1b2e 100%)",
         "mesh":
-          "radial-gradient(at 0% 0%, hsl(258 90% 66% / 0.10) 0px, transparent 50%), radial-gradient(at 100% 0%, hsl(220 90% 60% / 0.10) 0px, transparent 50%)",
+          "radial-gradient(at 0% 0%, rgba(59,130,246,0.12) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(34,211,238,0.10) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(29,78,216,0.08) 0px, transparent 50%)",
+        "glow-blue":
+          "radial-gradient(ellipse at center, rgba(59,130,246,0.15) 0%, transparent 70%)",
+        "glow-cyan":
+          "radial-gradient(ellipse at center, rgba(34,211,238,0.12) 0%, transparent 70%)",
       },
       keyframes: {
         "accordion-down": {
@@ -115,27 +149,41 @@ const config: Config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        "pulse-ring": {
-          "0%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.4)" },
-          "70%": { boxShadow: "0 0 0 8px hsl(var(--primary) / 0)" },
-          "100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0)" },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(59,130,246,0)" },
+          "50%": { boxShadow: "0 0 20px 4px rgba(59,130,246,0.3)" },
         },
         "fade-up": {
-          from: { opacity: "0", transform: "translateY(8px)" },
+          from: { opacity: "0", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-4px)" },
+          "0%, 100%": { transform: "translateY(0px) rotate(0deg)" },
+          "50%": { transform: "translateY(-12px) rotate(2deg)" },
+        },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        "blink-cursor": {
+          "0%, 50%": { opacity: "1" },
+          "51%, 100%": { opacity: "0" },
+        },
+        "scanline": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(400%)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 2.5s linear infinite",
-        "pulse-ring": "pulse-ring 2s ease-out infinite",
-        "fade-up": "fade-up 0.4s ease-out forwards",
-        float: "float 4s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 2.5s ease-in-out infinite",
+        "fade-up": "fade-up 0.5s ease-out forwards",
+        float: "float 5s ease-in-out infinite",
+        "spin-slow": "spin-slow 12s linear infinite",
+        "blink-cursor": "blink-cursor 1s step-end infinite",
+        scanline: "scanline 4s linear infinite",
       },
     },
   },
