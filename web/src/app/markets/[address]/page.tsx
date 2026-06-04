@@ -1,17 +1,23 @@
-import { getMarketDetail } from "@/lib/markets";
-import { getMarketActivity } from "@/lib/activity";
-import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
-import { StatusBadge } from "@/components/StatusBadge";
-import { CountdownClock } from "@/components/CountdownClock";
-import { BetPanel } from "@/components/BetPanel";
-import { ClaimPanel } from "@/components/ClaimPanel";
-import { OracleControls } from "@/components/OracleControls";
-import { ProbabilityDisplay } from "@/components/ProbabilityDisplay";
-import { ActivityFeed } from "@/components/ActivityFeed";
-import { SettlementRules } from "@/components/SettlementRules";
-import { PositionPanel } from "@/components/PositionPanel";
-import { formatUSDC, shortAddr } from "@/lib/format";
 import Link from "next/link";
+import { ChevronLeft, Users, Lock, CheckCircle2 } from "lucide-react";
+import { getMarketDetail } from "@/lib/markets";
+import { getMarketActivity, getTraderCount } from "@/lib/activity";
+import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
+import { CategoryChip } from "@/components/CategoryChip";
+import { MarketStatusBadge } from "@/components/MarketStatusBadge";
+import { Countdown } from "@/components/Countdown";
+import { ProbabilityBar } from "@/components/ProbabilityBar";
+import { SealedBlock } from "@/components/Sealed";
+import { BetForm } from "@/components/BetForm";
+import { ClaimCard } from "@/components/ClaimCard";
+import { OraclePanel } from "@/components/OraclePanel";
+import { PositionCard } from "@/components/PositionCard";
+import { ActivityChart } from "@/components/ActivityChart";
+import { ActivityList } from "@/components/ActivityList";
+import { SettlementCard } from "@/components/SettlementCard";
+import { Card, CardContent } from "@/components/ui/card";
+import { formatUSDC } from "@/lib/format";
+import { pct } from "@/lib/utils";
 
 export const revalidate = 15;
 
@@ -21,93 +27,130 @@ export default async function MarketDetailPage({
   params: Promise<{ address: string }>;
 }) {
   const { address } = await params;
-  const [m, activity] = await Promise.all([
-    getMarketDetail(address as `0x${string}`),
-    getMarketActivity(address as `0x${string}`, 8),
+  const addr = address as `0x${string}`;
+  const [m, activity, traderCount] = await Promise.all([
+    getMarketDetail(addr),
+    getMarketActivity(addr, 14),
+    getTraderCount(addr),
   ]);
-  const status = m.status as MarketStatusValue;
-  const total = m.yesPoolClear + m.noPoolClear;
 
-  const deadlineDate = new Date(m.deadline * 1000).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const status = m.status as MarketStatusValue;
+  const isOpen = status === MARKET_STATUS.OPEN;
+  const isResolving = status === MARKET_STATUS.RESOLVING;
+  const isResolved = status === MARKET_STATUS.RESOLVED;
+  const isVoided = status === MARKET_STATUS.VOIDED;
+  const sealed = isOpen || isResolving;
+
+  const total = m.yesPoolClear + m.noPoolClear;
+  const yesPct = pct(m.yesPoolClear, total, 0);
 
   return (
-    <div className="mx-auto max-w-[1400px] px-5 pt-6 pb-20">
-      {/* Breadcrumb + status strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div className="font-mono text-[10px] tracking-[0.14em] uppercase text-bone-dim flex items-center gap-1.5">
-          <Link href="/" className="hover:text-bone transition-colors">Markets</Link>
-          <span className="text-bone-dark">›</span>
-          <span>{m.category}</span>
-          <span className="text-bone-dark">›</span>
-          <span className="text-bone-dark">{shortAddr(m.address)}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <StatusBadge status={status} />
-          {status === MARKET_STATUS.OPEN && (
-            <CountdownClock deadlineSec={m.deadline} className="text-[11px]" />
-          )}
-          {status === MARKET_STATUS.RESOLVED && (
-            <span className={`font-mono text-[10px] ${m.outcomeYes ? "text-signal" : "text-bleed"}`}>
-              Resolved {m.outcomeYes ? "YES" : "NO"}
-            </span>
-          )}
-        </div>
-      </div>
+    <div className="container py-6">
+      <Link
+        href="/"
+        className="mb-5 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        All markets
+      </Link>
 
-      {/* Question */}
-      <h1 className="font-serif text-[32px] md:text-[46px] leading-[1.08] tracking-[-0.02em] text-bone mb-1">
-        {m.question}
-      </h1>
-
-      {/* ASCII separator */}
-      <div className="font-mono text-[9px] text-bone-dark flex items-center gap-2 mt-3 mb-8 select-none">
-        <span className="flex-1 border-t border-wire" />
-        <span>◆</span>
-        <span className="flex-1 border-t border-wire" />
-      </div>
-
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* LEFT: market data (7/12) */}
-        <div className="lg:col-span-7 space-y-4">
-
-          {/* Probability / Odds display */}
-          <ProbabilityDisplay
-            status={status}
-            yesPoolClear={m.yesPoolClear}
-            noPoolClear={m.noPoolClear}
-            outcomeYes={m.outcomeYes}
-          />
-
-          {/* Market stats grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px" style={{ boxShadow: "inset 0 0 0 0.5px rgba(46,52,65,1)" }}>
-            <MetaCell
-              label="Deadline"
-              value={deadlineDate}
-            />
-            <MetaCell
-              label="Pool (cUSDC)"
-              value={
-                status === MARKET_STATUS.RESOLVED || status === MARKET_STATUS.VOIDED
-                  ? `$${formatUSDC(total)}`
-                  : "Sealed"
-              }
-              tone={status === MARKET_STATUS.RESOLVED ? "reveal" : undefined}
-            />
-            <MetaCell label="Creator" value={shortAddr(m.creator)} />
-            <MetaCell label="Oracle" value={shortAddr(m.oracle)} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* LEFT — market info (2 cols) */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Header */}
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <CategoryChip category={m.category} />
+              <MarketStatusBadge status={status} />
+              <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                <Users className="h-3.5 w-3.5" />
+                {traderCount} trader{traderCount !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
+              {m.question}
+            </h1>
           </div>
 
-          {/* Activity feed */}
-          <ActivityFeed items={activity} />
+          {/* Hero: odds or sealed */}
+          <Card>
+            <CardContent className="p-5">
+              {sealed ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Implied probability
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <span className="font-display text-2xl font-extrabold text-violet-700">
+                          Hidden
+                        </span>
+                        <Lock className="h-5 w-5 text-violet-500" strokeWidth={2.5} />
+                      </div>
+                    </div>
+                    {isOpen ? (
+                      <div className="text-right">
+                        <div className="text-xs font-medium text-muted-foreground">Closes in</div>
+                        <Countdown
+                          deadlineSec={m.deadline}
+                          withIcon={false}
+                          className="font-display text-lg font-bold"
+                        />
+                      </div>
+                    ) : (
+                      <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
+                        Awaiting result
+                      </span>
+                    )}
+                  </div>
+                  <SealedBlock />
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Every position in this market is encrypted. Odds, sizes, and
+                    sides remain private until {isOpen ? "the market closes and is resolved" : "the resolver reveals the pools"}.
+                    This is what stops herding and front-running.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Final result</div>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <CheckCircle2
+                          className={isVoided ? "h-5 w-5 text-slate-400" : m.outcomeYes ? "h-5 w-5 text-yes" : "h-5 w-5 text-no"}
+                        />
+                        <span className="font-display text-2xl font-extrabold">
+                          {isVoided ? "Voided" : m.outcomeYes ? "YES" : "NO"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-medium text-muted-foreground">Total volume</div>
+                      <div className="font-display text-lg font-bold tabular-nums">
+                        ${formatUSDC(total)}
+                      </div>
+                    </div>
+                  </div>
+                  {!isVoided && total > 0n && <ProbabilityBar yesPct={yesPct} />}
+                  {isVoided && (
+                    <p className="text-sm text-muted-foreground">
+                      This market was voided. All bettors can withdraw their full stake.
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Settlement rules */}
-          <SettlementRules
+          {/* Activity chart */}
+          <ActivityChart items={activity} />
+
+          {/* Activity list */}
+          <ActivityList items={activity} />
+
+          {/* Settlement */}
+          <SettlementCard
             description={m.description}
             oracle={m.oracle}
             deadline={m.deadline}
@@ -115,78 +158,27 @@ export default async function MarketDetailPage({
           />
         </div>
 
-        {/* RIGHT: action column (5/12) */}
-        <div className="lg:col-span-5">
-          <div className="sticky top-16 space-y-3">
-
-            {/* Bet ticket */}
-            {status === MARKET_STATUS.OPEN && (
-              <BetPanel marketAddress={m.address} deadline={m.deadline} />
-            )}
-
-            {/* Claim panel */}
-            {(status === MARKET_STATUS.RESOLVED ||
-              status === MARKET_STATUS.VOIDED) && (
-              <ClaimPanel
+        {/* RIGHT — actions (sticky, 1 col) */}
+        <div className="lg:col-span-1">
+          <div className="space-y-4 lg:sticky lg:top-20">
+            {isOpen && <BetForm marketAddress={m.address} deadline={m.deadline} />}
+            {(isResolved || isVoided) && (
+              <ClaimCard
                 marketAddress={m.address}
-                voided={status === MARKET_STATUS.VOIDED}
+                voided={isVoided}
                 outcomeYes={m.outcomeYes}
               />
             )}
-
-            {/* My position */}
-            <PositionPanel marketAddress={m.address} />
-
-            {/* Oracle controls */}
-            <OracleControls
+            <PositionCard marketAddress={m.address} />
+            <OraclePanel
               marketAddress={m.address}
               oracle={m.oracle}
               deadline={m.deadline}
               disputeWindow={m.disputeWindow}
               status={status}
             />
-
-            {/* Privacy note */}
-            <div className="panel p-4">
-              <div className="font-mono text-[9px] text-bone-dark leading-[1.7] space-y-1">
-                <div className="text-signal uppercase tracking-[0.16em] mb-2">
-                  ◈ Privacy guarantee
-                </div>
-                <div>▸ All bets encrypted at submission via Zama FHEVM</div>
-                <div>▸ Amount and side never appear in plaintext on-chain</div>
-                <div>▸ Position decryptable only by your wallet (EIP-712)</div>
-                <div>▸ Payout delivered as confidential cUSDC</div>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function MetaCell({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: React.ReactNode;
-  tone?: "signal" | "reveal";
-}) {
-  return (
-    <div className="stat-cell">
-      <div className="stat-label">{label}</div>
-      <div
-        className={`font-mono text-[13px] num ${
-          tone === "signal"
-            ? "text-signal"
-            : tone === "reveal"
-              ? "text-reveal"
-              : "text-bone"
-        }`}
-      >
-        {value}
       </div>
     </div>
   );

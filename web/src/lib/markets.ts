@@ -6,6 +6,7 @@
 import { ADDRESSES } from "./addresses";
 import { marketFactoryAbi, marketAbi } from "./abis";
 import { publicClient } from "./viem";
+import { getTraderCount } from "./activity";
 
 export interface MarketSummary {
   address: `0x${string}`;
@@ -18,6 +19,7 @@ export interface MarketSummary {
   yesPoolClear: bigint;
   noPoolClear: bigint;
   outcomeYes: boolean;
+  traderCount: number;
 }
 
 export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
@@ -45,6 +47,11 @@ export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
   ]);
   const reads = await publicClient.multicall({ contracts, allowFailure: true });
 
+  // Trader counts (best effort, in parallel)
+  const traderCounts = await Promise.all(
+    list.map((m) => getTraderCount(m.market).catch(() => 0)),
+  );
+
   return list.map((m, i) => {
     const status = reads[i * 4];
     const yesP = reads[i * 4 + 1];
@@ -61,6 +68,7 @@ export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
       yesPoolClear: yesP.status === "success" ? (yesP.result as bigint) : 0n,
       noPoolClear: noP.status === "success" ? (noP.result as bigint) : 0n,
       outcomeYes: outc.status === "success" ? Boolean(outc.result) : false,
+      traderCount: traderCounts[i] ?? 0,
     };
   });
 }

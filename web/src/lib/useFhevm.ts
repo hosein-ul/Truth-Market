@@ -1,36 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, createElement, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import type { FhevmInstance } from "@zama-fhe/relayer-sdk/web";
-import { useAccount } from "wagmi";
 import { getFhevmInstance, resetFhevmInstance } from "./fhevm";
 
-export interface UseFhevmResult {
+export interface FhevmState {
   instance: FhevmInstance | null;
-  status: "idle" | "loading" | "ready" | "error";
+  status: "loading" | "ready" | "error";
   error: string | null;
   retry: () => void;
 }
 
+const FhevmContext = createContext<FhevmState | null>(null);
+
 /**
- * Hook that resolves the Zama relayer-sdk instance for the current connected
- * wallet. Returns { instance, status, error, retry }. Components should treat
- * `instance` as null until status === "ready".
+ * App-wide provider that eagerly initializes the encryption layer on mount —
+ * independent of wallet connection. By the time a user wants to bet, the
+ * instance is almost always already "ready".
  */
-export function useFhevm(): UseFhevmResult {
-  const { isConnected } = useAccount();
+export function FhevmProvider({ children }: { children: ReactNode }) {
   const [instance, setInstance] = useState<FhevmInstance | null>(null);
-  const [status, setStatus] = useState<UseFhevmResult["status"]>("idle");
+  const [status, setStatus] = useState<FhevmState["status"]>("loading");
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
-    if (!isConnected) {
-      setInstance(null);
-      setStatus("idle");
-      setError(null);
-      return;
-    }
     let cancelled = false;
     setStatus("loading");
     setError(null);
@@ -50,9 +45,9 @@ export function useFhevm(): UseFhevmResult {
     return () => {
       cancelled = true;
     };
-  }, [isConnected, nonce]);
+  }, [nonce]);
 
-  return {
+  const value: FhevmState = {
     instance,
     status,
     error,
@@ -61,4 +56,15 @@ export function useFhevm(): UseFhevmResult {
       setNonce((n) => n + 1);
     },
   };
+
+  return createElement(FhevmContext.Provider, { value }, children);
+}
+
+export function useFhevm(): FhevmState {
+  const ctx = useContext(FhevmContext);
+  if (!ctx) {
+    // Defensive default so consumers never crash outside the provider.
+    return { instance: null, status: "loading", error: null, retry: () => {} };
+  }
+  return ctx;
 }

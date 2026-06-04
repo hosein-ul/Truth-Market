@@ -1,45 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount, useWriteContract } from "wagmi";
+import { decodeEventLog } from "viem";
+import { toast } from "sonner";
+import { Sparkles, Lock } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { ADDRESSES } from "@/lib/addresses";
 import { marketFactoryAbi } from "@/lib/abis";
-import { decodeEventLog } from "viem";
 import { publicClient } from "@/lib/viem";
-
-const CATEGORIES = ["Crypto", "Politics", "Sports", "Science", "Other"];
+import { humanizeError } from "@/lib/errors";
+import { CATEGORY_OPTIONS } from "@/lib/categories";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CategoryChip } from "@/components/CategoryChip";
+import { SealedBlock } from "@/components/Sealed";
+import { MarketStatusBadge } from "@/components/MarketStatusBadge";
+import { MARKET_STATUS } from "@/lib/abis";
 
 export default function CreatePage() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const [q, setQ] = useState("");
-  const [desc, setDesc] = useState("");
-  const [cat, setCat] = useState("Crypto");
+  const [question, setQuestion] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("Crypto");
   const [days, setDays] = useState("7");
   const [oracle, setOracle] = useState("");
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
+
+  const closesLabel = useMemo(() => {
+    const d = Number(days) || 0;
+    const date = new Date(Date.now() + d * 86400 * 1000);
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [days]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!isConnected || !address) return;
-    if (!q.trim()) {
-      setErr("Question is required.");
+    if (!question.trim()) {
+      toast.error("Please write a question for your market.");
       return;
     }
     const deadline = BigInt(Math.floor(Date.now() / 1000) + Number(days) * 86400);
-    const oracleAddr = (oracle && /^0x[0-9a-fA-F]{40}$/.test(oracle) ? oracle : address) as `0x${string}`;
+    const oracleAddr = (
+      oracle && /^0x[0-9a-fA-F]{40}$/.test(oracle) ? oracle : address
+    ) as `0x${string}`;
+    const toastId = toast.loading("Creating your market…");
     try {
       setBusy(true);
-      setErr("");
       const hash = await writeContractAsync({
         address: ADDRESSES.marketFactory,
         abi: marketFactoryAbi,
         functionName: "createMarket",
-        args: [oracleAddr, deadline, q, desc, cat],
+        args: [oracleAddr, deadline, question, description, category],
       });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       for (const log of receipt.logs) {
@@ -50,154 +80,171 @@ export default function CreatePage() {
             topics: log.topics,
           });
           if (ev.eventName === "MarketCreated") {
+            toast.success("Market created! Redirecting…", { id: toastId });
             router.push(`/markets/${(ev.args as any).market}`);
             return;
           }
         } catch {
-          // ignore unrelated logs
+          /* unrelated log */
         }
       }
+      toast.success("Market created!", { id: toastId });
       router.push("/");
-    } catch (e: any) {
-      setErr(String(e?.shortMessage ?? e?.message ?? e));
+    } catch (e) {
+      toast.error(humanizeError(e), { id: toastId });
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-[860px] px-5 pt-8 pb-20">
-      <div className="mb-8">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-dark mb-2 flex items-center gap-2">
-          <span className="dot-live" /> Open a sealed market
-        </div>
-        <h1 className="font-serif text-[34px] md:text-[44px] leading-[1.05] tracking-[-0.02em]">
-          Frame a question.
-        </h1>
-        <p className="mt-3 text-bone-dim leading-[1.6] text-[14px] max-w-[62ch]">
-          Binary YES / NO market. Pools stay encrypted on-chain until the deadline;
-          the designated oracle records the outcome and pools unlock for payout.
-          You can delegate the oracle role to a third party or keep it yourself.
-        </p>
-      </div>
-
-      {/* ASCII separator */}
-      <div className="font-mono text-[9px] text-bone-dark flex items-center gap-3 mb-8 select-none">
-        <span>─────</span>
-        <span className="uppercase tracking-[0.22em]">Market parameters</span>
-        <span className="flex-1 border-t border-wire" />
-      </div>
-
-      <form onSubmit={submit} className="space-y-7">
-        <Field label="Question" hint="One sentence. Resolves YES or NO.">
-          <textarea
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            rows={2}
-            placeholder="Will BTC close above $200k on 2026-12-31?"
-            className="w-full bg-transparent px-3 py-3 font-serif text-[18px] outline-none resize-none"
-          />
-        </Field>
-
-        <Field
-          label="Resolution criteria"
-          hint="How exactly will the outcome be decided? Be specific — source, time, threshold."
-        >
-          <textarea
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            rows={4}
-            placeholder="Resolves YES if the daily close on Coinbase BTC-USD on Dec 31 2026 (UTC) is greater than $200,000."
-            className="w-full bg-transparent px-3 py-3 font-mono text-[13px] leading-[1.6] outline-none resize-none"
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field label="Category">
-            <select
-              value={cat}
-              onChange={(e) => setCat(e.target.value)}
-              className="w-full bg-transparent px-3 py-3 font-mono text-[13px] outline-none"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="bg-ink-800">
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Open for (days)">
-            <input
-              value={days}
-              onChange={(e) => setDays(e.target.value.replace(/[^\d]/g, ""))}
-              className="w-full bg-transparent px-3 py-3 font-mono num text-[16px] outline-none"
-            />
-          </Field>
-          <Field label="Oracle" hint="Leave blank to use your wallet">
-            <input
-              value={oracle}
-              onChange={(e) => setOracle(e.target.value)}
-              placeholder="0x…"
-              className="w-full bg-transparent px-3 py-3 font-mono text-[12px] outline-none"
-            />
-          </Field>
-        </div>
-
-        {err && (
-          <div className="hairline bg-bleed/10 px-3 py-2.5 font-mono text-[11px] text-bleed">
-            ✕ {err}
+    <div className="container py-8">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-sm font-semibold text-violet-700">
+            <Sparkles className="h-3.5 w-3.5" />
+            New sealed market
           </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-bone-dark max-w-[48ch] leading-[1.6]">
-            Creating this market commits you to the resolution criteria above. Oracle cannot modify the question after deployment.
+          <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight">
+            Create a market
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Frame a clear yes/no question. Bets stay sealed until you resolve it.
           </p>
-          <button
-            type="submit"
-            disabled={!isConnected || busy || !q.trim()}
-            className={isConnected && q.trim() && !busy ? "btn-primary flex-shrink-0" : "btn-disabled flex-shrink-0"}
-          >
-            {busy ? "Deploying…" : "◈ Open sealed market"}
-          </button>
         </div>
-      </form>
 
-      {/* Info note */}
-      <div className="mt-8 panel p-5">
-        <div className="font-mono text-[9px] text-bone-dark leading-[1.7] grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
-          <div>◈ Binary YES / NO — no multi-outcome markets in v1</div>
-          <div>◈ Pool sizes encrypted until resolution</div>
-          <div>◈ Oracle resolves after deadline (not before)</div>
-          <div>◈ 7-day dispute window before finalization</div>
-          <div>◈ Winners claim pro-rata share of total pool</div>
-          <div>◈ Market auto-voids if unresolved after dispute window</div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          {/* Form */}
+          <form onSubmit={submit} className="space-y-5 lg:col-span-3">
+            <div className="space-y-2">
+              <Label htmlFor="question">Question</Label>
+              <Textarea
+                id="question"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Will ETH close above $5,000 on Dec 31, 2026?"
+                rows={2}
+                className="font-display text-lg font-semibold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="desc">Resolution criteria</Label>
+              <Textarea
+                id="desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Resolves YES if the daily close on Coinbase ETH-USD on Dec 31, 2026 (UTC) is above $5,000. Otherwise NO."
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                Be specific — name the source, the exact time, and the threshold.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="days">Open for (days)</Label>
+                <Input
+                  id="days"
+                  value={days}
+                  onChange={(e) => setDays(e.target.value.replace(/[^\d]/g, ""))}
+                  className="tabular-nums"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="oracle">Resolver address (optional)</Label>
+              <Input
+                id="oracle"
+                value={oracle}
+                onChange={(e) => setOracle(e.target.value)}
+                placeholder="Defaults to your wallet"
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                The resolver records the final outcome after the market closes.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              {isConnected ? (
+                <Button
+                  type="submit"
+                  disabled={busy || !question.trim()}
+                  variant="gradient"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  {busy ? "Creating…" : "Create market"}
+                </Button>
+              ) : (
+                <ConnectButton.Custom>
+                  {({ openConnectModal }) => (
+                    <Button
+                      type="button"
+                      onClick={openConnectModal}
+                      variant="gradient"
+                      size="lg"
+                      className="w-full sm:w-auto"
+                    >
+                      Connect wallet to create
+                    </Button>
+                  )}
+                </ConnectButton.Custom>
+              )}
+            </div>
+          </form>
+
+          {/* Live preview */}
+          <div className="lg:col-span-2">
+            <div className="lg:sticky lg:top-20">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Live preview
+              </p>
+              <Card className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <CategoryChip category={category} />
+                  <MarketStatusBadge status={MARKET_STATUS.OPEN} />
+                </div>
+                <h3 className="mt-3 min-h-[48px] font-display text-[15px] font-bold leading-snug tracking-tight">
+                  {question || "Your question will appear here…"}
+                </h3>
+                <div className="mt-3">
+                  <SealedBlock />
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <Lock className="h-3.5 w-3.5" />
+                    Sealed on open
+                  </span>
+                  <span>Closes {closesLabel}</span>
+                </div>
+              </Card>
+              <p className="mt-3 px-1 text-xs leading-relaxed text-muted-foreground">
+                While the market is open, the odds and every position stay hidden.
+                The probability bar appears only after you resolve it.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <div className="flex items-baseline justify-between mb-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-bone-dim">
-          {label}
-        </span>
-        {hint && (
-          <span className="font-mono text-[10px] text-bone-dark">{hint}</span>
-        )}
-      </div>
-      <div className="hairline bg-ink-900">{children}</div>
-    </label>
   );
 }
