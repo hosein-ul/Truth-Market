@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-03 (Session 5)
+**Last updated:** 2026-06-04 (Session 6)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -271,3 +271,32 @@ sign + `userDecrypt`.
   - Pages: Home (data-dense, no hero, stat cells, filter feed, protocol pillars), Market detail (two-column: left = probability/activity/rules; right = bet/position/oracle/privacy note), Portfolio (table view + empty states), Create (cleaner layout + info grid).
   - Design system: `.panel`, `.chip-*`, `.prob-track/fill-*`, `.activity-row`, `.stat-cell`, `.market-card`, `.filter-pill`, `.bet-side-btn`, `.fade-in`.
   - Build passes cleanly: `npm run build` ✓ (19 static pages generated).
+- **Session 6 (this one).** Full UI redesign #2 — rejected the dark+lime terminal
+  look; rebuilt on **shadcn/ui** with a light, premium "Sealed Markets" language.
+  - **Brand:** violet/indigo = privacy; emerald YES / rose NO; soft shadows,
+    rounded cards. Fonts: Plus Jakarta Sans (display) + Inter (body).
+  - **shadcn primitives** added under `web/src/components/ui/` (button, card,
+    badge, input, textarea, label, tabs, select, dialog, dropdown-menu,
+    separator, skeleton, tooltip, sonner). Deps: cva, clsx, tailwind-merge,
+    lucide-react, sonner, tailwindcss-animate, radix primitives.
+  - **Sealed visual** (`Sealed.tsx`): elegant frosted blur + violet shimmer +
+    lock — replaces the ASCII glyph scramble.
+  - New components: Navbar, SiteFooter, MarketCard (Polymarket-style),
+    MarketsExplorer (search/filter/sort), ProbabilityBar, Countdown,
+    CategoryChip, MarketStatusBadge, BetForm, ClaimCard, OraclePanel,
+    PositionCard, ActivityChart, ActivityList, SettlementCard.
+  - Pages rebuilt: Home (hero + value props + explorer), Market detail (2-col,
+    responsive), Create (form + live preview), Portfolio (sealed balance reveal,
+    claimable/active/history). Removed 16 obsolete components.
+  - **FHEVM bug fixed:** `fhevm.ts` now inits eagerly via the RPC URL (not gated
+    on wallet) and `useFhevm` is an app-wide `FhevmProvider`. BetForm/OraclePanel
+    also `await getFhevmInstance()` directly. "Encryption layer not ready" no
+    longer shown.
+  - **Jargon hidden:** `lib/errors.ts` `humanizeError()` maps all reverts to
+    plain language; UI only says USDC / Deposit / Sealed / Reveal.
+  - Responsive verified to 375px via Playwright screenshots. `npm run build` ✓.
+  - **Deploy:** Netlify MCP was disconnected this session — could NOT trigger
+    deploy programmatically. `netlify.toml` is correct for the new deps
+    (`npm install --legacy-peer-deps`, base `web/`, COOP/COEP headers). Pushing
+    to the branch auto-deploys **once the GitHub repo link is completed** (still
+    the pending manual step — see §8).
