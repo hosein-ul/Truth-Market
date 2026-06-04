@@ -1,7 +1,10 @@
 // Server-side reads against MarketFactory + each ConfidentialMarket.
 //
-// We hit listMarkets() on the factory for discovery, then multicall each
-// market's metadata + status in one batch.
+// Per-market metadata + public counters are plain on-chain reads. Aggregate odds
+// are derived from the LAST PUBLICLY-DECRYPTED SNAPSHOT — fetched via the Zama
+// relayer (Node-side SDK). If a market has not yet hit its K-anonymity gate
+// (snapshotBatchK bets), there is no snapshot yet and odds are intentionally
+// blank for everyone — that's the privacy property, not a bug.
 
 import { ADDRESSES } from "./addresses";
 import { marketFactoryAbi, marketAbi } from "./abis";
@@ -15,10 +18,45 @@ export interface MarketSummary {
   question: string;
   category: string;
   status: number;
-  yesPoolClear: bigint;
-  noPoolClear: bigint;
+  /** YES pool revealed at the last odds snapshot (0n if no snapshot yet, set server-side if available, otherwise 0). */
+  yesPoolSnapshot: bigint;
+  noPoolSnapshot: bigint;
+  /** Encrypted pool HANDLES so the client can publicDecrypt on its own if RSC couldn't. */
+  yesPoolHandle: `0x${string}`;
+  noPoolHandle: `0x${string}`;
+  /** After Resolved: cleartext finals used for claim math. */
+  yesPoolFinal: bigint;
+  noPoolFinal: bigint;
   outcomeYes: boolean;
-  traderCount: number;
+  betCount: number;
+  lastSnapshotBetCount: number;
+  snapshotBatchK: number;
+  hasUnsnappedBets: boolean;
+}
+
+async function publicDecryptHandles(handles: string[]): Promise<Record<string, bigint>> {
+  if (handles.length === 0) return {};
+  // Only attempt if all handles are non-zero (an unintialized euint64 is ZeroHash).
+  if (handles.some((h) => /^0x0+$/.test(h))) return {};
+  try {
+    const mod = await import("@zama-fhe/relayer-sdk/node");
+    const rpc =
+      process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ??
+      process.env.SEPOLIA_RPC_URL ??
+      "https://ethereum-sepolia-rpc.publicnode.com";
+    const inst = await mod.createInstance({ ...mod.SepoliaConfig, network: rpc });
+    const result: any = await inst.publicDecrypt(handles);
+    // SDK shape: { clearValues: { [handle]: bigint }, decryptionProof, ... }
+    const clear = result.clearValues ?? result;
+    const out: Record<string, bigint> = {};
+    for (const h of handles) {
+      const v = clear[h];
+      if (v !== undefined && v !== null) out[h] = BigInt(v);
+    }
+    return out;
+  } catch {
+    return {}; // gracefully degrade — UI shows "snapshot pending"
+  }
 }
 
 export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
@@ -37,23 +75,54 @@ export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
     args: [0n, BigInt(Math.min(limit, n))],
   });
 
-  // Multicall per-market dynamic fields. Pools are now PUBLIC plaintext so
-  // odds are always available; betCount gives the public participant count.
-  const contracts = list.flatMap((m) => [
-    { address: m.market, abi: marketAbi, functionName: "status" } as const,
-    { address: m.market, abi: marketAbi, functionName: "yesPool" } as const,
-    { address: m.market, abi: marketAbi, functionName: "noPool" } as const,
-    { address: m.market, abi: marketAbi, functionName: "outcomeYes" } as const,
-    { address: m.market, abi: marketAbi, functionName: "betCount" } as const,
-  ]);
+  const fns = [
+    "status",
+    "outcomeYes",
+    "betCount",
+    "lastSnapshotBetCount",
+    "snapshotBatchK",
+    "yesPoolFinal",
+    "noPoolFinal",
+    "getYesPoolHandle",
+    "getNoPoolHandle",
+  ] as const;
+  const contracts = list.flatMap((m) =>
+    fns.map((fn) => ({ address: m.market, abi: marketAbi, functionName: fn }) as const),
+  );
   const reads = await publicClient.multicall({ contracts, allowFailure: true });
 
+  // Collect all snapshot handles to decrypt in one relayer call.
+  const allHandles: string[] = [];
+  list.forEach((_, i) => {
+    const status = reads[i * fns.length];
+    const yesH = reads[i * fns.length + 7];
+    const noH = reads[i * fns.length + 8];
+    if (status.status !== "success") return;
+    const s = Number(status.result);
+    // Only decrypt while market is Open or Resolving — once Resolved, use yesPoolFinal.
+    if (s === 0 || s === 1) {
+      if (yesH.status === "success") allHandles.push(yesH.result as string);
+      if (noH.status === "success") allHandles.push(noH.result as string);
+    }
+  });
+  const decrypted = await publicDecryptHandles(allHandles);
+
   return list.map((m, i) => {
-    const status = reads[i * 5];
-    const yesP = reads[i * 5 + 1];
-    const noP = reads[i * 5 + 2];
-    const outc = reads[i * 5 + 3];
-    const bets = reads[i * 5 + 4];
+    const status = reads[i * fns.length];
+    const outc = reads[i * fns.length + 1];
+    const bets = reads[i * fns.length + 2];
+    const lastSnap = reads[i * fns.length + 3];
+    const k = reads[i * fns.length + 4];
+    const yesFinal = reads[i * fns.length + 5];
+    const noFinal = reads[i * fns.length + 6];
+    const yesH = reads[i * fns.length + 7];
+    const noH = reads[i * fns.length + 8];
+
+    const yesPoolSnapshot =
+      yesH.status === "success" ? decrypted[yesH.result as string] ?? 0n : 0n;
+    const noPoolSnapshot =
+      noH.status === "success" ? decrypted[noH.result as string] ?? 0n : 0n;
+
     return {
       address: m.market,
       creator: m.creator,
@@ -62,10 +131,20 @@ export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
       question: m.question,
       category: m.category,
       status: status.status === "success" ? Number(status.result) : 0,
-      yesPoolClear: yesP.status === "success" ? (yesP.result as bigint) : 0n,
-      noPoolClear: noP.status === "success" ? (noP.result as bigint) : 0n,
+      yesPoolSnapshot,
+      noPoolSnapshot,
+      yesPoolHandle: (yesH.status === "success" ? (yesH.result as string) : "0x0") as `0x${string}`,
+      noPoolHandle: (noH.status === "success" ? (noH.result as string) : "0x0") as `0x${string}`,
+      yesPoolFinal: yesFinal.status === "success" ? BigInt(yesFinal.result as bigint) : 0n,
+      noPoolFinal: noFinal.status === "success" ? BigInt(noFinal.result as bigint) : 0n,
       outcomeYes: outc.status === "success" ? Boolean(outc.result) : false,
-      traderCount: bets.status === "success" ? Number(bets.result) : 0,
+      betCount: bets.status === "success" ? Number(bets.result) : 0,
+      lastSnapshotBetCount: lastSnap.status === "success" ? Number(lastSnap.result) : 0,
+      snapshotBatchK: k.status === "success" ? Number(k.result) : 3,
+      hasUnsnappedBets:
+        bets.status === "success" && lastSnap.status === "success"
+          ? Number(bets.result) > Number(lastSnap.result)
+          : false,
     };
   });
 }
@@ -80,43 +159,51 @@ export async function getMarketDetail(address: `0x${string}`) {
     "deadline",
     "disputeWindow",
     "status",
-    "yesPool",
-    "noPool",
     "outcomeYes",
     "betCount",
+    "lastSnapshotBetCount",
+    "snapshotBatchK",
+    "yesPoolFinal",
+    "noPoolFinal",
+    "getYesPoolHandle",
+    "getNoPoolHandle",
   ] as const;
   const contracts = fns.map(
     (fn) => ({ address, abi: marketAbi, functionName: fn }) as const,
   );
   const reads = await publicClient.multicall({ contracts, allowFailure: false });
-  const [
-    question,
-    description,
-    category,
-    creator,
-    oracle,
-    deadline,
-    disputeWindow,
-    status,
-    yesPool,
-    noPool,
-    outcomeYes,
-    betCount,
-  ] = reads;
+
+  const status = Number(reads[7]);
+  const yesH = reads[14] as string;
+  const noH = reads[15] as string;
+  let yesPoolSnapshot = 0n;
+  let noPoolSnapshot = 0n;
+  if (status === 0 || status === 1) {
+    const dec = await publicDecryptHandles([yesH, noH]);
+    yesPoolSnapshot = dec[yesH] ?? 0n;
+    noPoolSnapshot = dec[noH] ?? 0n;
+  }
+
   return {
     address,
-    question: question as string,
-    description: description as string,
-    category: category as string,
-    creator: creator as `0x${string}`,
-    oracle: oracle as `0x${string}`,
-    deadline: Number(deadline),
-    disputeWindow: Number(disputeWindow),
-    status: Number(status),
-    yesPoolClear: yesPool as bigint,
-    noPoolClear: noPool as bigint,
-    outcomeYes: outcomeYes as boolean,
-    betCount: Number(betCount),
+    question: reads[0] as string,
+    description: reads[1] as string,
+    category: reads[2] as string,
+    creator: reads[3] as `0x${string}`,
+    oracle: reads[4] as `0x${string}`,
+    deadline: Number(reads[5]),
+    disputeWindow: Number(reads[6]),
+    status,
+    outcomeYes: reads[8] as boolean,
+    betCount: Number(reads[9]),
+    lastSnapshotBetCount: Number(reads[10]),
+    snapshotBatchK: Number(reads[11]),
+    yesPoolFinal: reads[12] as bigint,
+    noPoolFinal: reads[13] as bigint,
+    yesPoolSnapshot,
+    noPoolSnapshot,
+    yesPoolHandle: yesH as `0x${string}`,
+    noPoolHandle: noH as `0x${string}`,
   };
 }
 

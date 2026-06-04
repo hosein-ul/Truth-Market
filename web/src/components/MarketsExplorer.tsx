@@ -55,7 +55,7 @@ export function MarketsExplorer({ markets }: { markets: MarketSummary[] }) {
 
     list = [...list].sort((a, b) => {
       if (sort === "ending") return a.deadline - b.deadline;
-      if (sort === "traders") return b.traderCount - a.traderCount;
+      if (sort === "traders") return b.betCount - a.betCount;
       return b.deadline - a.deadline; // newest ~ latest deadline as proxy
     });
     return list;

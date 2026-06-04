@@ -1,54 +1,54 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lock, Database, Eye, Shield, Cpu, ArrowRight, Zap } from "lucide-react";
+import { Lock, KeyRound, Eye, Shield, Cpu, ArrowRight, Zap, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
   {
-    icon: Database,
-    color: "text-orange-600",
-    bg: "bg-orange-50 border-orange-200",
-    title: "Public odds, on-chain",
-    desc: "Pool totals are stored as plaintext. The implied probability is always visible, so price discovery works exactly like a normal prediction market.",
-    badge: "uint256 yesPool / noPool",
-    badgeColor: "text-orange-700 bg-orange-50 border-orange-200",
-  },
-  {
     icon: Lock,
     color: "text-sky-600",
     bg: "bg-sky-50 border-sky-200",
-    title: "Private per-user stakes",
-    desc: "Your cumulative position is accumulated as an encrypted euint64 via FHE.add. No one can read how much any wallet has staked, or on which side.",
-    badge: "euint64 userYesStake",
+    title: "Encrypted bet inputs",
+    desc: "Amount and side are encrypted in your browser with the Zama Relayer SDK before submission. The contract operates on the ciphertext — calldata reveals nothing.",
+    badge: "externalEuint64 + externalEbool",
     badgeColor: "text-sky-700 bg-sky-50 border-sky-200",
   },
   {
-    icon: Eye,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50 border-emerald-200",
-    title: "No wallet tracking",
-    desc: "The BetPlaced event carries amount + side but no address. Tools like 'Polymarket Whales' simply have nothing to index — herding is impossible.",
-    badge: "anonymous events",
-    badgeColor: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    icon: EyeOff,
+    color: "text-violet-600",
+    bg: "bg-violet-50 border-violet-200",
+    title: "Encrypted pools & stakes",
+    desc: "Pools and per-wallet stakes live as euint64 ciphertexts. No plaintext pool deltas appear on-chain. BetPlaced events carry no fields — no amount, no side, no address.",
+    badge: "euint64 yesPoolEnc / userYesStake",
+    badgeColor: "text-violet-700 bg-violet-50 border-violet-200",
+  },
+  {
+    icon: KeyRound,
+    color: "text-orange-600",
+    bg: "bg-orange-50 border-orange-200",
+    title: "K-anonymous public odds",
+    desc: "Odds are released as a snapshot only after K=3 new bets. A snapshot diff covers ≥3 bets at once, so no observer can tie revealed volume to a single wallet.",
+    badge: "FHE.makePubliclyDecryptable",
+    badgeColor: "text-orange-700 bg-orange-50 border-orange-200",
   },
   {
     icon: Shield,
-    color: "text-violet-600",
-    bg: "bg-violet-50 border-violet-200",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50 border-emerald-200",
     title: "Confidential payouts",
-    desc: "Winnings settle in cUSDC via ERC-7984 confidentialTransfer. Your payout is encrypted — only your wallet can decrypt the balance you earned.",
-    badge: "ERC-7984 cUSDC",
-    badgeColor: "text-violet-700 bg-violet-50 border-violet-200",
+    desc: "Winnings settle in cUSDC via ERC-7984 confidentialTransfer. The payout amount is encrypted on-chain; only your wallet can decrypt the credited balance.",
+    badge: "confidentialTransfer",
+    badgeColor: "text-emerald-700 bg-emerald-50 border-emerald-200",
   },
 ];
 
 const FLOW = [
-  { label: "Approve USDC", sublabel: "Standard ERC-20" },
-  { label: "placeBet()", sublabel: "Amount + side public" },
-  { label: "Wrap → cUSDC", sublabel: "Encrypted collateral" },
-  { label: "Encrypted stake", sublabel: "euint64 per wallet" },
-  { label: "Claim payout", sublabel: "Confidential transfer" },
+  { label: "Top up", sublabel: "USDC → cUSDC (once)" },
+  { label: "Encrypt", sublabel: "amount + side, in-browser" },
+  { label: "placeBet()", sublabel: "ciphertext + proof" },
+  { label: "K-anon snapshot", sublabel: "after K bets" },
+  { label: "Confidential payout", sublabel: "encrypted transfer" },
 ];
 
 export function ZamaExplainer() {
@@ -67,12 +67,12 @@ export function ZamaExplainer() {
             Powered by Zama Protocol FHEVM
           </div>
           <h2 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Public odds. <span className="text-gradient">Private positions.</span>
+            Public market. <span className="text-gradient">Private positions.</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            A real prediction market needs visible odds for price discovery — but
-            visible <em>wallets</em> are what enable herding and whale-tracking.
-            Fully Homomorphic Encryption lets us keep one and kill the other.
+            A prediction market needs public odds for price discovery. We keep that —
+            but release the odds as K-anonymous snapshots over the encrypted pools,
+            so no individual wallet can ever be reconstructed from chain data.
           </p>
         </motion.div>
 
@@ -116,7 +116,7 @@ export function ZamaExplainer() {
           <div className="mb-4 flex items-center gap-2">
             <Zap className="h-4 w-4 text-orange-500" />
             <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Collateral flow
+              Full lifecycle
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">

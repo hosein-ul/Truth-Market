@@ -7,6 +7,8 @@ import { CategoryChip } from "@/components/CategoryChip";
 import { MarketStatusBadge } from "@/components/MarketStatusBadge";
 import { Countdown } from "@/components/Countdown";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
+import { LiveOdds } from "@/components/LiveOdds";
+import { RefreshOddsButton } from "@/components/RefreshOddsButton";
 import { BetForm } from "@/components/BetForm";
 import { ClaimCard } from "@/components/ClaimCard";
 import { OraclePanel } from "@/components/OraclePanel";
@@ -34,12 +36,16 @@ export default async function MarketDetailPage({
 
   const status = m.status as MarketStatusValue;
   const isOpen = status === MARKET_STATUS.OPEN;
+  const isResolving = status === MARKET_STATUS.RESOLVING;
   const isResolved = status === MARKET_STATUS.RESOLVED;
   const isVoided = status === MARKET_STATUS.VOIDED;
 
-  const total = m.yesPoolClear + m.noPoolClear;
-  const yesPct = pct(m.yesPoolClear, total, 0);
+  const yesShown = isResolved ? m.yesPoolFinal : m.yesPoolSnapshot;
+  const noShown = isResolved ? m.noPoolFinal : m.noPoolSnapshot;
+  const total = yesShown + noShown;
+  const yesPct = pct(yesShown, total, 0);
   const hasBets = total > 0n;
+  const betsBehindSnapshot = Math.max(0, m.betCount - m.lastSnapshotBetCount);
 
   return (
     <div className="container py-6">
@@ -60,8 +66,15 @@ export default async function MarketDetailPage({
               <MarketStatusBadge status={status} />
               <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="h-3.5 w-3.5" />
-                {m.betCount} bet{m.betCount !== 1 ? "s" : ""}
+                {m.betCount} encrypted bet{m.betCount !== 1 ? "s" : ""}
               </span>
+              {isOpen && (
+                <RefreshOddsButton
+                  marketAddress={m.address}
+                  betsBehindSnapshot={betsBehindSnapshot}
+                  snapshotBatchK={m.snapshotBatchK}
+                />
+              )}
             </div>
             <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
               {m.question}
@@ -94,11 +107,25 @@ export default async function MarketDetailPage({
                       />
                     </div>
                   </div>
-                  {hasBets ? (
-                    <ProbabilityBar yesPct={yesPct} />
+                  {m.betCount >= m.snapshotBatchK ? (
+                    <LiveOdds
+                      yesHandle={m.yesPoolHandle}
+                      noHandle={m.noPoolHandle}
+                      initialYes={m.yesPoolSnapshot}
+                      initialNo={m.noPoolSnapshot}
+                      betsBehindSnapshot={betsBehindSnapshot}
+                      snapshotBatchK={m.snapshotBatchK}
+                      layout="hero"
+                    />
+                  ) : m.betCount > 0 ? (
+                    <div className="rounded-xl border border-dashed border-sky-200 bg-sky-50/50 px-4 py-3 text-sm text-sky-700">
+                      Odds open after {m.snapshotBatchK - m.betCount} more
+                      bet{m.snapshotBatchK - m.betCount > 1 ? "s" : ""}. K-anonymity gate keeps
+                      individual bets unattributable.
+                    </div>
                   ) : (
                     <div className="rounded-xl border border-dashed border-orange-200 bg-orange-50/50 px-4 py-3 text-sm text-orange-700">
-                      No bets yet — be the first to set the odds.
+                      No bets yet — be the first to take a position.
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
@@ -106,9 +133,10 @@ export default async function MarketDetailPage({
                     <span className="font-display font-bold tabular-nums">${formatUSDC(total)}</span>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Odds are public — they move with every bet, so price discovery
-                    works. But individual positions are encrypted: no one can see
-                    how much you bet or on which side.
+                    Odds are revealed in K-anonymous snapshots: every {m.snapshotBatchK}{" "}
+                    new bets, the aggregated pools can be publicly decrypted. A snapshot
+                    diff covers ≥{m.snapshotBatchK} bets at once, so it never attributes
+                    to a single wallet. Per-wallet stakes stay encrypted end-to-end.
                   </p>
                 </div>
               ) : (
