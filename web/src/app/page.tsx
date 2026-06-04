@@ -1,116 +1,119 @@
 import { getMarketSummaries } from "@/lib/markets";
-import { MarketCard } from "@/components/MarketCard";
-import { CipherCanvas } from "@/components/CipherCanvas";
+import { MarketsFeed } from "@/components/MarketsFeed";
 import { MARKET_STATUS } from "@/lib/abis";
+import Link from "next/link";
 
 export const revalidate = 30;
 
 export default async function HomePage() {
   const markets = await getMarketSummaries();
-  const open = markets.filter((m) => m.status === MARKET_STATUS.OPEN);
-  const settling = markets.filter((m) => m.status === MARKET_STATUS.RESOLVING);
-  const resolved = markets.filter(
+  const nOpen = markets.filter((m) => m.status === MARKET_STATUS.OPEN).length;
+  const nResolving = markets.filter((m) => m.status === MARKET_STATUS.RESOLVING).length;
+  const nSettled = markets.filter(
     (m) => m.status === MARKET_STATUS.RESOLVED || m.status === MARKET_STATUS.VOIDED,
-  );
+  ).length;
 
   return (
-    <>
-      {/* Hero */}
-      <section className="relative">
-        <div className="absolute inset-0 -z-10">
-          <CipherCanvas seed={11} density={0.44} className="w-full h-full" />
-          <div className="absolute inset-0 bg-gradient-to-r from-ink-900/95 via-ink-900/70 to-ink-900/50" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink-900" />
+    <div className="mx-auto max-w-[1400px] px-5 pt-8 pb-20">
+
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-dark mb-2 flex items-center gap-2">
+            <span className="dot-live" />
+            Sealed prediction markets · Ethereum Sepolia
+          </div>
+          <h1 className="font-serif text-[34px] md:text-[44px] leading-[1.05] tracking-[-0.02em] text-bone">
+            Predict. Sealed. Verified.
+          </h1>
+          <p className="mt-2 max-w-[60ch] text-[13px] text-bone-dim leading-[1.55]">
+            Bet amounts and sides are encrypted on-chain via{" "}
+            <span className="text-signal font-mono">FHEVM</span>. Only the resolved
+            outcome and aggregate pools become public. Your position is private.
+          </p>
         </div>
 
-        <div className="mx-auto max-w-[1400px] px-6 pt-20 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
-            <div className="lg:col-span-8">
-              <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-signal mb-5 flex items-center gap-2">
-                <span className="dot-live" />
-                Sealed market protocol · Live on Sepolia
-              </div>
-              <h1 className="font-serif text-[64px] md:text-[88px] leading-[0.96] tracking-[-0.02em] text-bone">
-                Prediction <br />
-                without <span className="text-signal italic">spectacle.</span>
-              </h1>
-              <p className="mt-7 max-w-[58ch] text-[16px] leading-[1.6] text-bone-dim">
-                On every other prediction market your size, side, and identity
-                are public the moment you click. Whales lead herds, insiders are
-                exposed, and a political bet can become a personal record.
-                TruthMarket encrypts <em className="text-bone">amount</em> and{" "}
-                <em className="text-bone">side</em> on-chain at the protocol
-                level. Only the resolved outcome and final aggregate pools ever
-                become public; your payout is decryptable only by the wallet
-                that earned it.
-              </p>
-            </div>
-            <div className="lg:col-span-4 lg:pl-8">
-              <div className="hairline bg-ink-800/70 backdrop-blur p-5">
-                <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-dim mb-3">
-                  Protocol stats
-                </div>
-                <Stat label="Markets opened" value={String(markets.length)} />
-                <Stat label="Currently sealed" value={String(open.length)} />
-                <Stat label="Resolving" value={String(settling.length)} />
-                <Stat label="Settled" value={String(resolved.length)} />
-              </div>
-            </div>
+        {/* Stats */}
+        <div className="flex-shrink-0">
+          <div
+            className="grid grid-cols-4 gap-px"
+            style={{ boxShadow: "inset 0 0 0 0.5px rgba(46,52,65,1)" }}
+          >
+            <StatCell label="Total" value={markets.length.toString()} />
+            <StatCell label="Sealed" value={nOpen.toString()} tone="signal" />
+            <StatCell label="Resolving" value={nResolving.toString()} tone="reveal" />
+            <StatCell label="Settled" value={nSettled.toString()} />
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Markets */}
-      <section className="mx-auto max-w-[1400px] px-6 pb-24">
-        <FeedBlock title="Sealed · open for betting" markets={open} />
-        {settling.length > 0 && (
-          <FeedBlock title="Resolving · awaiting finalization" markets={settling} />
-        )}
-        {resolved.length > 0 && <FeedBlock title="Settled" markets={resolved} />}
-        {markets.length === 0 && (
-          <div className="hairline p-12 text-center text-bone-dim font-mono text-sm mt-8">
-            no markets created yet — be the first
+      {/* ASCII rule */}
+      <div className="font-mono text-[9px] text-bone-dark mb-5 flex items-center gap-3">
+        <span className="select-none">─────</span>
+        <span className="uppercase tracking-[0.22em]">Markets</span>
+        <span className="flex-1 border-t border-wire" />
+        <Link
+          href="/create"
+          className="text-signal hover:text-signal-dim transition-colors flex items-center gap-1 uppercase tracking-[0.18em]"
+        >
+          + Open new market
+        </Link>
+      </div>
+
+      {/* Markets feed with client-side filters */}
+      <MarketsFeed markets={markets} />
+
+      {/* Protocol pillars */}
+      {markets.length > 0 && (
+        <div className="mt-12 panel p-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ProtocolNote
+              title="◈ End-to-end Encryption"
+              body="Amount and side are encrypted client-side before submission. The contract never sees plaintext inputs."
+            />
+            <ProtocolNote
+              title="◈ Anti-Herding Design"
+              body="No implied odds during the open phase. Prevents whale-driven bias and copy-trading from the outset."
+            />
+            <ProtocolNote
+              title="◈ Private Payouts"
+              body="Winnings are delivered as confidential cUSDC. Only your wallet can decrypt the amount you received."
+            />
           </div>
-        )}
-      </section>
-    </>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between py-2 hairline-b last:shadow-none">
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-bone-dim">
-        {label}
-      </span>
-      <span className="font-mono num text-[20px] text-bone">{value}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-function FeedBlock({
-  title,
-  markets,
+function StatCell({
+  label,
+  value,
+  tone,
 }: {
-  title: string;
-  markets: Awaited<ReturnType<typeof getMarketSummaries>>;
+  label: string;
+  value: string;
+  tone?: "signal" | "reveal";
 }) {
-  if (markets.length === 0) return null;
   return (
-    <div className="mt-12">
-      <div className="flex items-baseline justify-between hairline-b pb-3 mb-5">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone">
-          {title}
-        </h2>
-        <span className="font-mono num text-[11px] text-bone-dim">
-          {markets.length.toString().padStart(2, "0")}
-        </span>
+    <div className="stat-cell min-w-[68px]">
+      <div className="stat-label">{label}</div>
+      <div
+        className={`stat-value ${tone === "signal" ? "text-signal" : tone === "reveal" ? "text-reveal" : ""}`}
+      >
+        {value}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-wire">
-        {markets.map((m) => (
-          <MarketCard key={m.address} m={m} />
-        ))}
+    </div>
+  );
+}
+
+function ProtocolNote({ title, body }: { title: string; body: string }) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-signal mb-2">
+        {title}
       </div>
+      <p className="font-mono text-[11px] text-bone-dim leading-[1.6]">{body}</p>
     </div>
   );
 }

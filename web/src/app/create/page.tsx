@@ -66,20 +66,26 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="mx-auto max-w-[760px] px-6 pt-12 pb-24">
-      <div className="mb-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone-dim mb-3 flex items-center gap-2">
+    <div className="mx-auto max-w-[860px] px-5 pt-8 pb-20">
+      <div className="mb-8">
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-dark mb-2 flex items-center gap-2">
           <span className="dot-live" /> Open a sealed market
         </div>
-        <h1 className="font-serif text-[44px] leading-[1.05] tracking-[-0.02em]">
-          Frame a question. Set a deadline. Pick an oracle.
+        <h1 className="font-serif text-[34px] md:text-[44px] leading-[1.05] tracking-[-0.02em]">
+          Frame a question.
         </h1>
-        <p className="mt-5 text-bone-dim leading-relaxed">
-          Markets resolve as binary YES / NO. Pools stay encrypted on-chain
-          until the deadline; after that the designated oracle records the
-          outcome and pools become public for payout. You may delegate the
-          oracle role to a third party — or keep it for yourself.
+        <p className="mt-3 text-bone-dim leading-[1.6] text-[14px] max-w-[62ch]">
+          Binary YES / NO market. Pools stay encrypted on-chain until the deadline;
+          the designated oracle records the outcome and pools unlock for payout.
+          You can delegate the oracle role to a third party or keep it yourself.
         </p>
+      </div>
+
+      {/* ASCII separator */}
+      <div className="font-mono text-[9px] text-bone-dark flex items-center gap-3 mb-8 select-none">
+        <span>─────</span>
+        <span className="uppercase tracking-[0.22em]">Market parameters</span>
+        <span className="flex-1 border-t border-wire" />
       </div>
 
       <form onSubmit={submit} className="space-y-7">
@@ -143,19 +149,31 @@ export default function CreatePage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-bone-dim max-w-[40ch]">
-            By creating this market you commit to the resolution criteria as written above.
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-bone-dark max-w-[48ch] leading-[1.6]">
+            Creating this market commits you to the resolution criteria above. Oracle cannot modify the question after deployment.
           </p>
           <button
             type="submit"
             disabled={!isConnected || busy || !q.trim()}
-            className={isConnected && q.trim() ? "btn-primary" : "btn-disabled"}
+            className={isConnected && q.trim() && !busy ? "btn-primary flex-shrink-0" : "btn-disabled flex-shrink-0"}
           >
-            {busy ? "Submitting…" : "Open market"}
+            {busy ? "Deploying…" : "◈ Open sealed market"}
           </button>
         </div>
       </form>
+
+      {/* Info note */}
+      <div className="mt-8 panel p-5">
+        <div className="font-mono text-[9px] text-bone-dark leading-[1.7] grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+          <div>◈ Binary YES / NO — no multi-outcome markets in v1</div>
+          <div>◈ Pool sizes encrypted until resolution</div>
+          <div>◈ Oracle resolves after deadline (not before)</div>
+          <div>◈ 7-day dispute window before finalization</div>
+          <div>◈ Winners claim pro-rata share of total pool</div>
+          <div>◈ Market auto-voids if unresolved after dispute window</div>
+        </div>
+      </div>
     </div>
   );
 }

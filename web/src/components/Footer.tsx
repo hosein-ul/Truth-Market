@@ -1,49 +1,34 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
-    <footer className="hairline-t mt-24">
-      <div className="mx-auto max-w-[1400px] px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8 font-mono text-[11px] tracking-[0.06em] text-bone-dim">
-        <div>
-          <div className="font-serif text-[16px] tracking-tight text-bone mb-2">
+    <footer className="mt-20" style={{ boxShadow: "inset 0 0.5px 0 0 rgba(46,52,65,1)" }}>
+      <div className="mx-auto max-w-[1400px] px-5 py-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <Link href="/" className="font-mono text-[12px] text-bone">
             truth<span className="text-signal">.</span>market
-          </div>
-          <p className="leading-relaxed max-w-[40ch]">
-            Confidential prediction markets on Ethereum. The protocol encrypts
-            bet amounts and sides on-chain; only the resolved outcome and
-            aggregate pools ever become public.
-          </p>
+          </Link>
+          <span className="font-mono text-[10px] text-bone-dark">
+            Confidential prediction markets · Sepolia · Zama FHEVM
+          </span>
         </div>
-        <div>
-          <div className="uppercase text-bone mb-2 tracking-[0.18em]">Protocol</div>
-          <ul className="space-y-1">
-            <li>Ethereum Sepolia · 11155111</li>
-            <li>Powered by Zama FHEVM</li>
-            <li>Collateral · cUSDC (Zama)</li>
-          </ul>
-        </div>
-        <div>
-          <div className="uppercase text-bone mb-2 tracking-[0.18em]">Resources</div>
-          <ul className="space-y-1">
-            <li>
-              <a
-                className="hover:text-bone transition-colors"
-                href="https://docs.zama.org/protocol"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Zama Protocol docs ↗
-              </a>
-            </li>
-            <li>
-              <a
-                className="hover:text-bone transition-colors"
-                href="https://sepolia.etherscan.io"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Sepolia Etherscan ↗
-              </a>
-            </li>
-          </ul>
+        <div className="flex items-center gap-5 font-mono text-[10px] text-bone-dark">
+          <a
+            href="https://docs.zama.org/protocol"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-bone transition-colors"
+          >
+            Zama docs ↗
+          </a>
+          <a
+            href="https://sepolia.etherscan.io/address/0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-bone transition-colors"
+          >
+            Contract ↗
+          </a>
         </div>
       </div>
     </footer>

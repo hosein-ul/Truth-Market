@@ -1,13 +1,24 @@
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
 
-const META: Record<
-  MarketStatusValue,
-  { label: string; tone: "signal" | "reveal" | "bleed" | "wire"; dot: boolean }
-> = {
-  [MARKET_STATUS.OPEN]: { label: "OPEN", tone: "signal", dot: true },
-  [MARKET_STATUS.RESOLVING]: { label: "RESOLVING", tone: "reveal", dot: true },
-  [MARKET_STATUS.RESOLVED]: { label: "RESOLVED", tone: "reveal", dot: false },
-  [MARKET_STATUS.VOIDED]: { label: "VOIDED", tone: "bleed", dot: false },
+const CHIP_CLASS: Record<MarketStatusValue, string> = {
+  [MARKET_STATUS.OPEN]: "chip chip-open",
+  [MARKET_STATUS.RESOLVING]: "chip chip-resolving",
+  [MARKET_STATUS.RESOLVED]: "chip chip-resolved",
+  [MARKET_STATUS.VOIDED]: "chip chip-voided",
+};
+
+const LABEL: Record<MarketStatusValue, string> = {
+  [MARKET_STATUS.OPEN]: "Open",
+  [MARKET_STATUS.RESOLVING]: "Resolving",
+  [MARKET_STATUS.RESOLVED]: "Resolved",
+  [MARKET_STATUS.VOIDED]: "Voided",
+};
+
+const DOT_CLASS: Record<MarketStatusValue, string | null> = {
+  [MARKET_STATUS.OPEN]: "bg-signal animate-pulse_signal",
+  [MARKET_STATUS.RESOLVING]: "bg-reveal",
+  [MARKET_STATUS.RESOLVED]: null,
+  [MARKET_STATUS.VOIDED]: null,
 };
 
 export function StatusBadge({
@@ -17,32 +28,17 @@ export function StatusBadge({
   status: MarketStatusValue;
   className?: string;
 }) {
-  const m = META[status];
-  const toneClass =
-    m.tone === "signal"
-      ? "text-signal hairline"
-      : m.tone === "reveal"
-        ? "text-reveal hairline"
-        : m.tone === "bleed"
-          ? "text-bleed hairline"
-          : "text-bone-dim hairline";
-
+  const chipCls = CHIP_CLASS[status] ?? "chip chip-resolved";
+  const dot = DOT_CLASS[status];
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] ${toneClass} ${className}`}
-    >
-      {m.dot && (
+    <span className={`${chipCls} ${className}`}>
+      {dot && (
         <span
-          className={`inline-block w-1.5 h-1.5 rounded-full ${
-            m.tone === "signal"
-              ? "bg-signal"
-              : m.tone === "reveal"
-                ? "bg-reveal"
-                : "bg-bleed"
-          } ${m.tone === "signal" ? "animate-pulse_signal" : ""}`}
+          className={`inline-block rounded-full ${dot}`}
+          style={{ width: 5, height: 5 }}
         />
       )}
-      {m.label}
+      {LABEL[status] ?? "Unknown"}
     </span>
   );
 }

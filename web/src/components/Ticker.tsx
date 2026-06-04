@@ -1,13 +1,14 @@
-// Top "telex" strip — sets the technical/financial tone before anything else
-// renders. Pure CSS marquee, no JS state.
+// Top telex strip — enforces the protocol tone before anything else renders.
 
 const ITEMS = [
   "SEALED ORDER FLOW",
-  "FHE-ENCRYPTED POSITIONS",
+  "FHE-ENCRYPTED · AMOUNT + SIDE HIDDEN",
   "ETHEREUM SEPOLIA · CHAIN 11155111",
-  "POOLS DISCLOSED ON RESOLUTION ONLY",
+  "POOLS DISCLOSED AT RESOLUTION ONLY",
   "PAYOUTS DECRYPTABLE ONLY BY WINNER",
-  "POWERED BY ZAMA PROTOCOL",
+  "POWERED BY ZAMA FHEVM",
+  "NO HERDING BIAS · NO COPY-TRADING",
+  "POSITIONS PRIVATE FROM ALL OBSERVERS",
 ];
 
 export function Ticker() {

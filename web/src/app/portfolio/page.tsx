@@ -192,78 +192,112 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 pt-12 pb-24">
-      <div className="mb-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone-dim mb-3">
-          Account · {shortAddr(address)}
+    <div className="mx-auto max-w-[1200px] px-5 pt-8 pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-dark mb-2">
+            Account · {isConnected ? shortAddr(address) : "—"}
+          </div>
+          <h1 className="font-serif text-[34px] md:text-[42px] leading-[1.05] tracking-[-0.02em]">
+            Portfolio
+          </h1>
         </div>
-        <h1 className="font-serif text-[44px] leading-[1.05] tracking-[-0.02em]">
-          Portfolio
-        </h1>
       </div>
 
-      {!isConnected && (
-        <div className="hairline p-10 text-center text-bone-dim font-mono text-sm">
-          Connect a wallet to view your positions.
+      {!isConnected ? (
+        <div className="panel p-16 text-center">
+          <div className="font-mono text-[32px] text-bone-dark mb-4">◈</div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone-dim mb-2">
+            Wallet not connected
+          </div>
+          <p className="font-mono text-[11px] text-bone-dark">
+            Connect a wallet to view your sealed positions.
+          </p>
         </div>
-      )}
-
-      {isConnected && (
+      ) : (
         <>
-          {/* Confidential balance */}
-          <div className="hairline bg-ink-800/40 p-5 mb-10 flex items-center justify-between">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-bone-dim mb-1">
-                Sealed wallet balance
-              </div>
-              <div className="flex items-baseline gap-3">
+          {/* Balance card */}
+          <div className="panel mb-6">
+            <div className="panel-header">
+              Confidential Balance
+              <span className="font-mono text-[9px] text-signal">● SEALED</span>
+            </div>
+            <div className="p-5 flex items-center justify-between">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-dark mb-2">
+                  cUSDC (Zama confidential wrapper)
+                </div>
                 {bal !== null ? (
-                  <span className="font-mono num text-[28px] text-reveal">
-                    ${formatUSDC(bal)}{" "}
-                    <span className="text-bone-dim text-[12px] uppercase tracking-[0.18em]">
-                      cUSDC
-                    </span>
-                  </span>
+                  <div className="font-mono num text-[32px] text-reveal fade-in">
+                    ${formatUSDC(bal)}
+                  </div>
                 ) : (
-                  <EncryptedValue revealed={false} width={12} className="text-[28px]" />
+                  <EncryptedValue revealed={false} width={14} className="text-[28px]" />
                 )}
               </div>
+              {bal === null && (
+                <button
+                  onClick={decryptBalance}
+                  disabled={fhevmStatus !== "ready"}
+                  className={fhevmStatus === "ready" ? "btn-ghost" : "btn-disabled"}
+                >
+                  🔓 Decrypt balance
+                </button>
+              )}
             </div>
-            {bal === null && (
-              <button
-                onClick={decryptBalance}
-                disabled={fhevmStatus !== "ready"}
-                className={fhevmStatus === "ready" ? "btn-ghost" : "btn-disabled"}
-              >
-                Decrypt balance
-              </button>
-            )}
           </div>
 
-          {/* Positions list */}
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone hairline-b pb-3 mb-5">
-            Positions · {positions?.length ?? "—"}
-          </h2>
+          {/* Positions */}
+          <div className="font-mono text-[9px] text-bone-dark mb-4 flex items-center gap-3 select-none">
+            <span>─────</span>
+            <span className="uppercase tracking-[0.22em]">
+              Positions · {positions?.length ?? "—"}
+            </span>
+            <span className="flex-1 border-t border-wire" />
+          </div>
 
           {positions === null && (
-            <div className="font-mono text-[11px] text-bone-dim">loading…</div>
-          )}
-          {positions?.length === 0 && (
-            <div className="hairline p-10 text-center text-bone-dim font-mono text-sm">
-              No positions. <Link href="/" className="text-signal">Browse markets →</Link>
+            <div className="panel p-8 text-center font-mono text-[11px] text-bone-dark">
+              Loading positions…
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-px bg-wire hairline">
-            {(positions ?? []).map((p) => (
-              <PositionRow
-                key={p.market}
-                p={p}
-                fhevmReady={fhevmStatus === "ready"}
-                onDecrypt={() => decryptStake(p)}
-              />
-            ))}
-          </div>
+          {positions?.length === 0 && (
+            <div className="panel p-12 text-center">
+              <div className="font-mono text-[32px] text-bone-dark mb-3">◈</div>
+              <div className="font-mono text-[11px] text-bone-dim mb-4">
+                No positions found
+              </div>
+              <Link href="/" className="btn-ghost">
+                Browse markets
+              </Link>
+            </div>
+          )}
+
+          {(positions ?? []).length > 0 && (
+            <div style={{ boxShadow: "inset 0 0 0 0.5px rgba(46,52,65,1)" }}>
+              {/* Table header */}
+              <div
+                className="grid grid-cols-12 gap-2 px-5 py-2 font-mono text-[9px] uppercase tracking-[0.18em] text-bone-dark"
+                style={{ boxShadow: "inset 0 -0.5px 0 0 rgba(46,52,65,0.6)", background: "#07080a" }}
+              >
+                <div className="col-span-5">Market</div>
+                <div className="col-span-2">YES Stake</div>
+                <div className="col-span-2">NO Stake</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-1" />
+              </div>
+              {(positions ?? []).map((p) => (
+                <PositionRow
+                  key={p.market}
+                  p={p}
+                  fhevmReady={fhevmStatus === "ready"}
+                  onDecrypt={() => decryptStake(p)}
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>
@@ -280,51 +314,51 @@ function PositionRow({
   onDecrypt: () => void;
 }) {
   return (
-    <div className="bg-ink-900 p-5 grid grid-cols-12 items-center gap-4">
-      <div className="col-span-12 md:col-span-6">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-bone-dim mb-1">
-          {p.category}
-        </div>
+    <div
+      className="grid grid-cols-12 gap-2 px-5 py-4 items-center"
+      style={{
+        boxShadow: "inset 0 -0.5px 0 0 rgba(46,52,65,0.5)",
+        background: "#0b0d11",
+      }}
+    >
+      <div className="col-span-12 md:col-span-5">
+        <div className="chip chip-cat mb-1 inline-flex">{p.category}</div>
         <Link
           href={`/markets/${p.market}`}
-          className="font-serif text-[20px] text-bone hover:text-signal transition-colors"
+          className="block font-serif text-[16px] leading-[1.3] text-bone hover:text-signal transition-colors line-clamp-2"
         >
           {p.question}
         </Link>
       </div>
-      <div className="col-span-6 md:col-span-2">
-        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-dark mb-1">
-          YES stake
-        </div>
+      <div className="col-span-5 md:col-span-2">
         {p.decrypted ? (
-          <span className="font-mono num text-[14px] text-signal">
+          <span className="font-mono num text-[14px] text-signal fade-in">
             ${formatUSDC(p.yesClear ?? 0n)}
           </span>
         ) : (
-          <EncryptedValue revealed={false} width={6} />
+          <EncryptedValue revealed={false} width={5} className="text-[12px]" />
         )}
       </div>
-      <div className="col-span-6 md:col-span-2">
-        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone-dark mb-1">
-          NO stake
-        </div>
+      <div className="col-span-5 md:col-span-2">
         {p.decrypted ? (
-          <span className="font-mono num text-[14px] text-bleed">
+          <span className="font-mono num text-[14px] text-bleed fade-in">
             ${formatUSDC(p.noClear ?? 0n)}
           </span>
         ) : (
-          <EncryptedValue revealed={false} width={6} />
+          <EncryptedValue revealed={false} width={5} className="text-[12px]" />
         )}
       </div>
-      <div className="col-span-12 md:col-span-2 flex md:justify-end items-center gap-3">
+      <div className="col-span-2 md:col-span-2">
         <StatusBadge status={p.status as any} />
+      </div>
+      <div className="col-span-12 md:col-span-1 flex md:justify-end">
         {!p.decrypted && (
           <button
             onClick={onDecrypt}
             disabled={!fhevmReady}
-            className="font-mono text-[10px] uppercase tracking-[0.18em] text-signal hover:underline disabled:text-bone-dark"
+            className="font-mono text-[9px] uppercase tracking-[0.16em] text-signal hover:underline disabled:text-bone-dark"
           >
-            decrypt
+            🔓 decrypt
           </button>
         )}
       </div>
