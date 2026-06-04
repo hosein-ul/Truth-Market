@@ -12,10 +12,13 @@ import { humanizeError } from "@/lib/errors";
 import { publicClient } from "@/lib/viem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WrapFlow, type WrapStage } from "@/components/WrapFlow";
 import { cn } from "@/lib/utils";
 
 type Side = "YES" | "NO";
 const PRESETS = ["10", "50", "100", "250"];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function BetForm({
   marketAddress,
@@ -30,6 +33,7 @@ export function BetForm({
   const [side, setSide] = useState<Side>("YES");
   const [amount, setAmount] = useState("25");
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<WrapStage>("idle");
 
   const { data: publicBal, refetch: refetchBal } = useReadContract({
     address: ADDRESSES.underlyingUSDC,
@@ -62,6 +66,7 @@ export function BetForm({
       // 1. Ensure the wallet has enough test USDC (mint if short).
       const cur = (publicBal as bigint | undefined) ?? 0n;
       if (cur < amountWei) {
+        setStage("mint");
         toast.loading("Adding test USDC to your wallet…", { id: toastId });
         const hMint = await writeContractAsync({
           address: ADDRESSES.underlyingUSDC,
@@ -73,6 +78,7 @@ export function BetForm({
       }
 
       // 2. Approve the market to pull USDC.
+      setStage("approve");
       toast.loading("Approving USDC…", { id: toastId });
       const hApprove = await writeContractAsync({
         address: ADDRESSES.underlyingUSDC,
@@ -82,9 +88,11 @@ export function BetForm({
       });
       await publicClient.waitForTransactionReceipt({ hash: hApprove });
 
-      // 3. Place the bet. Amount + side are public (so odds update live);
-      //    your cumulative position is encrypted on-chain.
-      toast.loading("Placing your bet…", { id: toastId });
+      // 3. Place the bet. The SAME tx pulls your USDC, wraps it into Zama's
+      //    confidential cUSDC, and records an encrypted per-wallet stake.
+      //    Amount + side are public (live odds); your position is encrypted.
+      setStage("wrap");
+      toast.loading("Converting to cUSDC & placing your bet…", { id: toastId });
       const hash = await writeContractAsync({
         address: marketAddress,
         abi: marketAbi,
@@ -93,12 +101,21 @@ export function BetForm({
       });
       await publicClient.waitForTransactionReceipt({ hash });
 
+      // Visualize the on-chain seal step that just completed.
+      setStage("seal");
+      await sleep(800);
+      setStage("done");
       toast.success(`Bet placed on ${side}. Your position is private.`, {
         id: toastId,
       });
       refetchBal();
+      await sleep(1800);
+      setStage("idle");
     } catch (e) {
+      setStage("error");
       toast.error(humanizeError(e), { id: toastId });
+      await sleep(1200);
+      setStage("idle");
     } finally {
       setBusy(false);
     }
@@ -113,6 +130,10 @@ export function BetForm({
         </div>
       </div>
     );
+  }
+
+  if (stage !== "idle") {
+    return <WrapFlow stage={stage} amount={amount} />;
   }
 
   return (

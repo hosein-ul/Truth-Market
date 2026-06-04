@@ -92,7 +92,7 @@ export function P5Background() {
                 p.noise(x * 0.003, time * 0.8 + c * 100) * h * 0.3 -
                 h * 0.15 +
                 Math.sin(x * 0.005 + time * 2 + c) * 30;
-              p.curveVertex(x, y);
+              p.vertex(x, y);
             }
             p.endShape();
           }

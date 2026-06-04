@@ -6,6 +6,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Lock, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Faucet } from "@/components/Faucet";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -63,6 +64,9 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <div className="hidden sm:block">
+            <Faucet />
+          </div>
+          <div className="hidden sm:block">
             <ConnectButton
               showBalance={false}
               chainStatus="icon"
@@ -105,7 +109,14 @@ export function Navbar() {
                 </Link>
               ))}
             </nav>
-            <div className="mt-3 sm:hidden">
+            <div className="mt-3 flex flex-col gap-2 sm:hidden">
+              <Faucet
+                trigger={
+                  <button className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card py-2.5 text-sm font-semibold text-foreground">
+                    Get test USDC
+                  </button>
+                }
+              />
               <ConnectButton showBalance={false} chainStatus="icon" />
             </div>
           </motion.div>

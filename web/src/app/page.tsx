@@ -4,6 +4,7 @@ import { getMarketSummaries } from "@/lib/markets";
 import { MARKET_STATUS } from "@/lib/abis";
 import { MarketsExplorer } from "@/components/MarketsExplorer";
 import { ZamaExplainer } from "@/components/ZamaExplainer";
+import { GenerativeHero } from "@/components/GenerativeHero";
 import { Button } from "@/components/ui/button";
 import { formatUSDC } from "@/lib/format";
 
@@ -20,12 +21,14 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
         <div className="pointer-events-none absolute inset-0 bg-hero-mesh" />
-        <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
+        {/* algorithmic art — Perlin flow-field ribbons (YES-orange → NO-sky) */}
+        <GenerativeHero className="absolute inset-0 opacity-95 [mask-image:radial-gradient(ellipse_90%_85%_at_50%_45%,#000_68%,transparent_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
         {/* decorative blobs */}
         <div className="pointer-events-none absolute -right-16 -top-16 h-96 w-96 rounded-full bg-orange-200/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-10 -left-10 h-72 w-72 rounded-full bg-sky-200/20 blur-3xl" />
 
-        <div className="container relative py-16 sm:py-24">
+        <div className="container relative z-10 py-16 sm:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-orange-700">
               <Cpu className="h-3.5 w-3.5" strokeWidth={2.5} />

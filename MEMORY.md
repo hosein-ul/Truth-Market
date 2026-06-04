@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-04 (Session 6)
+**Last updated:** 2026-06-04 (Session 9)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -345,3 +345,29 @@ sign + `userDecrypt`.
     components (HeroTerminal, FloatingOrbs) + v1/v2/v3 demo pages.
   - **Lesson:** `IERC7984` has no `wrap()` — use `IERC7984ERC20Wrapper`. Picked
     user's chosen design (V1 Solar Burst) and built it for real with shadcn/ui.
+- **Session 9 (this one).** Faucet + confidential-conversion visual + hero algorithmic art.
+  - **On-chain verification first:** confirmed via Sepolia `eth_call` that the Zama
+    cUSDC wrapper `0x7c5B…3639` is hard-bound (`underlying()`) to the USDCMock
+    `0x9b5C…dFFfF`, and that USDCMock exposes a public `mint(address,uint256)`
+    (selector `40c10f19` present in bytecode). Conclusion: **Circle's Sepolia USDC
+    CANNOT be wrapped into Zama cUSDC** — the wrapper only accepts that one token.
+    So the on-site faucet mints Zama's USDCMock (the only token the wrapper takes).
+  - **`Faucet.tsx`** (new): shadcn Dialog faucet. Mints 1,000 test USDCMock to the
+    user, shows balance + a USDC→cUSDC mini-explainer. Wired into Navbar (desktop
+    "Test USDC" button + mobile menu).
+  - **`WrapFlow.tsx`** (new): framer-motion visualization of the REAL on-chain
+    wrap that already happens inside `placeBet` (USDC → encrypt/FHE wrap → sealed
+    cUSDC), with a traveling token + per-stage captions. `BetForm` now drives it
+    through stages mint→approve→wrap→seal→done (replaces the form while active).
+  - **`GenerativeHero.tsx`** (new): algorithmic art for the homepage hero — a
+    Perlin-noise FLOW FIELD drawn as flowing ribbons that lerp YES-orange → NO-sky,
+    seeded (42), re-integrated each frame as noise-z drifts; signal streamlines
+    pulse. Mounted behind hero text with a radial mask. (The named Anthropic
+    `algorithmic-art` skill was NOT installed this session, so built directly.)
+  - **p5 2.x BUG fixed:** p5 `2.3.0` removed `curveVertex` (→ `splineVertex`).
+    Both `GenerativeHero` and the pre-existing `P5Background` used `curveVertex`
+    and threw `curveVertex is not a function` at runtime (the ambient bg was
+    silently broken too). Switched both to `p.vertex` (dense points stay smooth).
+  - Verified with playwright-core screenshots: hero ribbons visible, faucet dialog,
+    WrapFlow wrap+done states. `npm run build` ✓.
+  - **Policy:** per user, changes go out as a **PR** (no self-merge).
