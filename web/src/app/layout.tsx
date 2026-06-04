@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Header } from "@/components/Header";
-import { Ticker } from "@/components/Ticker";
-import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
+import { SiteFooter } from "@/components/SiteFooter";
+import { P5Background } from "@/components/P5Background";
 
 const sans = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+});
+const display = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 const mono = JetBrains_Mono({
@@ -16,31 +22,27 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
   display: "swap",
 });
-const serif = Instrument_Serif({
-  subsets: ["latin"],
-  variable: "--font-serif",
-  weight: "400",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
-  title: "TruthMarket — Sealed prediction markets",
+  title: "TruthMarket — Public Odds, Private Positions",
   description:
-    "Confidential prediction markets on Ethereum. Bets are encrypted on-chain; only outcomes become public.",
+    "A prediction market with public odds and private positions. See where the crowd leans, but keep your wallet untrackable — powered by Zama FHEVM.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${mono.variable} ${serif.variable} dark`}
+      className={`${sans.variable} ${display.variable} ${mono.variable}`}
     >
-      <body className="min-h-screen bg-ink-900 text-bone antialiased">
+      <body className="min-h-screen bg-background font-sans">
         <Providers>
-          <Ticker />
-          <Header />
-          <main className="min-h-[calc(100vh-180px)]">{children}</main>
-          <Footer />
+          <P5Background />
+          <div className="relative flex min-h-screen flex-col">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+          </div>
         </Providers>
       </body>
     </html>

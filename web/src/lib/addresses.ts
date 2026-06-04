@@ -8,7 +8,7 @@ export const ADDRESSES = {
   underlyingUSDC: "0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF",
   confidentialUSDC: "0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639",
   // Our protocol
-  marketFactory: "0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30",
+  marketFactory: "0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334",
 } as const;
 
-export const FACTORY_DEPLOY_BLOCK = 10981400n; // approx — narrows event scans
+export const FACTORY_DEPLOY_BLOCK = 10987800n; // approx — narrows event scans

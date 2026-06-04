@@ -1,32 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {FHE, ebool, euint64, externalEuint64, externalEbool} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC7984ERC20Wrapper} from "@openzeppelin/confidential-contracts/interfaces/IERC7984ERC20Wrapper.sol";
 
-/// @title ConfidentialMarket
-/// @notice A single binary prediction market where bet amounts and sides are
-///         encrypted on-chain via Zama FHEVM. Pools are revealed only after the
-///         market closes; individual positions remain encrypted forever and
-///         payouts are decryptable only by the winner.
+/// @title ConfidentialMarket (v2 — public odds, private positions)
+/// @notice Binary prediction market with PUBLIC aggregate odds and PRIVATE
+///         per-user positions. Pools (yesPool/noPool) are plaintext uint256
+///         so anyone can compute implied probability at any time. Individual
+///         wallet positions are encrypted via FHEVM and only self-decryptable.
+///
+/// Privacy model: you can see the odds change in real-time, but you CANNOT
+/// look up what any specific wallet has bet (amount or cumulative stake).
+/// This kills whale-tracking tools like "Polymarket Whales" at the protocol level.
+///
+/// Collateral flow:
+///   Deposit: regular USDC → contract wraps to cUSDC internally
+///   Claim:   encrypted payout → confidentialTransfer(cUSDC) to winner
 ///
 /// Lifecycle:
-///   Open       → users place encrypted bets until `deadline`.
-///   Resolving  → oracle picks YES/NO; pools made publicly decryptable.
-///   Resolved   → cleartext pools landed via KMS proof; winners can claim.
-///   Voided     → no bets on winning side OR oracle missed dispute window;
-///                everyone refunds their full encrypted stake.
+///   Open     → users bet; pools visible; per-user stakes hidden.
+///   Resolved → oracle picks YES/NO; winners can claim.
+///   Voided   → no bets on winning side OR oracle timeout; full refund.
 contract ConfidentialMarket is ZamaEthereumConfig {
     enum Status {
         Open,
-        Resolving,
         Resolved,
         Voided
     }
 
     // ─── Immutable / config ─────────────────────────────────────────────────
-    IERC7984 public immutable collateral;
+    IERC20 public immutable usdc;
+    IERC7984ERC20Wrapper public immutable cUsdc;
     address public immutable creator;
     address public immutable oracle;
     uint64 public immutable deadline;
@@ -36,17 +43,14 @@ contract ConfidentialMarket is ZamaEthereumConfig {
     string public description;
     string public category;
 
-    // ─── State ──────────────────────────────────────────────────────────────
+    // ─── State (PUBLIC — aggregate odds) ────────────────────────────────────
     Status public status;
     bool public outcomeYes;
-    uint64 public yesPoolClear;
-    uint64 public noPoolClear;
+    uint256 public yesPool;
+    uint256 public noPool;
+    uint256 public betCount;
 
-    // Encrypted pools (during Open phase).
-    euint64 private yesPool;
-    euint64 private noPool;
-
-    // Per-user encrypted stake on each side.
+    // ─── State (PRIVATE — per-user encrypted stakes) ────────────────────────
     mapping(address => euint64) private userYesStake;
     mapping(address => euint64) private userNoStake;
 
@@ -54,11 +58,10 @@ contract ConfidentialMarket is ZamaEthereumConfig {
     mapping(address => bool) public hasBet;
 
     // ─── Events ─────────────────────────────────────────────────────────────
-    event BetPlaced(address indexed bettor);
-    event Resolved(bool outcomeYes, bytes32 yesHandle, bytes32 noHandle);
-    event Finalized(uint64 yesPoolClear, uint64 noPoolClear);
-    event Voided(string reason);
-    event Claimed(address indexed bettor);
+    event BetPlaced(uint64 amount, bool side);
+    event MarketResolved(bool outcomeYes);
+    event MarketVoided(string reason);
+    event Claimed(address indexed user);
 
     // ─── Errors ─────────────────────────────────────────────────────────────
     error NotOpen();
@@ -69,9 +72,11 @@ contract ConfidentialMarket is ZamaEthereumConfig {
     error AlreadyClaimed();
     error NoPosition();
     error TooEarlyToVoid();
+    error ZeroAmount();
 
     constructor(
-        IERC7984 collateral_,
+        IERC20 usdc_,
+        IERC7984ERC20Wrapper cUsdc_,
         address creator_,
         address oracle_,
         uint64 deadline_,
@@ -80,11 +85,13 @@ contract ConfidentialMarket is ZamaEthereumConfig {
         string memory description_,
         string memory category_
     ) {
-        require(address(collateral_) != address(0), "zero collateral");
+        require(address(usdc_) != address(0), "zero usdc");
+        require(address(cUsdc_) != address(0), "zero cUsdc");
         require(oracle_ != address(0), "zero oracle");
         require(deadline_ > block.timestamp, "deadline in past");
 
-        collateral = collateral_;
+        usdc = usdc_;
+        cUsdc = cUsdc_;
         creator = creator_;
         oracle = oracle_;
         deadline = deadline_;
@@ -97,118 +104,88 @@ contract ConfidentialMarket is ZamaEthereumConfig {
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // BETTING
+    // BETTING — plaintext amount and side, encrypted per-user accumulation
     // ════════════════════════════════════════════════════════════════════════
 
-    /// @notice Place a confidential bet.
-    /// @dev    Caller must first call `collateral.setOperator(market, expiry)`.
-    ///         Both `encAmount` and `encSide` come from a single
-    ///         `createEncryptedInput().add64(amount).addBool(side).encrypt()` call,
-    ///         so they share one `inputProof`.
-    function placeBet(
-        externalEuint64 encAmount,
-        externalEbool encSide,
-        bytes calldata inputProof
-    ) external {
+    /// @notice Place a bet. Amount and side are public (so odds update live).
+    ///         Per-user cumulative stake is encrypted (so no one can look up
+    ///         a specific wallet's total position).
+    /// @param amount USDC amount (6 decimals). Must have approved this contract.
+    /// @param side   true = YES, false = NO.
+    function placeBet(uint64 amount, bool side) external {
         if (status != Status.Open) revert NotOpen();
         if (block.timestamp >= deadline) revert PastDeadline();
+        if (amount == 0) revert ZeroAmount();
 
-        euint64 amount = FHE.fromExternal(encAmount, inputProof);
-        ebool side = FHE.fromExternal(encSide, inputProof);
+        // 1. Pull regular USDC from the bettor.
+        usdc.transferFrom(msg.sender, address(this), amount);
 
-        // Token contract internally does FHE.ge(balance, amount), so it needs
-        // transient ACL on `amount`.
-        FHE.allowTransient(amount, address(collateral));
+        // 2. Wrap into cUSDC (contract holds encrypted collateral for claims).
+        usdc.approve(address(cUsdc), amount);
+        cUsdc.wrap(address(this), amount);
 
-        // Pull collateral. `transferred` == 0 if the user lacks funds — FHE
-        // operations don't revert. We never know which side it went on.
-        euint64 transferred = collateral.confidentialTransferFrom(msg.sender, address(this), amount);
-        FHE.allowThis(transferred);
+        // 3. Update PUBLIC plaintext pools (live odds).
+        if (side) {
+            yesPool += amount;
+        } else {
+            noPool += amount;
+        }
 
-        euint64 yesPart = FHE.select(side, transferred, FHE.asEuint64(0));
-        euint64 noPart = FHE.select(side, FHE.asEuint64(0), transferred);
-
-        // Accumulate global pools.
-        yesPool = FHE.add(yesPool, yesPart);
-        noPool = FHE.add(noPool, noPart);
-        FHE.allowThis(yesPool);
-        FHE.allowThis(noPool);
-
-        // Accumulate per-user stake on each side.
-        userYesStake[msg.sender] = FHE.add(userYesStake[msg.sender], yesPart);
-        userNoStake[msg.sender] = FHE.add(userNoStake[msg.sender], noPart);
-        FHE.allowThis(userYesStake[msg.sender]);
-        FHE.allowThis(userNoStake[msg.sender]);
-        FHE.allow(userYesStake[msg.sender], msg.sender);
-        FHE.allow(userNoStake[msg.sender], msg.sender);
+        // 4. Update PRIVATE encrypted per-user stake.
+        euint64 encAmount = FHE.asEuint64(amount);
+        if (side) {
+            userYesStake[msg.sender] = FHE.add(userYesStake[msg.sender], encAmount);
+            FHE.allowThis(userYesStake[msg.sender]);
+            FHE.allow(userYesStake[msg.sender], msg.sender);
+        } else {
+            userNoStake[msg.sender] = FHE.add(userNoStake[msg.sender], encAmount);
+            FHE.allowThis(userNoStake[msg.sender]);
+            FHE.allow(userNoStake[msg.sender], msg.sender);
+        }
 
         hasBet[msg.sender] = true;
-        emit BetPlaced(msg.sender);
+        betCount++;
+        emit BetPlaced(amount, side);
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // RESOLUTION (two-phase: oracle marks → anyone finalizes with KMS proof)
+    // RESOLUTION — single step (no finalize needed; pools already plaintext)
     // ════════════════════════════════════════════════════════════════════════
 
-    /// @notice Oracle records the outcome and marks pools as publicly decryptable.
+    /// @notice Oracle records the outcome. Pools are already public, so no
+    ///         decryption phase is needed.
     function resolve(bool outcomeYes_) external {
         if (msg.sender != oracle) revert NotOracle();
         if (status != Status.Open) revert WrongStatus();
         if (block.timestamp < deadline) revert BeforeDeadline();
 
         outcomeYes = outcomeYes_;
-        status = Status.Resolving;
 
-        FHE.makePubliclyDecryptable(yesPool);
-        FHE.makePubliclyDecryptable(noPool);
-
-        emit Resolved(outcomeYes_, FHE.toBytes32(yesPool), FHE.toBytes32(noPool));
-    }
-
-    /// @notice Anyone can complete resolution by supplying the KMS-signed
-    ///         cleartext pools obtained from the relayer.
-    function finalize(
-        uint64 yesPoolClear_,
-        uint64 noPoolClear_,
-        bytes calldata decryptionProof
-    ) external {
-        if (status != Status.Resolving) revert WrongStatus();
-
-        bytes32[] memory handles = new bytes32[](2);
-        handles[0] = FHE.toBytes32(yesPool);
-        handles[1] = FHE.toBytes32(noPool);
-        bytes memory cleartexts = abi.encode(yesPoolClear_, noPoolClear_);
-        FHE.checkSignatures(handles, cleartexts, decryptionProof);
-
-        yesPoolClear = yesPoolClear_;
-        noPoolClear = noPoolClear_;
-
-        uint64 winningPool = outcomeYes ? yesPoolClear_ : noPoolClear_;
+        uint256 winningPool = outcomeYes_ ? yesPool : noPool;
         if (winningPool == 0) {
             status = Status.Voided;
-            emit Voided("empty winning pool");
+            emit MarketVoided("empty winning pool");
         } else {
             status = Status.Resolved;
-            emit Finalized(yesPoolClear_, noPoolClear_);
+            emit MarketResolved(outcomeYes_);
         }
     }
 
-    /// @notice Emergency void: if oracle never resolves within the dispute
-    ///         window, anyone can void the market so users can recover stakes.
+    /// @notice Emergency void: oracle missed the dispute window.
     function enableRefunds() external {
         if (status != Status.Open) revert WrongStatus();
         if (block.timestamp < deadline + disputeWindow) revert TooEarlyToVoid();
 
         status = Status.Voided;
-        emit Voided("oracle timeout");
+        emit MarketVoided("oracle timeout");
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // CLAIM
+    // CLAIM — encrypted payout calculation → confidential transfer
     // ════════════════════════════════════════════════════════════════════════
 
-    /// @notice Claim winnings (or refund if voided). Payout is paid in
-    ///         confidential tokens — only the claimer can decrypt it.
+    /// @notice Claim winnings (or refund if voided). Payout is encrypted and
+    ///         sent via confidentialTransfer — only the claimer can decrypt it.
     function claim() external {
         if (claimed[msg.sender]) revert AlreadyClaimed();
         if (!hasBet[msg.sender]) revert NoPosition();
@@ -216,17 +193,16 @@ contract ConfidentialMarket is ZamaEthereumConfig {
         euint64 payout;
 
         if (status == Status.Resolved) {
-            // Winning stake × totalPool ÷ winningPool. div requires plaintext
-            // divisor, which is exactly why we revealed the pools first.
-            uint64 totalPool = yesPoolClear + noPoolClear;
-            uint64 winningPool = outcomeYes ? yesPoolClear : noPoolClear;
-            euint64 winningStake = outcomeYes ? userYesStake[msg.sender] : userNoStake[msg.sender];
+            uint64 totalPool = uint64(yesPool + noPool);
+            uint64 winningPool = outcomeYes ? uint64(yesPool) : uint64(noPool);
+            euint64 winningStake = outcomeYes
+                ? userYesStake[msg.sender]
+                : userNoStake[msg.sender];
 
             // payout = winningStake * totalPool / winningPool
             euint64 numerator = FHE.mul(winningStake, totalPool);
             payout = FHE.div(numerator, winningPool);
         } else if (status == Status.Voided) {
-            // Refund full stake regardless of which side it was on.
             payout = FHE.add(userYesStake[msg.sender], userNoStake[msg.sender]);
         } else {
             revert WrongStatus();
@@ -234,10 +210,9 @@ contract ConfidentialMarket is ZamaEthereumConfig {
 
         claimed[msg.sender] = true;
         FHE.allowThis(payout);
-        FHE.allowTransient(payout, address(collateral));
+        FHE.allowTransient(payout, address(cUsdc));
 
-        // Pay out. Recipient gains ACL on the transferred amount.
-        collateral.confidentialTransfer(msg.sender, payout);
+        cUsdc.confidentialTransfer(msg.sender, payout);
 
         emit Claimed(msg.sender);
     }
@@ -246,19 +221,20 @@ contract ConfidentialMarket is ZamaEthereumConfig {
     // VIEWS
     // ════════════════════════════════════════════════════════════════════════
 
-    function getYesPool() external view returns (euint64) {
-        return yesPool;
-    }
-
-    function getNoPool() external view returns (euint64) {
-        return noPool;
-    }
-
+    /// @notice Returns the user's encrypted YES stake handle (self-decryptable).
     function getUserYesStake(address user) external view returns (euint64) {
         return userYesStake[user];
     }
 
+    /// @notice Returns the user's encrypted NO stake handle (self-decryptable).
     function getUserNoStake(address user) external view returns (euint64) {
         return userNoStake[user];
+    }
+
+    /// @notice Implied YES probability in basis points (0-10000).
+    function yesProbabilityBps() external view returns (uint256) {
+        uint256 total = yesPool + noPool;
+        if (total == 0) return 5000; // 50/50 default
+        return (yesPool * 10000) / total;
     }
 }

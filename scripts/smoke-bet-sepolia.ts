@@ -1,60 +1,58 @@
 // End-to-end smoke test of the live Sepolia deployment.
 //  1. Mint the official underlying USDC to the deployer
-//  2. Wrap into the official confidential USDC (cUSDCMock)
-//  3. Set the first demo market as operator
-//  4. Encrypt (amount, side) via the relayer SDK and place a confidential bet
+//  2. Approve the market to pull USDC
+//  3. placeBet(amount, side) — amount + side are public (live odds),
+//     the contract wraps to cUSDC internally and accumulates an encrypted
+//     per-user stake.
 //
-// Anything past `placeBet` (resolve / finalize / claim) needs to wait for the
-// market deadline, so it's exercised in the mock test suite, not here.
+// Anything past `placeBet` (resolve / claim) needs the deadline, so it's
+// exercised in the mock test suite, not here.
 
-import { ethers, fhevm, network } from "hardhat";
+import { ethers, network } from "hardhat";
 import fs from "fs";
 import path from "path";
 
 async function main() {
-  // Plugin auto-inits during `hardhat test`; scripts need an explicit kick.
-  await fhevm.initializeCLIApi();
-
   const dir = path.join(__dirname, "..", "deployments", network.name);
   const addrs = JSON.parse(fs.readFileSync(path.join(dir, "addresses.json"), "utf8"));
   const demos = JSON.parse(fs.readFileSync(path.join(dir, "demo-markets.json"), "utf8"));
 
   const [signer] = await ethers.getSigners();
   const usdc = await ethers.getContractAt("ERC20Mintable", addrs.contracts.underlyingUSDC, signer);
-  const cusdc = await ethers.getContractAt("ConfidentialWrapperMock", addrs.contracts.confidentialUSDC, signer);
 
-  const marketAddr: string = demos[0].address;
-  console.log(`market : ${marketAddr}  (${demos[0].question})`);
+  // A few bets across the demo markets so odds render on the live site.
+  const bets: { market: string; amount: bigint; side: boolean; label: string }[] = [
+    { market: demos[0].address, amount: 60_000_000n, side: true,  label: "YES 60" },
+    { market: demos[0].address, amount: 40_000_000n, side: false, label: "NO 40" },
+    { market: demos[1].address, amount: 30_000_000n, side: false, label: "NO 30" },
+    { market: demos[1].address, amount: 20_000_000n, side: true,  label: "YES 20" },
+    { market: demos[2].address, amount: 50_000_000n, side: true,  label: "YES 50" },
+  ];
 
-  const stake = 25_000_000n; // 25 USDC
+  const total = bets.reduce((s, b) => s + b.amount, 0n);
+  console.log(`[1] mint ${total / 1_000_000n} USDC`);
+  await (await usdc.mint(signer.address, total)).wait();
 
-  console.log("[1] mint 25 USDC");
-  const mintTx = await usdc.mint(signer.address, stake);
-  await mintTx.wait();
+  for (const b of bets) {
+    console.log(`[bet] ${b.label} on ${b.market}`);
+    await (await usdc.approve(b.market, b.amount)).wait();
+    const m = await ethers.getContractAt("ConfidentialMarket", b.market, signer);
+    const tx = await (m as any).placeBet(b.amount, b.side);
+    const r = await tx.wait();
+    console.log(`      ok in block ${r!.blockNumber}`);
+  }
 
-  console.log("[2] approve + wrap into confidential USDC");
-  await (await usdc.approve(await cusdc.getAddress(), stake)).wait();
-  await (await (cusdc as any).wrap(signer.address, stake)).wait();
+  // Show resulting public odds.
+  console.log("\nResulting odds:");
+  for (const d of demos) {
+    const m = await ethers.getContractAt("ConfidentialMarket", d.address, signer);
+    const yes = await (m as any).yesPool();
+    const no = await (m as any).noPool();
+    const bps = await (m as any).yesProbabilityBps();
+    console.log(`  ${d.address}  YES ${yes / 1_000_000n} / NO ${no / 1_000_000n}  → ${Number(bps) / 100}% YES`);
+  }
 
-  console.log("[3] set market as operator");
-  const until = Math.floor(Date.now() / 1000) + 30 * 86400;
-  await (await (cusdc as any).setOperator(marketAddr, until)).wait();
-
-  console.log("[4] encrypt (amount=10, side=YES) via FHEVM relayer");
-  const enc = await fhevm
-    .createEncryptedInput(marketAddr, signer.address)
-    .add64(10_000_000n)
-    .addBool(true)
-    .encrypt();
-
-  console.log("[5] placeBet");
-  const m = await ethers.getContractAt("ConfidentialMarket", marketAddr, signer);
-  const tx = await (m as any).placeBet(enc.handles[0], enc.handles[1], enc.inputProof);
-  console.log(`    tx ${tx.hash}`);
-  const r = await tx.wait();
-  console.log(`    ok in block ${r!.blockNumber}`);
-
-  console.log("\nLive Sepolia confidential bet placed successfully.");
+  console.log("\nLive Sepolia bets placed — public odds, private positions.");
 }
 
 main().catch((e) => {

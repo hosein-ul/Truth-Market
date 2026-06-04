@@ -18,6 +18,7 @@ export interface MarketSummary {
   yesPoolClear: bigint;
   noPoolClear: bigint;
   outcomeYes: boolean;
+  traderCount: number;
 }
 
 export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
@@ -36,20 +37,23 @@ export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
     args: [0n, BigInt(Math.min(limit, n))],
   });
 
-  // Multicall per-market dynamic fields
+  // Multicall per-market dynamic fields. Pools are now PUBLIC plaintext so
+  // odds are always available; betCount gives the public participant count.
   const contracts = list.flatMap((m) => [
     { address: m.market, abi: marketAbi, functionName: "status" } as const,
-    { address: m.market, abi: marketAbi, functionName: "yesPoolClear" } as const,
-    { address: m.market, abi: marketAbi, functionName: "noPoolClear" } as const,
+    { address: m.market, abi: marketAbi, functionName: "yesPool" } as const,
+    { address: m.market, abi: marketAbi, functionName: "noPool" } as const,
     { address: m.market, abi: marketAbi, functionName: "outcomeYes" } as const,
+    { address: m.market, abi: marketAbi, functionName: "betCount" } as const,
   ]);
   const reads = await publicClient.multicall({ contracts, allowFailure: true });
 
   return list.map((m, i) => {
-    const status = reads[i * 4];
-    const yesP = reads[i * 4 + 1];
-    const noP = reads[i * 4 + 2];
-    const outc = reads[i * 4 + 3];
+    const status = reads[i * 5];
+    const yesP = reads[i * 5 + 1];
+    const noP = reads[i * 5 + 2];
+    const outc = reads[i * 5 + 3];
+    const bets = reads[i * 5 + 4];
     return {
       address: m.market,
       creator: m.creator,
@@ -61,6 +65,7 @@ export async function getMarketSummaries(limit = 50): Promise<MarketSummary[]> {
       yesPoolClear: yesP.status === "success" ? (yesP.result as bigint) : 0n,
       noPoolClear: noP.status === "success" ? (noP.result as bigint) : 0n,
       outcomeYes: outc.status === "success" ? Boolean(outc.result) : false,
+      traderCount: bets.status === "success" ? Number(bets.result) : 0,
     };
   });
 }
@@ -75,9 +80,10 @@ export async function getMarketDetail(address: `0x${string}`) {
     "deadline",
     "disputeWindow",
     "status",
-    "yesPoolClear",
-    "noPoolClear",
+    "yesPool",
+    "noPool",
     "outcomeYes",
+    "betCount",
   ] as const;
   const contracts = fns.map(
     (fn) => ({ address, abi: marketAbi, functionName: fn }) as const,
@@ -92,9 +98,10 @@ export async function getMarketDetail(address: `0x${string}`) {
     deadline,
     disputeWindow,
     status,
-    yesPoolClear,
-    noPoolClear,
+    yesPool,
+    noPool,
     outcomeYes,
+    betCount,
   ] = reads;
   return {
     address,
@@ -106,9 +113,10 @@ export async function getMarketDetail(address: `0x${string}`) {
     deadline: Number(deadline),
     disputeWindow: Number(disputeWindow),
     status: Number(status),
-    yesPoolClear: yesPoolClear as bigint,
-    noPoolClear: noPoolClear as bigint,
+    yesPoolClear: yesPool as bigint,
+    noPoolClear: noPool as bigint,
     outcomeYes: outcomeYes as boolean,
+    betCount: Number(betCount),
   };
 }
 

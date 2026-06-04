@@ -1,119 +1,152 @@
-import { getMarketSummaries } from "@/lib/markets";
-import { MarketsFeed } from "@/components/MarketsFeed";
-import { MARKET_STATUS } from "@/lib/abis";
 import Link from "next/link";
+import { Lock, EyeOff, Award, ArrowRight, Cpu, TrendingUp, BarChart3 } from "lucide-react";
+import { getMarketSummaries } from "@/lib/markets";
+import { MARKET_STATUS } from "@/lib/abis";
+import { MarketsExplorer } from "@/components/MarketsExplorer";
+import { ZamaExplainer } from "@/components/ZamaExplainer";
+import { GenerativeHero } from "@/components/GenerativeHero";
+import { Button } from "@/components/ui/button";
+import { formatUSDC } from "@/lib/format";
 
 export const revalidate = 30;
 
 export default async function HomePage() {
   const markets = await getMarketSummaries();
-  const nOpen = markets.filter((m) => m.status === MARKET_STATUS.OPEN).length;
-  const nResolving = markets.filter((m) => m.status === MARKET_STATUS.RESOLVING).length;
-  const nSettled = markets.filter(
-    (m) => m.status === MARKET_STATUS.RESOLVED || m.status === MARKET_STATUS.VOIDED,
-  ).length;
+  const open = markets.filter((m) => m.status === MARKET_STATUS.OPEN).length;
+  const totalTraders = markets.reduce((s, m) => s + m.traderCount, 0);
+  const totalVol = markets.reduce((s, m) => s + m.yesPoolClear + m.noPoolClear, 0n);
 
-  return (
-    <div className="mx-auto max-w-[1400px] px-5 pt-8 pb-20">
-
-      {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone-dark mb-2 flex items-center gap-2">
-            <span className="dot-live" />
-            Sealed prediction markets · Ethereum Sepolia
-          </div>
-          <h1 className="font-serif text-[34px] md:text-[44px] leading-[1.05] tracking-[-0.02em] text-bone">
-            Predict. Sealed. Verified.
-          </h1>
-          <p className="mt-2 max-w-[60ch] text-[13px] text-bone-dim leading-[1.55]">
-            Bet amounts and sides are encrypted on-chain via{" "}
-            <span className="text-signal font-mono">FHEVM</span>. Only the resolved
-            outcome and aggregate pools become public. Your position is private.
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="flex-shrink-0">
-          <div
-            className="grid grid-cols-4 gap-px"
-            style={{ boxShadow: "inset 0 0 0 0.5px rgba(46,52,65,1)" }}
-          >
-            <StatCell label="Total" value={markets.length.toString()} />
-            <StatCell label="Sealed" value={nOpen.toString()} tone="signal" />
-            <StatCell label="Resolving" value={nResolving.toString()} tone="reveal" />
-            <StatCell label="Settled" value={nSettled.toString()} />
-          </div>
-        </div>
-      </div>
-
-      {/* ASCII rule */}
-      <div className="font-mono text-[9px] text-bone-dark mb-5 flex items-center gap-3">
-        <span className="select-none">─────</span>
-        <span className="uppercase tracking-[0.22em]">Markets</span>
-        <span className="flex-1 border-t border-wire" />
-        <Link
-          href="/create"
-          className="text-signal hover:text-signal-dim transition-colors flex items-center gap-1 uppercase tracking-[0.18em]"
-        >
-          + Open new market
-        </Link>
-      </div>
-
-      {/* Markets feed with client-side filters */}
-      <MarketsFeed markets={markets} />
-
-      {/* Protocol pillars */}
-      {markets.length > 0 && (
-        <div className="mt-12 panel p-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <ProtocolNote
-              title="◈ End-to-end Encryption"
-              body="Amount and side are encrypted client-side before submission. The contract never sees plaintext inputs."
-            />
-            <ProtocolNote
-              title="◈ Anti-Herding Design"
-              body="No implied odds during the open phase. Prevents whale-driven bias and copy-trading from the outset."
-            />
-            <ProtocolNote
-              title="◈ Private Payouts"
-              body="Winnings are delivered as confidential cUSDC. Only your wallet can decrypt the amount you received."
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatCell({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "signal" | "reveal";
-}) {
-  return (
-    <div className="stat-cell min-w-[68px]">
-      <div className="stat-label">{label}</div>
-      <div
-        className={`stat-value ${tone === "signal" ? "text-signal" : tone === "reveal" ? "text-reveal" : ""}`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function ProtocolNote({ title, body }: { title: string; body: string }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-signal mb-2">
-        {title}
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-border">
+        <div className="pointer-events-none absolute inset-0 bg-hero-mesh" />
+        {/* algorithmic art — Perlin flow-field ribbons (YES-orange → NO-sky) */}
+        <GenerativeHero className="absolute inset-0 opacity-95 [mask-image:radial-gradient(ellipse_90%_85%_at_50%_45%,#000_68%,transparent_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
+        {/* decorative blobs */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-96 w-96 rounded-full bg-orange-200/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 -left-10 h-72 w-72 rounded-full bg-sky-200/20 blur-3xl" />
+
+        <div className="container relative z-10 py-16 sm:py-24">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-orange-700">
+              <Cpu className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Powered by Zama FHEVM
+            </div>
+            <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+              Predict the future.{" "}
+              <span className="text-gradient">Keep your edge.</span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+              TruthMarket is a prediction market with{" "}
+              <strong className="text-foreground">public odds</strong> and{" "}
+              <strong className="text-foreground">private positions</strong>.
+              See where the crowd leans, but no one can track your wallet.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button asChild size="xl" variant="gradient" className="w-full sm:w-auto gap-2">
+                <Link href="#markets">
+                  Explore markets
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild size="xl" variant="outline" className="w-full sm:w-auto">
+                <Link href="/create">Create a market</Link>
+              </Button>
+            </div>
+
+            <div className="mx-auto mt-10 flex max-w-lg items-center justify-center gap-8">
+              <Stat value={String(markets.length)} label="Markets" />
+              <div className="h-8 w-px bg-border" />
+              <Stat value={String(open)} label="Live now" accent />
+              <div className="h-8 w-px bg-border" />
+              <Stat value={totalVol > 0n ? `$${formatUSDC(totalVol, { decimals: 0 })}` : String(totalTraders)} label={totalVol > 0n ? "Volume" : "Bets"} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Value props */}
+      <section className="border-b border-border bg-secondary/30">
+        <div className="container grid grid-cols-1 gap-6 py-10 sm:grid-cols-3">
+          <Feature
+            icon={<BarChart3 className="h-5 w-5" />}
+            title="Real-time odds"
+            body="Pool totals are public — you always know the implied probability. Price discovery works. No hidden markets."
+            color="text-orange-600"
+            bg="bg-orange-50"
+            border="border-orange-200"
+          />
+          <Feature
+            icon={<EyeOff className="h-5 w-5" />}
+            title="Private positions"
+            body="Per-user stakes are encrypted on-chain via FHE. Nobody can look up how much you bet or on which side — whale tracking is impossible."
+            color="text-sky-600"
+            bg="bg-sky-50"
+            border="border-sky-200"
+          />
+          <Feature
+            icon={<Award className="h-5 w-5" />}
+            title="Confidential payouts"
+            body="Winnings settle via ERC-7984 confidential transfer. Only your wallet can decrypt your balance — your edge stays yours."
+            color="text-emerald-600"
+            bg="bg-emerald-50"
+            border="border-emerald-200"
+          />
+        </div>
+      </section>
+
+      {/* Markets */}
+      <section id="markets" className="container scroll-mt-20 py-10">
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">
+              Markets
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Real odds, private positions. Pick a side.
+            </p>
+          </div>
+          {open > 0 && (
+            <div className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5">
+              <TrendingUp className="h-3.5 w-3.5 text-orange-600" />
+              <span className="text-xs font-semibold text-orange-700">{open} live</span>
+            </div>
+          )}
+        </div>
+        <MarketsExplorer markets={markets} />
+      </section>
+
+      {/* Zama technical explainer */}
+      <ZamaExplainer />
+    </div>
+  );
+}
+
+function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div className="text-center">
+      <div className={`font-display text-2xl font-extrabold tabular-nums ${accent ? "text-gradient" : ""}`}>
+        {value}
       </div>
-      <p className="font-mono text-[11px] text-bone-dim leading-[1.6]">{body}</p>
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function Feature({
+  icon, title, body, color, bg, border,
+}: {
+  icon: React.ReactNode; title: string; body: string; color: string; bg: string; border: string;
+}) {
+  return (
+    <div className={`rounded-2xl border p-6 ${bg} ${border}`}>
+      <div className={`mb-3 inline-grid h-11 w-11 place-items-center rounded-xl border ${border} bg-white/70 ${color}`}>
+        {icon}
+      </div>
+      <h3 className="mb-1.5 font-display text-base font-bold tracking-tight text-foreground">{title}</h3>
+      <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>
   );
 }

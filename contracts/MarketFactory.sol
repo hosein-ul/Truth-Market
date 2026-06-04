@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC7984ERC20Wrapper} from "@openzeppelin/confidential-contracts/interfaces/IERC7984ERC20Wrapper.sol";
 import {ConfidentialMarket} from "./ConfidentialMarket.sol";
 
-/// @title MarketFactory - deploys ConfidentialMarket instances and indexes them.
-/// @dev    Anyone can create a market. The factory is the canonical registry
-///         the frontend reads to render the market feed.
+/// @title MarketFactory — deploys ConfidentialMarket instances and indexes them.
 contract MarketFactory {
-    IERC7984 public immutable collateral;
+    IERC20 public immutable usdc;
+    IERC7984ERC20Wrapper public immutable cUsdc;
     uint64 public defaultDisputeWindow = 7 days;
 
     struct MarketInfo {
@@ -21,7 +21,7 @@ contract MarketFactory {
     }
 
     MarketInfo[] private _markets;
-    mapping(address => uint256) public marketIndex; // 1-based; 0 means unknown
+    mapping(address => uint256) public marketIndex;
 
     event MarketCreated(
         uint256 indexed id,
@@ -33,9 +33,11 @@ contract MarketFactory {
         string category
     );
 
-    constructor(IERC7984 collateral_) {
-        require(address(collateral_) != address(0), "zero collateral");
-        collateral = collateral_;
+    constructor(IERC20 usdc_, IERC7984ERC20Wrapper cUsdc_) {
+        require(address(usdc_) != address(0), "zero usdc");
+        require(address(cUsdc_) != address(0), "zero cUsdc");
+        usdc = usdc_;
+        cUsdc = cUsdc_;
     }
 
     function createMarket(
@@ -46,7 +48,8 @@ contract MarketFactory {
         string calldata category
     ) external returns (address market) {
         ConfidentialMarket m = new ConfidentialMarket(
-            collateral,
+            usdc,
+            cUsdc,
             msg.sender,
             oracle,
             deadline,
@@ -80,7 +83,6 @@ contract MarketFactory {
         return _markets[id];
     }
 
-    /// @notice Paginated market list. Returns markets[offset .. offset+limit).
     function listMarkets(uint256 offset, uint256 limit) external view returns (MarketInfo[] memory page) {
         uint256 total = _markets.length;
         if (offset >= total) return new MarketInfo[](0);

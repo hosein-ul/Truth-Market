@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-03 (Session 5)
+**Last updated:** 2026-06-04 (Session 9)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -271,3 +271,103 @@ sign + `userDecrypt`.
   - Pages: Home (data-dense, no hero, stat cells, filter feed, protocol pillars), Market detail (two-column: left = probability/activity/rules; right = bet/position/oracle/privacy note), Portfolio (table view + empty states), Create (cleaner layout + info grid).
   - Design system: `.panel`, `.chip-*`, `.prob-track/fill-*`, `.activity-row`, `.stat-cell`, `.market-card`, `.filter-pill`, `.bet-side-btn`, `.fade-in`.
   - Build passes cleanly: `npm run build` ✓ (19 static pages generated).
+- **Session 6 (this one).** Full UI redesign #2 — rejected the dark+lime terminal
+  look; rebuilt on **shadcn/ui** with a light, premium "Sealed Markets" language.
+  - **Brand:** violet/indigo = privacy; emerald YES / rose NO; soft shadows,
+    rounded cards. Fonts: Plus Jakarta Sans (display) + Inter (body).
+  - **shadcn primitives** added under `web/src/components/ui/` (button, card,
+    badge, input, textarea, label, tabs, select, dialog, dropdown-menu,
+    separator, skeleton, tooltip, sonner). Deps: cva, clsx, tailwind-merge,
+    lucide-react, sonner, tailwindcss-animate, radix primitives.
+  - **Sealed visual** (`Sealed.tsx`): elegant frosted blur + violet shimmer +
+    lock — replaces the ASCII glyph scramble.
+  - New components: Navbar, SiteFooter, MarketCard (Polymarket-style),
+    MarketsExplorer (search/filter/sort), ProbabilityBar, Countdown,
+    CategoryChip, MarketStatusBadge, BetForm, ClaimCard, OraclePanel,
+    PositionCard, ActivityChart, ActivityList, SettlementCard.
+  - Pages rebuilt: Home (hero + value props + explorer), Market detail (2-col,
+    responsive), Create (form + live preview), Portfolio (sealed balance reveal,
+    claimable/active/history). Removed 16 obsolete components.
+  - **FHEVM bug fixed:** `fhevm.ts` now inits eagerly via the RPC URL (not gated
+    on wallet) and `useFhevm` is an app-wide `FhevmProvider`. BetForm/OraclePanel
+    also `await getFhevmInstance()` directly. "Encryption layer not ready" no
+    longer shown.
+  - **Jargon hidden:** `lib/errors.ts` `humanizeError()` maps all reverts to
+    plain language; UI only says USDC / Deposit / Sealed / Reveal.
+  - Responsive verified to 375px via Playwright screenshots. `npm run build` ✓.
+  - **Deploy:** Netlify MCP was disconnected this session — could NOT trigger
+    deploy programmatically. `netlify.toml` is correct for the new deps
+    (`npm install --legacy-peer-deps`, base `web/`, COOP/COEP headers). Pushing
+    to the branch auto-deploys **once the GitHub repo link is completed** (still
+    the pending manual step — see §8).
+- **Session 7 (this one).** Complete visual redesign #3 — dark navy + electric blue (zero purple).
+  - **User requirement:** no purple/violet; premium hackathon-winning UI showing Zama infra.
+  - **Install:** `framer-motion@^12` added to `web/package.json` (--legacy-peer-deps).
+  - **Color system:** replaced `--primary: 258 90% 58%` (violet) with `213 94% 59%` (blue).
+    Electric blue (#3b82f6) as primary, cyan (#22d3ee) as accent, gold (#f59e0b) for CTA.
+    Dark background #080c16 navy. All Tailwind violet tokens → blue/cyan tokens.
+  - **New components:**
+    - `GlareCard.tsx` — Framer Motion spring hover (scale 1.02, damping=12, stiffness=180),
+      3D tilt via useSpring(mouseX/Y), mouse-tracking radial glare overlay. Also exports `SpringCard`.
+    - `HeroTerminal.tsx` — Animated FHE code typewriter showing `euint64/ebool/FHE.select`
+      with scan-line animation. Makes Zama tech visually prominent. Client component.
+    - `FloatingOrbs.tsx` — CSS-animated glassy orbs (blue, cyan, gold radial gradients)
+      + jelly-shaped blobs (border-radius morphing). Client component.
+    - `ZamaExplainer.tsx` — 4-card FHEVM step explainer + collateral flow diagram (USDC→cUSDC→placeBet→claim).
+      Uses framer-motion whileInView for entrance animations. Key for hackathon judges.
+  - **Modified:** MarketCard uses GlareCard; Navbar has layoutId active-link indicator;
+    Sealed uses blue palette; all badges/chips use dark-mode-ready tints; RainbowKit darkTheme.
+  - **Hero:** Two-column layout: left=headline+CTA+stats, right=HeroTerminal + tech tags. Full-vh.
+    FloatingOrbs in background. Animated scrolldown indicator.
+  - **CSS fix:** Had duplicate @keyframes shimmer with invalid quoted syntax — cleaned up.
+  - `npm run build` ✓, `tsc --noEmit` ✓ (zero errors), Playwright screenshots taken.
+  - Commit: `feat: dark navy + electric blue redesign with Framer Motion` pushed to branch.
+  - **Lesson:** Avoid duplicate @keyframes blocks and invalid quoted CSS syntax (the
+    quoted `"0%"` syntax in Tailwind config keyframes does NOT work in raw CSS @keyframes).
+- **Session 8 (this one).** MAJOR rearchitecture + "Solar Burst" redesign.
+  - **Privacy model fixed (was backwards):** pools now PUBLIC plaintext
+    (`uint256 yesPool/noPool`) so odds/price-discovery work; per-user stakes
+    PRIVATE (`euint64` via `FHE.add`) so wallets can't be tracked. `BetPlaced`
+    event is anonymous (amount+side, no address).
+  - **Contract v2:** `placeBet(uint64 amount, bool side)` plaintext via USDC
+    `approve`; contract wraps to cUSDC internally; single-step `resolve()` (no
+    finalize/decrypt); added `betCount` + `yesProbabilityBps`; status enum
+    Open/Resolved/Voided. Uses `IERC7984ERC20Wrapper`. Factory ctor (usdc, cUsdc).
+  - **Redeployed Sepolia:** MarketFactory v2 `0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334`
+    (verified). Seeded 3 demo markets + placed live bets → odds 60%/40%/100% YES.
+    Updated `web/src/lib/addresses.ts` + FACTORY_DEPLOY_BLOCK=10987800.
+  - **Tests rewritten** for plaintext bets — 11/11 passing, pro-rata 375/125/0 verified.
+  - **Solar Burst UI (design V1):** light theme, vivid orange + sky blue + white.
+    NO dark, NO purple. New `P5Background.tsx` (p5.js generative probability
+    particle field — seeded, pauses on tab hide). Market cards show REAL odds
+    (ProbabilityBar + % + volume + betCount). Removed ALL emojis → Lucide icons.
+    Rewrote ZamaExplainer to "Public odds, Private positions". Deleted dark
+    components (HeroTerminal, FloatingOrbs) + v1/v2/v3 demo pages.
+  - **Lesson:** `IERC7984` has no `wrap()` — use `IERC7984ERC20Wrapper`. Picked
+    user's chosen design (V1 Solar Burst) and built it for real with shadcn/ui.
+- **Session 9 (this one).** Faucet + confidential-conversion visual + hero algorithmic art.
+  - **On-chain verification first:** confirmed via Sepolia `eth_call` that the Zama
+    cUSDC wrapper `0x7c5B…3639` is hard-bound (`underlying()`) to the USDCMock
+    `0x9b5C…dFFfF`, and that USDCMock exposes a public `mint(address,uint256)`
+    (selector `40c10f19` present in bytecode). Conclusion: **Circle's Sepolia USDC
+    CANNOT be wrapped into Zama cUSDC** — the wrapper only accepts that one token.
+    So the on-site faucet mints Zama's USDCMock (the only token the wrapper takes).
+  - **`Faucet.tsx`** (new): shadcn Dialog faucet. Mints 1,000 test USDCMock to the
+    user, shows balance + a USDC→cUSDC mini-explainer. Wired into Navbar (desktop
+    "Test USDC" button + mobile menu).
+  - **`WrapFlow.tsx`** (new): framer-motion visualization of the REAL on-chain
+    wrap that already happens inside `placeBet` (USDC → encrypt/FHE wrap → sealed
+    cUSDC), with a traveling token + per-stage captions. `BetForm` now drives it
+    through stages mint→approve→wrap→seal→done (replaces the form while active).
+  - **`GenerativeHero.tsx`** (new): algorithmic art for the homepage hero — a
+    Perlin-noise FLOW FIELD drawn as flowing ribbons that lerp YES-orange → NO-sky,
+    seeded (42), re-integrated each frame as noise-z drifts; signal streamlines
+    pulse. Mounted behind hero text with a radial mask. (The named Anthropic
+    `algorithmic-art` skill was NOT installed this session, so built directly.)
+  - **p5 2.x BUG fixed:** p5 `2.3.0` removed `curveVertex` (→ `splineVertex`).
+    Both `GenerativeHero` and the pre-existing `P5Background` used `curveVertex`
+    and threw `curveVertex is not a function` at runtime (the ambient bg was
+    silently broken too). Switched both to `p.vertex` (dense points stay smooth).
+  - Verified with playwright-core screenshots: hero ribbons visible, faucet dialog,
+    WrapFlow wrap+done states. `npm run build` ✓.
+  - **Policy:** per user, changes go out as a **PR** (no self-merge).

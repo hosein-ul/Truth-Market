@@ -28,9 +28,21 @@ become public; payouts are decryptable only by the winner.
 - `netlify.toml` — Netlify build + required COOP/COEP headers.
 
 ## Key addresses (Sepolia)
-- `MarketFactory` (ours, verified): `0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`
+- `MarketFactory` v2 (public-odds, verified): `0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334`
 - cUSDCMock (Zama official): `0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639`
 - Underlying USDC (Zama official): `0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF`
+- (old v1 factory, sealed-odds, deprecated: `0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`)
+
+## Privacy model (v2 — CORRECT)
+- **Pools are PUBLIC** plaintext (`uint256 yesPool/noPool`) → implied odds always
+  visible → real price discovery. A prediction market needs visible odds.
+- **Per-user stakes are PRIVATE** (`euint64` via `FHE.add`) → nobody can look up a
+  specific wallet's position. Whale-tracking is impossible.
+- `BetPlaced(amount, side)` is **anonymous** (no wallet address).
+- `placeBet(uint64 amount, bool side)` — plaintext bet via USDC `approve`; contract
+  wraps to cUSDC internally; payouts via ERC-7984 `confidentialTransfer`.
+- Single-step `resolve()` (pools already public — no finalize/decrypt phase).
+- Status enum: Open=0, Resolved=1, Voided=2.
 
 ## Stack gotchas (don't relearn the hard way)
 - `@zama-fhe/relayer-sdk` is **pinned to 0.4.1** (mock-utils requires it).
@@ -61,6 +73,25 @@ git push -u origin claude/loving-meitner-VH1fm
 ```
 Retry only on network errors with exponential backoff (2s/4s/8s/16s).
 
+## Design system (session 8 — "Solar Burst", CURRENT)
+- **Light theme.** Vivid orange `#f97316` (primary), sky blue `#0ea5e9` (accent), white bg.
+  NO dark, NO purple. `--primary: 25 95% 53%`.
+- **framer-motion v12** — GlareCard spring (damping=12, scale 1.02, mouse glare).
+- **p5.js** generative background (`P5Background.tsx`) — flowing probability particle
+  field, seeded (42), pauses on tab hide, fixed -z-10 behind all UI.
+- **No emojis anywhere** — all Lucide icons (Lock, Award, Check, AlertTriangle, etc.).
+- Market cards show **real odds**: animated YES/NO ProbabilityBar + %, volume, betCount,
+  countdown. Empty state: "No bets yet — be the first".
+- **ZamaExplainer** = "Public odds, Private positions" 4-step breakdown for judges.
+- (Earlier dark-navy/electric-blue look from session 7 was replaced.)
+
+## Lessons learned (avoid repeating)
+- Never duplicate `@keyframes` in CSS. Never use quoted `"0%"` syntax in raw CSS `@keyframes` (only valid in Tailwind config JS, not emitted CSS).
+- `useTransform` with function arg in framer-motion: `useTransform([a,b], ([x,y]) => ...)` — works in v12.
+- For `playwright-core` screenshots, use `domcontentloaded` not `networkidle` (FHEVM SDK hangs network).
+- `lightTheme` → `darkTheme` in RainbowKit when switching to dark design.
+- Tailwind `bg-amber-50`/`bg-slate-100` etc. are light-only; on dark bg use `/10` opacity variants instead.
+
 ## Outstanding
-- Link Netlify project `truth-market-app` to GitHub repo + branch (manual; see
-  `MEMORY.md` §8).
+- Link Netlify project `truth-market-app` to GitHub repo + branch (manual; see `MEMORY.md` §8).
+- Cloudflare Workers deployment not yet set up (user requested; blocked on wrangler config for Next.js).
