@@ -300,3 +300,27 @@ sign + `userDecrypt`.
     (`npm install --legacy-peer-deps`, base `web/`, COOP/COEP headers). Pushing
     to the branch auto-deploys **once the GitHub repo link is completed** (still
     the pending manual step — see §8).
+- **Session 7 (this one).** Complete visual redesign #3 — dark navy + electric blue (zero purple).
+  - **User requirement:** no purple/violet; premium hackathon-winning UI showing Zama infra.
+  - **Install:** `framer-motion@^12` added to `web/package.json` (--legacy-peer-deps).
+  - **Color system:** replaced `--primary: 258 90% 58%` (violet) with `213 94% 59%` (blue).
+    Electric blue (#3b82f6) as primary, cyan (#22d3ee) as accent, gold (#f59e0b) for CTA.
+    Dark background #080c16 navy. All Tailwind violet tokens → blue/cyan tokens.
+  - **New components:**
+    - `GlareCard.tsx` — Framer Motion spring hover (scale 1.02, damping=12, stiffness=180),
+      3D tilt via useSpring(mouseX/Y), mouse-tracking radial glare overlay. Also exports `SpringCard`.
+    - `HeroTerminal.tsx` — Animated FHE code typewriter showing `euint64/ebool/FHE.select`
+      with scan-line animation. Makes Zama tech visually prominent. Client component.
+    - `FloatingOrbs.tsx` — CSS-animated glassy orbs (blue, cyan, gold radial gradients)
+      + jelly-shaped blobs (border-radius morphing). Client component.
+    - `ZamaExplainer.tsx` — 4-card FHEVM step explainer + collateral flow diagram (USDC→cUSDC→placeBet→claim).
+      Uses framer-motion whileInView for entrance animations. Key for hackathon judges.
+  - **Modified:** MarketCard uses GlareCard; Navbar has layoutId active-link indicator;
+    Sealed uses blue palette; all badges/chips use dark-mode-ready tints; RainbowKit darkTheme.
+  - **Hero:** Two-column layout: left=headline+CTA+stats, right=HeroTerminal + tech tags. Full-vh.
+    FloatingOrbs in background. Animated scrolldown indicator.
+  - **CSS fix:** Had duplicate @keyframes shimmer with invalid quoted syntax — cleaned up.
+  - `npm run build` ✓, `tsc --noEmit` ✓ (zero errors), Playwright screenshots taken.
+  - Commit: `feat: dark navy + electric blue redesign with Framer Motion` pushed to branch.
+  - **Lesson:** Avoid duplicate @keyframes blocks and invalid quoted CSS syntax (the
+    quoted `"0%"` syntax in Tailwind config keyframes does NOT work in raw CSS @keyframes).

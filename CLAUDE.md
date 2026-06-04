@@ -61,6 +61,20 @@ git push -u origin claude/loving-meitner-VH1fm
 ```
 Retry only on network errors with exponential backoff (2s/4s/8s/16s).
 
+## Design system (session 7)
+- **Color palette:** electric blue `#3b82f6` (primary), cyan `#22d3ee` (accent), gold `#f59e0b`. NO purple/violet.
+- **framer-motion v12** installed. GlareCard: spring damping=12, scale 1.02, mouse-tracking glare.
+- **HeroTerminal** = animated FHE code typewriter. **FloatingOrbs** = glassy 3D CSS blobs.
+- **ZamaExplainer** section on home page — critical for hackathon judges to see FHEVM stack.
+- Dark navy background — use `rgba(8,12,22,...)` for glassmorphism overlays.
+
+## Lessons learned (avoid repeating)
+- Never duplicate `@keyframes` in CSS. Never use quoted `"0%"` syntax in raw CSS `@keyframes` (only valid in Tailwind config JS, not emitted CSS).
+- `useTransform` with function arg in framer-motion: `useTransform([a,b], ([x,y]) => ...)` — works in v12.
+- For `playwright-core` screenshots, use `domcontentloaded` not `networkidle` (FHEVM SDK hangs network).
+- `lightTheme` → `darkTheme` in RainbowKit when switching to dark design.
+- Tailwind `bg-amber-50`/`bg-slate-100` etc. are light-only; on dark bg use `/10` opacity variants instead.
+
 ## Outstanding
-- Link Netlify project `truth-market-app` to GitHub repo + branch (manual; see
-  `MEMORY.md` §8).
+- Link Netlify project `truth-market-app` to GitHub repo + branch (manual; see `MEMORY.md` §8).
+- Cloudflare Workers deployment not yet set up (user requested; blocked on wrangler config for Next.js).
