@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC7984ERC20Wrapper} from "@openzeppelin/confidential-contracts/interfaces/IERC7984ERC20Wrapper.sol";
+import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
 import {ConfidentialMarket} from "./ConfidentialMarket.sol";
 
-/// @title MarketFactory — deploys ConfidentialMarket instances and indexes them.
+/// @title MarketFactory v3 — deploys confidential markets and indexes them.
+/// @notice v3 markets accept ONLY encrypted bets. Collateral is a single ERC-7984
+///         confidential token (Zama's cUSDC on Sepolia); the underlying USDC is
+///         wrapped by the user once and never appears in per-bet calldata.
 contract MarketFactory {
-    IERC20 public immutable usdc;
-    IERC7984ERC20Wrapper public immutable cUsdc;
+    IERC7984 public immutable cUsdc;
     uint64 public defaultDisputeWindow = 7 days;
+    /// @notice Default K-anonymity batch for the per-market odds snapshot gate.
+    uint8 public defaultSnapshotBatchK = 3;
 
     struct MarketInfo {
         address market;
@@ -33,10 +36,8 @@ contract MarketFactory {
         string category
     );
 
-    constructor(IERC20 usdc_, IERC7984ERC20Wrapper cUsdc_) {
-        require(address(usdc_) != address(0), "zero usdc");
+    constructor(IERC7984 cUsdc_) {
         require(address(cUsdc_) != address(0), "zero cUsdc");
-        usdc = usdc_;
         cUsdc = cUsdc_;
     }
 
@@ -48,12 +49,12 @@ contract MarketFactory {
         string calldata category
     ) external returns (address market) {
         ConfidentialMarket m = new ConfidentialMarket(
-            usdc,
             cUsdc,
             msg.sender,
             oracle,
             deadline,
             defaultDisputeWindow,
+            defaultSnapshotBatchK,
             question,
             description,
             category

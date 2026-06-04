@@ -61,18 +61,6 @@ export const erc7984Abi = [
   },
   {
     type: "function",
-    name: "unwrap",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "from", type: "address" },
-      { name: "to", type: "address" },
-      { name: "encryptedAmount", type: "bytes32" },
-      { name: "inputProof", type: "bytes" },
-    ],
-    outputs: [{ type: "bytes32" }],
-  },
-  {
-    type: "function",
     name: "setOperator",
     stateMutability: "nonpayable",
     inputs: [
@@ -107,6 +95,13 @@ export const marketFactoryAbi = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "cUsdc",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
   },
   {
     type: "function",
@@ -158,150 +153,52 @@ export const marketFactoryAbi = [
   },
 ] as const;
 
+// v3 ConfidentialMarket — encrypted bets, snapshot odds, two-phase resolve.
 export const marketAbi = [
-  {
-    type: "function",
-    name: "status",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint8" }],
-  },
-  {
-    type: "function",
-    name: "outcomeYes",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "yesPool",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "noPool",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "betCount",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "yesProbabilityBps",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "deadline",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint64" }],
-  },
-  {
-    type: "function",
-    name: "disputeWindow",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint64" }],
-  },
-  {
-    type: "function",
-    name: "creator",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "address" }],
-  },
-  {
-    type: "function",
-    name: "oracle",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "address" }],
-  },
-  {
-    type: "function",
-    name: "question",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "string" }],
-  },
-  {
-    type: "function",
-    name: "description",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "string" }],
-  },
-  {
-    type: "function",
-    name: "category",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "string" }],
-  },
-  {
-    type: "function",
-    name: "claimed",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "hasBet",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "getUserYesStake",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ type: "bytes32" }],
-  },
-  {
-    type: "function",
-    name: "getUserNoStake",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ type: "bytes32" }],
-  },
-  {
-    type: "function",
-    name: "getYesPool",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "bytes32" }],
-  },
-  {
-    type: "function",
-    name: "getNoPool",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "bytes32" }],
-  },
+  // --- metadata / public counters ---
+  { type: "function", name: "status", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+  { type: "function", name: "outcomeYes", stateMutability: "view", inputs: [], outputs: [{ type: "bool" }] },
+  { type: "function", name: "betCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "lastSnapshotBetCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "lastSnapshotAt", stateMutability: "view", inputs: [], outputs: [{ type: "uint64" }] },
+  { type: "function", name: "snapshotCounter", stateMutability: "view", inputs: [], outputs: [{ type: "uint32" }] },
+  { type: "function", name: "snapshotBatchK", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+  { type: "function", name: "betsToNextSnapshot", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "deadline", stateMutability: "view", inputs: [], outputs: [{ type: "uint64" }] },
+  { type: "function", name: "disputeWindow", stateMutability: "view", inputs: [], outputs: [{ type: "uint64" }] },
+  { type: "function", name: "creator", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "oracle", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "cUsdc", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "question", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
+  { type: "function", name: "description", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
+  { type: "function", name: "category", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
+  { type: "function", name: "claimed", stateMutability: "view", inputs: [{ name: "user", type: "address" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "hasBet", stateMutability: "view", inputs: [{ name: "user", type: "address" }], outputs: [{ type: "bool" }] },
+
+  // --- encrypted handles for the frontend's user/public decryption ---
+  { type: "function", name: "getUserYesStake", stateMutability: "view", inputs: [{ name: "user", type: "address" }], outputs: [{ type: "bytes32" }] },
+  { type: "function", name: "getUserNoStake", stateMutability: "view", inputs: [{ name: "user", type: "address" }], outputs: [{ type: "bytes32" }] },
+  { type: "function", name: "getYesPoolHandle", stateMutability: "view", inputs: [], outputs: [{ type: "bytes32" }] },
+  { type: "function", name: "getNoPoolHandle", stateMutability: "view", inputs: [], outputs: [{ type: "bytes32" }] },
+
+  // --- final pools (post-finalize) for claim math ---
+  { type: "function", name: "yesPoolFinal", stateMutability: "view", inputs: [], outputs: [{ type: "uint64" }] },
+  { type: "function", name: "noPoolFinal", stateMutability: "view", inputs: [], outputs: [{ type: "uint64" }] },
+
+  // --- writes ---
   {
     type: "function",
     name: "placeBet",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "amount", type: "uint64" },
-      { name: "side", type: "bool" },
+      { name: "encAmount", type: "bytes32" },
+      { name: "amountProof", type: "bytes" },
+      { name: "encSide", type: "bytes32" },
+      { name: "sideProof", type: "bytes" },
     ],
     outputs: [],
   },
+  { type: "function", name: "refreshOdds", stateMutability: "nonpayable", inputs: [], outputs: [] },
   {
     type: "function",
     name: "resolve",
@@ -311,42 +208,47 @@ export const marketAbi = [
   },
   {
     type: "function",
-    name: "claim",
+    name: "finalize",
     stateMutability: "nonpayable",
-    inputs: [],
+    inputs: [
+      { name: "yesClear", type: "uint64" },
+      { name: "noClear", type: "uint64" },
+      { name: "decryptionProof", type: "bytes" },
+    ],
     outputs: [],
   },
-  {
-    type: "function",
-    name: "enableRefunds",
-    stateMutability: "nonpayable",
-    inputs: [],
-    outputs: [],
-  },
+  { type: "function", name: "claim", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  { type: "function", name: "enableRefunds", stateMutability: "nonpayable", inputs: [], outputs: [] },
+
+  // --- events (anonymous BetPlaced — no amount, no side, no address) ---
+  { type: "event", name: "BetPlaced", inputs: [] },
   {
     type: "event",
-    name: "BetPlaced",
+    name: "OddsSnapshotReady",
     inputs: [
-      { name: "amount", type: "uint64" },
-      { name: "side", type: "bool" },
+      { name: "snapshotId", type: "uint32", indexed: true },
+      { name: "betCountAtSnapshot", type: "uint256" },
     ],
   },
+  { type: "event", name: "MarketResolving", inputs: [{ name: "outcomeYes", type: "bool" }] },
   {
     type: "event",
     name: "MarketResolved",
-    inputs: [{ name: "outcomeYes", type: "bool" }],
+    inputs: [
+      { name: "outcomeYes", type: "bool" },
+      { name: "yesPool", type: "uint64" },
+      { name: "noPool", type: "uint64" },
+    ],
   },
-  {
-    type: "event",
-    name: "MarketVoided",
-    inputs: [{ name: "reason", type: "string" }],
-  },
+  { type: "event", name: "MarketVoided", inputs: [{ name: "reason", type: "string" }] },
+  { type: "event", name: "Claimed", inputs: [{ name: "user", type: "address", indexed: true }] },
 ] as const;
 
 export const MARKET_STATUS = {
   OPEN: 0,
-  RESOLVED: 1,
-  VOIDED: 2,
+  RESOLVING: 1,
+  RESOLVED: 2,
+  VOIDED: 3,
 } as const;
 
 export type MarketStatusValue = (typeof MARKET_STATUS)[keyof typeof MARKET_STATUS];

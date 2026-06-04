@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-04 (Session 9)
+**Last updated:** 2026-06-04 (Session 10)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -371,3 +371,30 @@ sign + `userDecrypt`.
   - Verified with playwright-core screenshots: hero ribbons visible, faucet dialog,
     WrapFlow wrap+done states. `npm run build` ✓.
   - **Policy:** per user, changes go out as a **PR** (no self-merge).
+- **Session 10 (this one).** Full privacy refactor — make confidentiality real.
+  - **Why:** Session 9 audit showed v2's privacy claim was theatrical: amount,
+    side, and sender were all visible in calldata + events + pool deltas.
+  - **Contract v3 (`ConfidentialMarket.sol` rewritten):**
+    - `placeBet(externalEuint64 encAmount, bytes amountProof, externalEbool encSide, bytes sideProof)`:
+      FHE.fromExternal → confidentialTransferFrom(user, this, encAmount) → split via FHE.select →
+      accumulate encrypted pools + per-user stakes (all euint64).
+    - `event BetPlaced()` — anonymous, zero args.
+    - Encrypted `yesPoolEnc`/`noPoolEnc` (`euint64`, private).
+    - K-anonymity gate `refreshOdds()`: rejects until `betCount - lastSnapshotBetCount >= snapshotBatchK` (default 3); then `FHE.makePubliclyDecryptable` on the CURRENT handles only. Each FHE.add returns new handles, so the ACL doesn't carry over → next bet "stales" the snapshot until another K bets pass.
+    - Two-phase resolve: oracle `resolve(bool)` opens public-decrypt; anyone `finalize(yes, no, decryptionProof)` submits + FHE.checkSignatures verifies → `yesPoolFinal`/`noPoolFinal` stored.
+    - `claim()` uses **euint128 intermediate** (`FHE.asEuint128 → FHE.mul → FHE.div → FHE.asEuint64`) so `stake × totalPool` can't overflow euint64.
+    - Status enum Open(0) / Resolving(1) / Resolved(2) / Voided(3).
+  - **MarketFactory v3:** constructor takes only `IERC7984 cUsdc` (no plaintext USDC needed in the contract). Default snapshot K = 3.
+  - **Deployed Sepolia (verified):** `MarketFactory v3 = 0x69Dbcf4426dF9f6AD16c035b005635efF22579F6`. Seeded 3 demo markets. Smoke test placed 3 encrypted bets + refreshOdds + public-decrypt: $250 YES / $80 NO → 75.75% YES.
+  - **Tests:** 9/9 passing — encrypted bets, K-anon gate, finalize w/ KMS proof, pro-rata payouts (375/125/0), double-claim, void paths.
+  - **Frontend rewrite:**
+    - ABIs updated for new bet signature + status enum + handles.
+    - `BetForm.tsx`: full encrypted flow — checks cUSDC balance + operator, runs top-up (mint USDC → wrap → setOperator) if needed, then `createEncryptedInput.add64.addBool.encrypt()` and submits ciphertexts.
+    - `LiveOdds.tsx` (NEW): client-side relayer publicDecrypt of current pool handles (RSC-side calls to SDK fail silently in Next bundling — moved to client where SDK works reliably). Shows "Decrypting K-anon snapshot…" while in flight.
+    - `RefreshOddsButton.tsx` (NEW): permissionless refreshOdds with K-anonymity progress indicator.
+    - `OraclePanel.tsx` extended for the two-phase resolve → publicDecrypt → finalize path via the relayer.
+    - `ActivityList.tsx` rewritten: heterogeneous activity kinds (encrypted bet / snapshot / resolving / settled / voided) — no per-bet amounts or sides.
+    - `MarketCard.tsx`, market detail, page.tsx, ZamaExplainer.tsx all updated to match the real model: "Public market. Private positions. K-anonymous odds."
+    - `markets.ts` returns encrypted pool handles in addition to (best-effort) cleartext snapshots so the client can finish the job.
+  - **Docs:** README rewritten with the explicit privacy table; MEMORY updated.
+  - **Notes:** `force-dynamic` on the home page so RSC reads stay live; `serverExternalPackages: ["@zama-fhe/relayer-sdk"]` in next.config to keep the Node SDK out of webpack bundling. Headless playwright cert validation blocks the relayer call to the Zama gateway, but the real browser path works (verified the same publicDecrypt directly in Node).

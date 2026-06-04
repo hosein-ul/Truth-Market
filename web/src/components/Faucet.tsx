@@ -118,8 +118,9 @@ export function Faucet({
             </span>
           </div>
           <p className="mt-2 text-center text-[11px] leading-relaxed text-sky-700/80">
-            When you bet, your USDC is automatically wrapped into Zama&apos;s
-            confidential cUSDC — so your position stays encrypted on-chain.
+            Step 1 — get test USDC here. On your first bet, the market wraps it
+            into Zama&apos;s confidential cUSDC so amounts and sides stay
+            encrypted on-chain.
           </p>
         </div>
 

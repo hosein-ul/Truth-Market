@@ -8,13 +8,18 @@ import { GenerativeHero } from "@/components/GenerativeHero";
 import { Button } from "@/components/ui/button";
 import { formatUSDC } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
 export default async function HomePage() {
   const markets = await getMarketSummaries();
   const open = markets.filter((m) => m.status === MARKET_STATUS.OPEN).length;
-  const totalTraders = markets.reduce((s, m) => s + m.traderCount, 0);
-  const totalVol = markets.reduce((s, m) => s + m.yesPoolClear + m.noPoolClear, 0n);
+  const totalBets = markets.reduce((s, m) => s + m.betCount, 0);
+  // Volume shown is whatever has been revealed in K-anonymity snapshots so far.
+  const totalVol = markets.reduce(
+    (s, m) => s + (m.status === MARKET_STATUS.RESOLVED ? m.yesPoolFinal + m.noPoolFinal : m.yesPoolSnapshot + m.noPoolSnapshot),
+    0n,
+  );
 
   return (
     <div>
@@ -39,10 +44,10 @@ export default async function HomePage() {
               <span className="text-gradient">Keep your edge.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-              TruthMarket is a prediction market with{" "}
-              <strong className="text-foreground">public odds</strong> and{" "}
-              <strong className="text-foreground">private positions</strong>.
-              See where the crowd leans, but no one can track your wallet.
+              A prediction market that keeps the bet — amount, side, position —
+              <strong className="text-foreground"> encrypted on-chain</strong>,
+              while still showing real odds via K-anonymous snapshots over the
+              encrypted pools.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild size="xl" variant="gradient" className="w-full sm:w-auto gap-2">
@@ -61,7 +66,7 @@ export default async function HomePage() {
               <div className="h-8 w-px bg-border" />
               <Stat value={String(open)} label="Live now" accent />
               <div className="h-8 w-px bg-border" />
-              <Stat value={totalVol > 0n ? `$${formatUSDC(totalVol, { decimals: 0 })}` : String(totalTraders)} label={totalVol > 0n ? "Volume" : "Bets"} />
+              <Stat value={totalVol > 0n ? `$${formatUSDC(totalVol, { decimals: 0 })}` : String(totalBets)} label={totalVol > 0n ? "Revealed volume" : "Bets"} />
             </div>
           </div>
         </div>
@@ -72,16 +77,16 @@ export default async function HomePage() {
         <div className="container grid grid-cols-1 gap-6 py-10 sm:grid-cols-3">
           <Feature
             icon={<BarChart3 className="h-5 w-5" />}
-            title="Real-time odds"
-            body="Pool totals are public — you always know the implied probability. Price discovery works. No hidden markets."
+            title="K-anonymous odds"
+            body="Pools are revealed as snapshots only after K=3 new bets. A snapshot diff covers many bets at once, so the public sees real prices without ever attributing them to a wallet."
             color="text-orange-600"
             bg="bg-orange-50"
             border="border-orange-200"
           />
           <Feature
             icon={<EyeOff className="h-5 w-5" />}
-            title="Private positions"
-            body="Per-user stakes are encrypted on-chain via FHE. Nobody can look up how much you bet or on which side — whale tracking is impossible."
+            title="Encrypted bets"
+            body="Bet amount and side are encrypted in your browser with the Zama Relayer SDK. They never appear in calldata, events, or pool deltas — only you can see your stake."
             color="text-sky-600"
             bg="bg-sky-50"
             border="border-sky-200"

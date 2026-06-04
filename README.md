@@ -1,205 +1,157 @@
-# TruthMarket
+# TruthMarket — Confidential Prediction Markets on Zama FHEVM
 
-**Confidential prediction markets on Ethereum, powered by Zama FHEVM.**
+A binary prediction market where **bet amount and side are encrypted on-chain**
+for the entire market lifecycle, while aggregate market metadata stays public.
+Built on Zama Protocol's FHEVM and Ethereum Sepolia.
 
-On Polymarket and Kalshi, *who* bet, *how much*, and *which side* are all
-public. That turns prediction markets into a copy-trading game: whales drive
-herds, insiders are exposed, and in some countries a visible political bet is a
-personal risk.
+The privacy boundary is explicit and documented at the protocol level:
 
-TruthMarket fixes this at the protocol level. Bet amounts and positions are
-encrypted on-chain via Fully Homomorphic Encryption throughout a market's
-entire lifecycle. The only thing that ever becomes public is the resolved
-outcome and the aggregate pool sizes (once the market is closed). Individual
-payouts are decryptable only by the wallet that earned them.
-
-This is **Phase A** of the build: smart contracts, full test suite, and a
-verified Sepolia deployment with a live end-to-end smoke test. The Next.js
-frontend lands in Phase B.
-
----
-
-## Sepolia deployment
-
-TruthMarket uses **Zama's official confidential tokens** as collateral — we do
-not deploy our own. The only contract we deploy is `MarketFactory` (which in
-turn deploys each `ConfidentialMarket`).
-
-| Contract                     | Address | Owner |
-|------------------------------|---------|-------|
-| `MarketFactory` (ours)       | [`0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`](https://sepolia.etherscan.io/address/0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30#code) | TruthMarket |
-| Confidential USDC `cUSDCMock`| [`0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639`](https://sepolia.etherscan.io/address/0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639) | **Zama official** |
-| Underlying USDC (public mint)| [`0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF`](https://sepolia.etherscan.io/address/0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF) | **Zama official** |
-
-`MarketFactory` is verified on Etherscan. Three demo markets are seeded in
-`deployments/sepolia/demo-markets.json`. A real confidential bet — mint official
-USDC → wrap via the official cUSDCMock → encrypted `placeBet` — was placed
-on-chain at block [`10981523`](https://sepolia.etherscan.io/tx/0x083277ca52d074c8af129782dd06129a2bbc0bd7fe9d661ff3abd8e3f3f0426f).
-
----
+| Layer                    | Visible to everyone           | Visible to the bettor (off-chain decrypt) | Never visible                                                              |
+|--------------------------|-------------------------------|-------------------------------------------|----------------------------------------------------------------------------|
+| Market metadata          | question, description, category, deadline, status, K-anon parameter | —                                | —                                                                          |
+| Public counters          | `betCount`, `lastSnapshotBetCount`, `snapshotCounter` | —                          | —                                                                          |
+| Aggregate odds           | K-anonymous snapshot (released only after ≥K=3 new bets) | —                  | live per-bet pool delta                                                    |
+| Bet input                | —                              | own bet                                   | bet amount, bet side, per-wallet cumulative stake                          |
+| Per-user stake           | —                              | self (via EIP-712 user decryption)        | other wallets' stakes                                                      |
+| Payout                   | —                              | self (encrypted cUSDC credit)             | payout amount                                                              |
+| Final pools (post-settle)| cleartext (needed for claim math) | —                                      | —                                                                          |
+| ERC-20 deposit (`wrap()`)| public USDC top-up amount     | —                                         | — (decoupled from per-bet amounts)                                         |
 
 ## How it works
 
-### Bet privacy
-
-A bet is a pair of encrypted values: `(amount: euint64, side: ebool)`. The
-contract computes
-
-```
-yesPart = FHE.select(side, transferred, 0)
-noPart  = FHE.select(side, 0, transferred)
-```
-
-and accumulates them into encrypted `yesPool` / `noPool` and per-user
-`userYesStake` / `userNoStake`. Because the side is encrypted, the
-yes-contribution and no-contribution branches are *both* evaluated, and the
-total amount pulled from the user is the same regardless of which side it
-went on. From outside the contract, all anyone sees is "an opaque
-encrypted amount moved" — both side and amount remain hidden.
-
-### Lifecycle
-
-1. **Open.** Users place encrypted bets until `deadline`. Pools stay
-   encrypted; no live odds are shown to anyone.
-2. **Resolving.** After the deadline the designated `oracle` calls
-   `resolve(bool outcomeYes)`. The contract records the outcome and marks the
-   two pool handles as **publicly decryptable** via the Zama KMS.
-3. **Resolved.** Anyone fetches the cleartext pool sizes plus the KMS-signed
-   proof from the Zama relayer and submits `finalize(yes, no, proof)`. The
-   on-chain `FHE.checkSignatures` verifies the KMS threshold signatures and
-   stores the cleartext pools.
-4. **Claim.** Winners call `claim()`. Because the pools are now plaintext
-   constants, the FHE payout formula
-
+### Encrypted bet
+1. The user has wrapped some plain USDC into Zama's confidential **cUSDC** once
+   ("top up") and granted the market operator status on the wrapper.
+2. The browser uses the Zama relayer SDK to encrypt `(amount, side)`:
    ```
-   payout = winningStake * totalPool / winningPool
+   createEncryptedInput(market, user).add64(amount).addBool(side).encrypt()
    ```
+3. `placeBet(externalEuint64 amount, bytes amountProof, externalEbool side, bytes sideProof)`
+   binds the ciphertexts via `FHE.fromExternal`, calls `confidentialTransferFrom`
+   on cUSDC (returns the encrypted actually-transferred amount), splits it with
+   `FHE.select`, and accumulates into encrypted pools + per-user stakes.
+4. The emitted `BetPlaced()` event has **no arguments** — no amount, no side, no address.
 
-   is a legal encrypted × scalar followed by encrypted ÷ scalar (FHE division
-   requires a cleartext divisor — which is *exactly* what resolution gives us).
-   The payout is delivered as confidential ERC-7984 tokens — only the claimer
-   can decrypt how much they received.
+### K-anonymous odds
+Pools are stored as `euint64`. They are only revealed publicly through a
+**snapshot** that's gated by a K-anonymity threshold:
 
-### Edge cases
+```solidity
+function refreshOdds() external {
+    if (betCount - lastSnapshotBetCount < snapshotBatchK) revert TooFewBetsSinceSnapshot();
+    FHE.makePubliclyDecryptable(yesPoolEnc);
+    FHE.makePubliclyDecryptable(noPoolEnc);
+    ...
+}
+```
 
-- **Empty winning pool** — market voids, everyone refunds their full stake.
-- **Oracle never resolves** — after `deadline + disputeWindow`, anyone can
-  call `enableRefunds()` to void the market.
-- **Double claim** — blocked by a per-address `claimed` flag.
-- **Bet after deadline** — plaintext `require` reverts.
+Each successful bet creates a **new ciphertext handle** for the pool (via
+`FHE.add`), and the public-decryption ACL applies to a specific handle — it
+doesn't carry over. So the relayer can only return cleartext for the handle that
+was active **at the moment a snapshot was triggered**. Because the snapshot
+requires ≥K=3 new bets since the previous one, the diff between snapshots covers
+at least K bets and can't be attributed to any individual wallet.
 
-### Collateral UX: USDC in / USDC out
+### Resolution and claim
+- **`resolve(bool outcomeYes)`** (oracle, after deadline) — records the outcome
+  and marks the final pool handles publicly decryptable.
+- **`finalize(uint64 yes, uint64 no, bytes proof)`** (permissionless) — anyone
+  pulls the cleartext pool values plus a KMS proof from the Zama relayer and
+  submits them on-chain. `FHE.checkSignatures(handles, encoded, proof)` verifies
+  the proof. The contract stores `yesPoolFinal` / `noPoolFinal` (now plaintext).
+- **`claim()`** — payout is computed entirely in FHE:
+  ```
+  euint128 stake128 = FHE.asEuint128(userYesStake[msg.sender]);
+  euint128 num      = FHE.mul(stake128, uint128(totalPool));
+  euint64  payout   = FHE.asEuint64(FHE.div(num, uint128(winningPool)));
+  cUsdc.confidentialTransfer(msg.sender, payout);
+  ```
+  The 128-bit intermediate prevents the `stake × totalPool` overflow that
+  64-bit math would silently hit. The payout is delivered via ERC-7984
+  `confidentialTransfer` — only the recipient can decrypt their credited balance.
 
-End users never see or hear about ERC-7984. The UI exposes only standard
-USDC: users mint the underlying USDC from Zama's public faucet, deposit goes
-in via the official wrapper's `wrap()`, and withdrawal goes out via `unwrap()`
-+ `finalizeUnwrap()`. The confidential token layer (Zama's `cUSDCMock`) is the
-implementation detail that makes encrypted betting possible — not a thing
-users need to understand.
+Void paths (empty winning pool, or oracle missed `deadline + disputeWindow`)
+refund the full stake via the same encrypted-transfer channel.
 
----
+## Sepolia deployment (v3 — encrypted bets only)
+
+We deploy a single contract; collateral comes from Zama's official tokens.
+
+| Contract                     | Address |
+|------------------------------|---------|
+| `MarketFactory` v3 (ours, verified) | [`0x69Dbcf4426dF9f6AD16c035b005635efF22579F6`](https://sepolia.etherscan.io/address/0x69Dbcf4426dF9f6AD16c035b005635efF22579F6#code) |
+| Confidential USDC `cUSDCMock`| [`0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639`](https://sepolia.etherscan.io/address/0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639) **Zama official** |
+| Underlying USDC (public mint)| [`0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF`](https://sepolia.etherscan.io/address/0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF) **Zama official** |
+
+Three demo markets are seeded in `deployments/sepolia/demo-markets.json`.
+A live confidential smoke run on Sepolia placed three encrypted bets and a
+post-K-anon snapshot, available at
+[`scripts/smoke-bet-sepolia.ts`](./scripts/smoke-bet-sepolia.ts).
 
 ## Architecture
 
 ```
 contracts/
-├─ ConfidentialMarket.sol  per-market: betting, resolution, claim
-├─ MarketFactory.sol       deploys + indexes markets (registry)
-└─ mocks/
-   └─ TokenMocks.sol       TEST-ONLY local stand-ins for the official Zama
-                           tokens (the real ones only exist on Sepolia)
+├─ ConfidentialMarket.sol   per-market: encrypted bet, K-anon snapshot, resolve, finalize, claim
+├─ MarketFactory.sol        deploys + indexes markets
+└─ mocks/                   TEST-ONLY local stand-ins for the official Zama tokens
 ```
-
-The deployed protocol uses **Zama's official `cUSDCMock` confidential wrapper**
-and its underlying USDC (see addresses above) — it deploys no tokens of its own.
-`ConfidentialMarket` and `MarketFactory` accept any `IERC7984` collateral, so
-they are wired to the official wrapper at deploy time.
 
 Built on:
 - [`@fhevm/solidity ^0.11.1`](https://docs.zama.org/protocol/solidity-guides)
 - [`@openzeppelin/confidential-contracts ^0.4.0`](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts) (ERC-7984)
 - [`@fhevm/hardhat-plugin ^0.4.2`](https://github.com/zama-ai/fhevm-hardhat-template)
 
----
-
 ## Development
 
 ```bash
-# Install
 npm install
-
-# Compile
 npm run compile
-
-# Run the full test suite on the FHEVM mock
-npm test
+npm test                     # 9 tests against the FHEVM mock
 ```
 
-Test coverage includes the full lifecycle (multi-user pro-rata payouts),
-deadline gating, oracle gating, double-claim protection, both void paths
-(empty winning pool + oracle timeout), and the wrap/unwrap on-ramp.
+Test coverage:
+- encrypted `(amount, side)` round-trip + per-user stake accumulation
+- K-anonymity gate (`refreshOdds` rejects before K, allows after, re-gates after each bet)
+- resolve → finalize (with KMS proof) → claim (pro-rata, with euint128 payout math)
+- double-claim guard
+- void paths (empty winning pool, oracle-timeout refunds)
+- deadline + oracle gating
 
 ### Deploy to Sepolia
 
-Copy `.env.example` to `.env` and fill in `SEPOLIA_RPC_URL`, `PRIVATE_KEY`,
+Copy `.env.example` → `.env` and fill in `SEPOLIA_RPC_URL`, `PRIVATE_KEY`,
 `ETHERSCAN_API_KEY`.
 
 ```bash
 npx hardhat run scripts/deploy.ts --network sepolia
-npx hardhat run scripts/verify.ts --network sepolia
 npx hardhat run scripts/seed-demo-markets.ts --network sepolia
 npx hardhat run scripts/smoke-bet-sepolia.ts --network sepolia
 ```
 
-### CLI tasks
-
-```
-npx hardhat tm:mint --to <addr> --amount 100
-npx hardhat tm:wrap --amount 100
-npx hardhat tm:create-market --question "Will X happen?"
-npx hardhat tm:place-bet --market <addr> --amount 10 --side yes
-npx hardhat tm:resolve --market <addr> --outcome yes    # mock only end-to-end
-npx hardhat tm:claim --market <addr>
-```
-
----
-
 ## Frontend (`web/`)
 
-A production-grade Next.js 15 frontend ships in this same repo under `web/`.
+Next.js 15 / App Router with shadcn/ui, wagmi v2, RainbowKit, the Zama Relayer
+SDK (web build), and a Solar Burst design system (light, vivid orange + sky
+blue + white).
 
-### Design — "Encrypted Terminal"
+Pages:
+| Route                 | Purpose |
+|-----------------------|---------|
+| `/`                   | Market feed. Hero with generative Perlin flow-field art, feature pillars, market explorer with live K-anonymous odds. |
+| `/markets/[address]`  | Market detail: snapshot odds via client-side relayer publicDecrypt, encrypted bet panel, refresh-odds button, claim, oracle/finalize controls. |
+| `/create`             | Open a new confidential market. |
+| `/portfolio`          | Encrypted per-wallet position list with self-reveal (EIP-712 + `userDecrypt`). |
 
-Dark-first, Bloomberg-density information design. Instrument Serif for
-headlines, JetBrains Mono for data, Inter for body. Electric lime as the
-"sealed / active" signal, warm amber as "decrypted / resolved", a pulled-back
-red for "loss / void". The signature primitive is `EncryptedValue` — animated
-cipher glyphs that visually communicate "sealed on-chain" until the user
-self-decrypts, at which point the glyphs are replaced by cleartext numbers.
-The home page hero uses a custom value-noise field (`CipherCanvas`) that
-steers a population of monospace glyphs with occasional "leaks" — momentary
-digits that briefly resolve out of the cipher.
+The collateral UX hides the confidential token under "USDC" — the first bet
+triggers a one-time top-up that mints test USDC, wraps it into Zama's cUSDC,
+and grants the market operator status. Subsequent bets are a single encrypted
+`placeBet` tx. The USDC→cUSDC conversion is visualized live with a
+`WrapFlow` animation.
 
-### Pages
-
-| Route | Purpose |
-|-------|---------|
-| `/` | Market feed, RSC. Hero + grouped status sections (sealed / resolving / settled). |
-| `/markets/[address]` | Market detail: encrypted pools, bet panel, claim, oracle controls (resolve + finalize + void). |
-| `/create` | Open a new sealed market. |
-| `/portfolio` | Positions list. Per-handle user-decryption via EIP-712. |
-
-### Collateral UX
-
-Users only ever see "USDC". Behind the scenes:
-- **Deposit USDC** silently mints from Zama's public faucet on the underlying
-  USDC contract, approves the wrapper, and `wrap()`s into cUSDC — one click.
-- **Place bet** transparently sets the market as operator on the cUSDC
-  wrapper if needed, encrypts `(amount, side)` client-side via the relayer
-  SDK, and submits a single `placeBet` tx.
-- **Decrypt balance / stake** uses `generateKeypair` + EIP-712 sign +
-  `userDecrypt` — the user signs once, glyphs resolve to numbers.
-- The user never sees the words "ERC7984", "cUSDC", or "wrap".
+A small in-site faucet (`Faucet.tsx`) mints test USDC for new users — Circle's
+Sepolia USDC cannot be wrapped into Zama's cUSDC because the wrapper is
+hard-bound to the USDCMock address, so we mint that one specifically.
 
 ### Run locally
 
@@ -209,8 +161,7 @@ npm install --legacy-peer-deps
 npm run dev          # http://localhost:3000
 ```
 
-Optional env (`web/.env.local`):
-
+`web/.env.local`:
 ```
 NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<key>
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<your-project-id>
@@ -218,7 +169,6 @@ NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<your-project-id>
 
 ### Deploy on Netlify
 
-A `netlify.toml` at the repo root points Netlify at `web/` with the
-`@netlify/plugin-nextjs` runtime and emits the `Cross-Origin-*` headers
-the Zama relayer-sdk requires for WASM + Web Worker. Connect the GitHub
-repo in the Netlify dashboard and it will build out of the box.
+`netlify.toml` points Netlify at `web/` with the `@netlify/plugin-nextjs`
+runtime and emits the `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`
+headers the Zama relayer SDK requires for SharedArrayBuffer + WASM workers.
