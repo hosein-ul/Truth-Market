@@ -1,4 +1,4 @@
-import { Lock, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
 import type { ActivityItem } from "@/lib/activity";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -8,7 +8,7 @@ export function ActivityList({ items }: { items: ActivityItem[] }) {
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Recent activity</CardTitle>
         <span className="text-xs text-muted-foreground">
-          {items.length} sealed bet{items.length !== 1 ? "s" : ""}
+          {items.length} bet{items.length !== 1 ? "s" : ""}
         </span>
       </CardHeader>
       <CardContent>
@@ -21,12 +21,24 @@ export function ActivityList({ items }: { items: ActivityItem[] }) {
             {items.map((item, i) => (
               <li key={i} className="flex items-center justify-between py-2.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-blue-500/10 text-blue-400">
-                    <Lock className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  <span
+                    className={
+                      item.side
+                        ? "grid h-8 w-8 place-items-center rounded-full bg-yes-bg text-yes-fg"
+                        : "grid h-8 w-8 place-items-center rounded-full bg-no-bg text-no-fg"
+                    }
+                  >
+                    {item.side ? (
+                      <TrendingUp className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    ) : (
+                      <TrendingDown className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    )}
                   </span>
                   <div className="text-sm">
-                    <span className="font-semibold text-foreground">{item.trader}</span>
-                    <span className="text-muted-foreground"> placed a sealed bet</span>
+                    <span className="text-muted-foreground">Anonymous bet on </span>
+                    <span className={item.side ? "font-semibold text-yes-fg" : "font-semibold text-no-fg"}>
+                      {item.side ? "YES" : "NO"}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

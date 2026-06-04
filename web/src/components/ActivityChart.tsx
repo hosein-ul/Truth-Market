@@ -32,13 +32,13 @@ export function ActivityChart({ items }: { items: ActivityItem[] }) {
       <CardHeader className="space-y-1">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Betting momentum</CardTitle>
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-400">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600">
             <Activity className="h-3.5 w-3.5" />
-            Sealed flow
+            Live flow
           </span>
         </div>
         <CardDescription>
-          Position sizes stay private — this shows how many sealed bets are flowing in over time.
+          How many bets are flowing in over time. Individual wallet positions stay private.
         </CardDescription>
       </CardHeader>
       <CardContent>

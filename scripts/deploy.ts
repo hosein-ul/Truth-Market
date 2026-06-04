@@ -43,7 +43,7 @@ async function main() {
 
   console.log("Deploying MarketFactory...");
   const MarketFactory = await ethers.getContractFactory("MarketFactory");
-  const factory = await MarketFactory.deploy(confidentialUSDC);
+  const factory = await MarketFactory.deploy(underlyingUSDC, confidentialUSDC);
   await factory.waitForDeployment();
   const factoryAddr = await factory.getAddress();
   console.log(`  MarketFactory    : ${factoryAddr}  tx=${factory.deploymentTransaction()?.hash}`);
@@ -79,7 +79,7 @@ async function main() {
     console.log("\nVerifying MarketFactory on Etherscan...");
     await new Promise((r) => setTimeout(r, 20_000));
     try {
-      await run("verify:verify", { address: factoryAddr, constructorArguments: [confidentialUSDC] });
+      await run("verify:verify", { address: factoryAddr, constructorArguments: [underlyingUSDC, confidentialUSDC] });
       console.log("  verified MarketFactory");
     } catch (e: any) {
       const msg = String(e.message ?? e);

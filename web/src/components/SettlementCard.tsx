@@ -58,7 +58,7 @@ export function SettlementCard({
           ))}
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5 text-xs font-medium text-blue-300">
+        <div className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-xs font-medium text-sky-700">
           <ShieldCheck className="h-4 w-4 shrink-0" />
           Confidentiality enforced on-chain by Zama — privacy by protocol, not by promise.
         </div>

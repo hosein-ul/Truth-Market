@@ -22,26 +22,21 @@ export function Navbar() {
     href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
   return (
-    <header
-      className="sticky top-0 z-40 border-b border-white/5 backdrop-blur-xl"
-      style={{ background: "rgba(8,12,22,0.85)" }}
-    >
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
       <div className="container flex h-16 items-center justify-between gap-4">
-        {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5 group">
           <motion.span
-            whileHover={{ scale: 1.08 }}
+            whileHover={{ scale: 1.06 }}
             transition={{ type: "spring", damping: 12 }}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-blue-glow"
+            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-orange-glow"
           >
             <Lock className="h-4 w-4 text-white" strokeWidth={2.5} />
           </motion.span>
-          <span className="font-display text-lg font-extrabold tracking-tight text-white">
+          <span className="font-display text-lg font-extrabold tracking-tight">
             Truth<span className="text-gradient">Market</span>
           </span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden items-center gap-0.5 md:flex">
           {NAV.map((item) => (
             <Link
@@ -57,7 +52,7 @@ export function Navbar() {
               {isActive(item.href) && (
                 <motion.span
                   layoutId="nav-active"
-                  className="absolute inset-0 rounded-lg bg-white/6 border border-white/8"
+                  className="absolute inset-0 rounded-lg bg-orange-50 border border-orange-200/50"
                   transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 />
               )}
@@ -66,7 +61,6 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Right */}
         <div className="flex items-center gap-2">
           <div className="hidden sm:block">
             <ConnectButton
@@ -76,7 +70,7 @@ export function Navbar() {
             />
           </div>
           <button
-            className="grid h-10 w-10 place-items-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
           >
@@ -85,7 +79,6 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -93,8 +86,7 @@ export function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="overflow-hidden border-t border-white/5 px-4 py-3 md:hidden"
-            style={{ background: "rgba(8,12,22,0.95)" }}
+            className="overflow-hidden border-t border-border bg-background px-4 py-3 md:hidden"
           >
             <nav className="flex flex-col gap-1">
               {NAV.map((item) => (
@@ -105,7 +97,7 @@ export function Navbar() {
                   className={cn(
                     "rounded-lg px-3 py-2.5 text-sm font-semibold",
                     isActive(item.href)
-                      ? "bg-white/6 text-foreground"
+                      ? "bg-orange-50 text-foreground"
                       : "text-muted-foreground",
                   )}
                 >

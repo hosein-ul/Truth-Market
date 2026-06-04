@@ -21,16 +21,10 @@ async function deployAll() {
   await cusdc.waitForDeployment();
 
   const MarketFactory = await ethers.getContractFactory("MarketFactory");
-  const factory = await MarketFactory.deploy(await cusdc.getAddress());
+  const factory = await MarketFactory.deploy(await usdc.getAddress(), await cusdc.getAddress());
   await factory.waitForDeployment();
 
   return { deployer, oracle, alice, bob, carol, usdc, cusdc, factory };
-}
-
-async function mintAndWrap(usdc: any, cusdc: any, user: Signer, amount: bigint) {
-  await (await usdc.mint(await user.getAddress(), amount)).wait();
-  await (await usdc.connect(user).approve(await cusdc.getAddress(), amount)).wait();
-  await (await cusdc.connect(user).wrap(await user.getAddress(), amount)).wait();
 }
 
 async function createMarket(
@@ -58,35 +52,21 @@ async function createMarket(
   return { market, marketAddr, deadline };
 }
 
+/**
+ * Place a bet. Amount and side are PUBLIC now (so odds update live). The user
+ * just needs plain USDC + an approval to the market.
+ */
 async function placeBet(
   market: any,
-  cusdc: any,
+  usdc: any,
   marketAddr: string,
   user: Signer,
   amount: bigint,
   yes: boolean,
 ) {
-  const until = Math.floor(Date.now() / 1000) + 30 * DAY;
-  await (await cusdc.connect(user).setOperator(marketAddr, until)).wait();
-  const enc = await fhevm
-    .createEncryptedInput(marketAddr, await user.getAddress())
-    .add64(amount)
-    .addBool(yes)
-    .encrypt();
-  return market.connect(user).placeBet(enc.handles[0], enc.handles[1], enc.inputProof);
-}
-
-async function finalizeMarket(market: any) {
-  // Pull encrypted pool handles, ask the mock relayer to decrypt them. The
-  // returned object includes a KMS-signed proof in the exact wire format
-  // FHE.checkSignatures expects.
-  const yesHandle = await market.getYesPool();
-  const noHandle = await market.getNoPool();
-  const result = await fhevm.publicDecrypt([yesHandle, noHandle]);
-  const yClear = BigInt(result.clearValues[yesHandle] as any);
-  const nClear = BigInt(result.clearValues[noHandle] as any);
-  await (await market.finalize(yClear, nClear, result.decryptionProof)).wait();
-  return { yClear, nClear };
+  await (await usdc.mint(await user.getAddress(), amount)).wait();
+  await (await usdc.connect(user).approve(marketAddr, amount)).wait();
+  return market.connect(user).placeBet(amount, yes);
 }
 
 async function userBalanceClear(cusdc: any, user: Signer): Promise<bigint> {
@@ -97,17 +77,40 @@ async function userBalanceClear(cusdc: any, user: Signer): Promise<bigint> {
 
 // Suite ──────────────────────────────────────────────────────────────────────
 
-describe("TruthMarket — confidential prediction market", function () {
+describe("TruthMarket — public odds, private positions", function () {
   before(function () {
     if (!fhevm.isMock) this.skip();
   });
 
-  describe("Wrap / unwrap collateral on-ramp", function () {
-    it("wraps underlying USDC into confidential USDC 1:1", async function () {
-      const { usdc, cusdc, alice } = await deployAll();
-      await mintAndWrap(usdc, cusdc, alice, USDC(1_000));
-      expect(await userBalanceClear(cusdc, alice)).to.eq(USDC(1_000));
-      expect(await usdc.balanceOf(await alice.getAddress())).to.eq(0n);
+  describe("Public odds", function () {
+    it("exposes pool totals and implied probability as plaintext", async function () {
+      const { usdc, factory, oracle, alice, bob } = await deployAll();
+      const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
+
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(300), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, bob, USDC(100), false)).wait();
+
+      expect(await market.yesPool()).to.eq(USDC(300));
+      expect(await market.noPool()).to.eq(USDC(100));
+      expect(await market.betCount()).to.eq(2n);
+      // 300 / 400 = 75% → 7500 bps
+      expect(await market.yesProbabilityBps()).to.eq(7500n);
+    });
+
+    it("keeps per-user stakes encrypted (only the owner can decrypt)", async function () {
+      const { usdc, factory, oracle, alice } = await deployAll();
+      const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
+
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(250), true)).wait();
+
+      const aliceYes = await market.getUserYesStake(await alice.getAddress());
+      const aliceYesClear = await fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        aliceYes,
+        await market.getAddress(),
+        alice,
+      );
+      expect(aliceYesClear).to.eq(USDC(250));
     });
   });
 
@@ -116,39 +119,22 @@ describe("TruthMarket — confidential prediction market", function () {
       const { usdc, cusdc, factory, oracle, alice, bob, carol } = await deployAll();
       const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
 
-      // Fund
-      await mintAndWrap(usdc, cusdc, alice, USDC(1_000));
-      await mintAndWrap(usdc, cusdc, bob, USDC(1_000));
-      await mintAndWrap(usdc, cusdc, carol, USDC(1_000));
-
       // Bets: alice YES 300, bob NO 100, carol YES 100
-      await (await placeBet(market, cusdc, marketAddr, alice, USDC(300), true)).wait();
-      await (await placeBet(market, cusdc, marketAddr, bob, USDC(100), false)).wait();
-      await (await placeBet(market, cusdc, marketAddr, carol, USDC(100), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(300), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, bob, USDC(100), false)).wait();
+      await (await placeBet(market, usdc, marketAddr, carol, USDC(100), true)).wait();
 
-      // Pools are encrypted and not publicly decryptable yet. Per-user stakes
-      // ARE accessible to the user themselves — verify Alice's YES stake.
-      const aliceYes = await market.getUserYesStake(await alice.getAddress());
-      const aliceYesClear = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        aliceYes,
-        await market.getAddress(),
-        alice,
-      );
-      expect(aliceYesClear).to.eq(USDC(300));
+      expect(await market.yesPool()).to.eq(USDC(400));
+      expect(await market.noPool()).to.eq(USDC(100));
 
       // Time travel past deadline.
       await ethers.provider.send("evm_increaseTime", [DAY + 1]);
       await ethers.provider.send("evm_mine", []);
 
-      // Oracle resolves YES, then anyone finalizes (delivers KMS-signed pools).
+      // Single-step resolve — pools are already public.
       await (await market.connect(oracle).resolve(true)).wait();
-      const { yClear, nClear } = await finalizeMarket(market);
-      expect(yClear).to.eq(USDC(400));
-      expect(nClear).to.eq(USDC(100));
-      expect(await market.status()).to.eq(2n); // Resolved
+      expect(await market.status()).to.eq(1n); // Resolved
 
-      // Claim
       const aliceBefore = await userBalanceClear(cusdc, alice);
       const carolBefore = await userBalanceClear(cusdc, carol);
       const bobBefore = await userBalanceClear(cusdc, bob);
@@ -168,39 +154,34 @@ describe("TruthMarket — confidential prediction market", function () {
     });
 
     it("blocks double claim", async function () {
-      const { usdc, cusdc, factory, oracle, alice } = await deployAll();
+      const { usdc, factory, oracle, alice } = await deployAll();
       const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
-      await mintAndWrap(usdc, cusdc, alice, USDC(100));
-      await (await placeBet(market, cusdc, marketAddr, alice, USDC(50), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(50), true)).wait();
       await ethers.provider.send("evm_increaseTime", [DAY + 1]);
       await ethers.provider.send("evm_mine", []);
       await (await market.connect(oracle).resolve(true)).wait();
-      await finalizeMarket(market);
       await (await market.connect(alice).claim()).wait();
       await expect(market.connect(alice).claim()).to.be.revertedWithCustomError(market, "AlreadyClaimed");
     });
 
     it("rejects claim from a non-bettor", async function () {
-      const { usdc, cusdc, factory, oracle, alice, bob } = await deployAll();
+      const { usdc, factory, oracle, alice, bob } = await deployAll();
       const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
-      await mintAndWrap(usdc, cusdc, alice, USDC(100));
-      await (await placeBet(market, cusdc, marketAddr, alice, USDC(50), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(50), true)).wait();
       await ethers.provider.send("evm_increaseTime", [DAY + 1]);
       await ethers.provider.send("evm_mine", []);
       await (await market.connect(oracle).resolve(true)).wait();
-      await finalizeMarket(market);
       await expect(market.connect(bob).claim()).to.be.revertedWithCustomError(market, "NoPosition");
     });
   });
 
   describe("Deadline & oracle gating", function () {
     it("rejects bets after deadline", async function () {
-      const { usdc, cusdc, factory, oracle, alice } = await deployAll();
+      const { usdc, factory, oracle, alice } = await deployAll();
       const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
-      await mintAndWrap(usdc, cusdc, alice, USDC(100));
       await ethers.provider.send("evm_increaseTime", [DAY + 1]);
       await ethers.provider.send("evm_mine", []);
-      await expect(placeBet(market, cusdc, marketAddr, alice, USDC(50), true)).to.be.revertedWithCustomError(
+      await expect(placeBet(market, usdc, marketAddr, alice, USDC(50), true)).to.be.revertedWithCustomError(
         market,
         "PastDeadline",
       );
@@ -225,13 +206,11 @@ describe("TruthMarket — confidential prediction market", function () {
     it("voids when winning side has no bets", async function () {
       const { usdc, cusdc, factory, oracle, alice } = await deployAll();
       const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
-      await mintAndWrap(usdc, cusdc, alice, USDC(100));
-      await (await placeBet(market, cusdc, marketAddr, alice, USDC(50), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(50), true)).wait();
       await ethers.provider.send("evm_increaseTime", [DAY + 1]);
       await ethers.provider.send("evm_mine", []);
-      await (await market.connect(oracle).resolve(false)).wait(); // NO wins
-      await finalizeMarket(market);
-      expect(await market.status()).to.eq(3n); // Voided
+      await (await market.connect(oracle).resolve(false)).wait(); // NO wins, but no NO bets
+      expect(await market.status()).to.eq(2n); // Voided
 
       const aliceBefore = await userBalanceClear(cusdc, alice);
       await (await market.connect(alice).claim()).wait();
@@ -242,8 +221,7 @@ describe("TruthMarket — confidential prediction market", function () {
     it("enableRefunds works only after dispute window", async function () {
       const { usdc, cusdc, factory, oracle, alice } = await deployAll();
       const { market, marketAddr } = await createMarket(factory, alice, await oracle.getAddress());
-      await mintAndWrap(usdc, cusdc, alice, USDC(100));
-      await (await placeBet(market, cusdc, marketAddr, alice, USDC(50), true)).wait();
+      await (await placeBet(market, usdc, marketAddr, alice, USDC(50), true)).wait();
       await ethers.provider.send("evm_increaseTime", [DAY + 1]);
       await ethers.provider.send("evm_mine", []);
       await expect(market.enableRefunds()).to.be.revertedWithCustomError(market, "TooEarlyToVoid");
@@ -251,7 +229,7 @@ describe("TruthMarket — confidential prediction market", function () {
       await ethers.provider.send("evm_increaseTime", [8 * DAY]);
       await ethers.provider.send("evm_mine", []);
       await (await market.enableRefunds()).wait();
-      expect(await market.status()).to.eq(3n); // Voided
+      expect(await market.status()).to.eq(2n); // Voided
 
       const before = await userBalanceClear(cusdc, alice);
       await (await market.connect(alice).claim()).wait();

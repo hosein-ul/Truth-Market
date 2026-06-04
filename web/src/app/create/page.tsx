@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAccount, useWriteContract } from "wagmi";
 import { decodeEventLog } from "viem";
 import { toast } from "sonner";
-import { Sparkles, Lock } from "lucide-react";
+import { Sparkles, BarChart3, EyeOff } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { ADDRESSES } from "@/lib/addresses";
 import { marketFactoryAbi } from "@/lib/abis";
@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CategoryChip } from "@/components/CategoryChip";
-import { SealedBlock } from "@/components/Sealed";
 import { MarketStatusBadge } from "@/components/MarketStatusBadge";
 import { MARKET_STATUS } from "@/lib/abis";
 
@@ -101,15 +100,15 @@ export default function CreatePage() {
     <div className="container py-8">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-sm font-semibold text-blue-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-700">
             <Sparkles className="h-3.5 w-3.5" />
-            New sealed market
+            New market
           </div>
           <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight">
             Create a market
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Frame a clear yes/no question. Bets stay sealed until you resolve it.
+            Frame a clear yes/no question. Odds are public; every position is private.
           </p>
         </div>
 
@@ -226,20 +225,21 @@ export default function CreatePage() {
                 <h3 className="mt-3 min-h-[48px] font-display text-[15px] font-bold leading-snug tracking-tight">
                   {question || "Your question will appear here…"}
                 </h3>
-                <div className="mt-3">
-                  <SealedBlock />
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-orange-200 bg-orange-50/50 px-3 py-3 text-sm text-orange-700">
+                  <BarChart3 className="h-4 w-4 shrink-0" />
+                  Odds appear once the first bet lands
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
-                    <Lock className="h-3.5 w-3.5" />
-                    Sealed on open
+                    <EyeOff className="h-3.5 w-3.5" />
+                    Private positions
                   </span>
                   <span>Closes {closesLabel}</span>
                 </div>
               </Card>
               <p className="mt-3 px-1 text-xs leading-relaxed text-muted-foreground">
-                While the market is open, the odds and every position stay hidden.
-                The probability bar appears only after you resolve it.
+                Pool odds are public so price discovery works. But each bettor&apos;s
+                stake is encrypted — no one can track individual wallets.
               </p>
             </div>
           </div>

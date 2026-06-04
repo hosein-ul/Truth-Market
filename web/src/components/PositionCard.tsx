@@ -92,10 +92,10 @@ export function PositionCard({ marketAddress }: { marketAddress: `0x${string}` }
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Lock className="h-4 w-4 text-blue-400" />
+          <Lock className="h-4 w-4 text-sky-600" />
           Your position
         </CardTitle>
-        <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-300">
+        <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
           Private to you
         </span>
       </CardHeader>

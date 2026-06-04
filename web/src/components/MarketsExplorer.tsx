@@ -27,8 +27,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 
 const STATUS_TABS = [
   { key: "all", label: "All" },
-  { key: "open", label: "Open" },
-  { key: "resolving", label: "Resolving" },
+  { key: "open", label: "Live" },
   { key: "settled", label: "Settled" },
 ];
 
@@ -49,7 +48,6 @@ export function MarketsExplorer({ markets }: { markets: MarketSummary[] }) {
       const matchesStatus =
         statusTab === "all" ||
         (statusTab === "open" && m.status === MARKET_STATUS.OPEN) ||
-        (statusTab === "resolving" && m.status === MARKET_STATUS.RESOLVING) ||
         (statusTab === "settled" &&
           (m.status === MARKET_STATUS.RESOLVED || m.status === MARKET_STATUS.VOIDED));
       return matchesQuery && matchesCat && matchesStatus;

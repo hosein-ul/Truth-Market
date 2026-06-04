@@ -2,40 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * TruthMarket — Dark Navy + Electric Blue design system
- * Zero purple. Premium dark crypto-tech aesthetic.
- */
+/* TruthMarket — Solar Burst design system
+   Warm orange + sky blue + white. Light, energetic, premium. */
 
 @layer base {
   :root {
-    --background: 224 36% 5%;
-    --foreground: 210 40% 94%;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
 
-    --card: 224 28% 8%;
-    --card-foreground: 210 40% 94%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 224 28% 9%;
-    --popover-foreground: 210 40% 94%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 213 94% 59%;
+    --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 224 22% 13%;
-    --secondary-foreground: 210 30% 82%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 20%;
 
-    --muted: 224 22% 11%;
-    --muted-foreground: 215 20% 50%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 186 100% 47%;
-    --accent-foreground: 224 36% 5%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 350 84% 56%;
+    --destructive: 350 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 28% 14%;
-    --input: 220 28% 12%;
-    --ring: 213 94% 59%;
+    --border: 210 40% 94%;
+    --input: 210 40% 94%;
+    --ring: 25 95% 53%;
 
     --radius: 0.75rem;
   }
@@ -47,7 +45,6 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "cv11";
-    -webkit-font-smoothing: antialiased;
   }
 
   .tnum {
@@ -57,81 +54,40 @@
 }
 
 @layer components {
-  .sealed-surface {
-    background: linear-gradient(135deg, #0d1829 0%, #0e1f35 50%, #0a1b2e 100%);
-    border: 1px solid rgba(56, 130, 246, 0.15);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .sealed-shimmer {
-    background: linear-gradient(
-      100deg,
-      transparent 20%,
-      rgba(56, 130, 246, 0.08) 40%,
-      rgba(34, 211, 238, 0.12) 50%,
-      rgba(56, 130, 246, 0.08) 60%,
-      transparent 80%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2.8s linear infinite;
-  }
-
-  .sealed-blur {
-    filter: blur(8px);
-    opacity: 0.45;
-    user-select: none;
-    pointer-events: none;
-  }
-
   .text-gradient {
-    background: linear-gradient(120deg, #3b82f6 0%, #22d3ee 60%, #06b6d4 100%);
+    background: linear-gradient(120deg, #f97316 0%, #ea580c 60%, #dc2626 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  .text-gradient-gold {
-    background: linear-gradient(120deg, #f59e0b 0%, #fbbf24 60%, #f59e0b 100%);
+  .text-gradient-blue {
+    background: linear-gradient(120deg, #0ea5e9 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
   .hover-lift {
-    @apply transition-shadow duration-200;
+    @apply transition-all duration-200;
   }
   .hover-lift:hover {
-    @apply shadow-blue-glow;
+    @apply -translate-y-0.5 shadow-lift;
   }
 
   .bg-grid {
     background-image:
-      linear-gradient(rgba(56, 130, 246, 0.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(56, 130, 246, 0.07) 1px, transparent 1px);
+      linear-gradient(hsl(25 95% 53% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(25 95% 53% / 0.04) 1px, transparent 1px);
     background-size: 48px 48px;
     -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
     mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
   }
 
   .glass-card {
-    background: rgba(14, 22, 40, 0.7);
-    border: 1px solid rgba(56, 130, 246, 0.15);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  .terminal-text {
-    font-family: var(--font-mono), "JetBrains Mono", "Fira Code", monospace;
-    font-size: 0.8rem;
-    line-height: 1.7;
-  }
-
-  .glow-border-blue {
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.1);
-  }
-  .glow-border-cyan {
-    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4), 0 0 20px rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -140,45 +96,29 @@
   100% { background-position: 200% 0; }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-  50% { box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.3); }
-}
-
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+  50% { transform: translateY(-6px); }
 }
 
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
-@keyframes blink-cursor {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(400%); }
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(220 28% 20%);
+  background: hsl(210 20% 88%);
   border-radius: 6px;
+  border: 2px solid white;
 }
-::-webkit-scrollbar-thumb:hover { background: hsl(220 28% 28%); }
+::-webkit-scrollbar-thumb:hover { background: hsl(210 20% 78%); }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.25);
+  background: hsl(25 95% 53% / 0.15);
 }
 
-/* RainbowKit dark align */
 [data-rk] {
   --rk-radii-connectButton: 10px;
   --rk-radii-actionButton: 10px;

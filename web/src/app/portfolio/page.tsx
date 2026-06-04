@@ -251,7 +251,7 @@ export default function PortfolioPage() {
       (p.status === MARKET_STATUS.RESOLVED || p.status === MARKET_STATUS.VOIDED) && !p.claimed,
   );
   const active = (positions ?? []).filter(
-    (p) => p.status === MARKET_STATUS.OPEN || p.status === MARKET_STATUS.RESOLVING,
+    (p) => p.status === MARKET_STATUS.OPEN,
   );
   const settled = (positions ?? []).filter(
     (p) =>
@@ -268,7 +268,7 @@ export default function PortfolioPage() {
           <CardContent className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
             <div>
               <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                <Lock className="h-4 w-4 text-blue-400" />
+                <Lock className="h-4 w-4 text-sky-600" />
                 Sealed balance
               </div>
               <div className="mt-1.5">
@@ -348,7 +348,7 @@ export default function PortfolioPage() {
 
       {/* Active */}
       {active.length > 0 && (
-        <Section title="Active positions" icon={<Lock className="h-4 w-4 text-blue-400" />}>
+        <Section title="Active positions" icon={<Lock className="h-4 w-4 text-sky-600" />}>
           {active.map((p) => (
             <PositionRow key={p.market} p={p} onReveal={() => revealPosition(p)} />
           ))}

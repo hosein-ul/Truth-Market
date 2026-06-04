@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
+import { P5Background } from "@/components/P5Background";
 
 const sans = Inter({
   subsets: ["latin"],
@@ -23,9 +24,9 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TruthMarket — Sealed Prediction Markets",
+  title: "TruthMarket — Public Odds, Private Positions",
   description:
-    "Trade on the future, privately. Bets are sealed and encrypted on-chain — your position stays yours until the market settles.",
+    "A prediction market with public odds and private positions. See where the crowd leans, but keep your wallet untrackable — powered by Zama FHEVM.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +37,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-screen bg-background font-sans">
         <Providers>
-          <div className="flex min-h-screen flex-col">
+          <P5Background />
+          <div className="relative flex min-h-screen flex-col">
             <Navbar />
             <main className="flex-1">{children}</main>
             <SiteFooter />

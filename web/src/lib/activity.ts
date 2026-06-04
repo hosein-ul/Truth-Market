@@ -1,20 +1,25 @@
 import { publicClient } from "./viem";
-import { shortAddr } from "./format";
 import { FACTORY_DEPLOY_BLOCK } from "./addresses";
 import type { Address } from "viem";
 
 export interface ActivityItem {
-  trader: string;
-  fullAddress: string;
   txHash: string;
   blockNumber: bigint;
   ageLabel: string;
+  side: boolean; // true = YES, false = NO
 }
 
+// The BetPlaced event is intentionally anonymous — it carries amount + side
+// (those are public, since pools are public) but NO wallet address. That means
+// you can watch market momentum, but you cannot tie any bet to a specific
+// wallet. Whale-tracking is impossible by construction.
 const BET_PLACED_EVENT = {
   type: "event" as const,
   name: "BetPlaced",
-  inputs: [{ type: "address" as const, name: "bettor", indexed: true }],
+  inputs: [
+    { type: "uint64" as const, name: "amount" },
+    { type: "bool" as const, name: "side" },
+  ],
 };
 
 function ageLabel(blocksAgo: number): string {
@@ -60,32 +65,14 @@ export async function getMarketActivity(
       .reverse()
       .map((log) => {
         const blocksAgo = Number(latest - (log.blockNumber ?? latest));
-        const bettor =
-          (log.args as any)?.bettor ??
-          "0x0000000000000000000000000000000000000000";
         return {
-          trader: shortAddr(bettor),
-          fullAddress: bettor,
           txHash: log.transactionHash ?? "",
           blockNumber: log.blockNumber ?? 0n,
           ageLabel: ageLabel(blocksAgo),
+          side: Boolean((log.args as any)?.side),
         };
       });
   } catch {
     return [];
-  }
-}
-
-/** Unique-bettor count for a market (best effort). */
-export async function getTraderCount(address: Address): Promise<number> {
-  try {
-    const { logs } = await fetchBetLogs(address);
-    const unique = new Set(
-      logs.map((l) => ((l.args as any)?.bettor ?? "").toLowerCase()),
-    );
-    unique.delete("");
-    return unique.size;
-  } catch {
-    return 0;
   }
 }

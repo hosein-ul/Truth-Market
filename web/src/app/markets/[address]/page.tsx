@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { ChevronLeft, Users, Lock, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, BarChart3 } from "lucide-react";
 import { getMarketDetail } from "@/lib/markets";
-import { getMarketActivity, getTraderCount } from "@/lib/activity";
+import { getMarketActivity } from "@/lib/activity";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
 import { CategoryChip } from "@/components/CategoryChip";
 import { MarketStatusBadge } from "@/components/MarketStatusBadge";
 import { Countdown } from "@/components/Countdown";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
-import { SealedBlock } from "@/components/Sealed";
 import { BetForm } from "@/components/BetForm";
 import { ClaimCard } from "@/components/ClaimCard";
 import { OraclePanel } from "@/components/OraclePanel";
@@ -28,21 +27,19 @@ export default async function MarketDetailPage({
 }) {
   const { address } = await params;
   const addr = address as `0x${string}`;
-  const [m, activity, traderCount] = await Promise.all([
+  const [m, activity] = await Promise.all([
     getMarketDetail(addr),
     getMarketActivity(addr, 14),
-    getTraderCount(addr),
   ]);
 
   const status = m.status as MarketStatusValue;
   const isOpen = status === MARKET_STATUS.OPEN;
-  const isResolving = status === MARKET_STATUS.RESOLVING;
   const isResolved = status === MARKET_STATUS.RESOLVED;
   const isVoided = status === MARKET_STATUS.VOIDED;
-  const sealed = isOpen || isResolving;
 
   const total = m.yesPoolClear + m.noPoolClear;
   const yesPct = pct(m.yesPoolClear, total, 0);
+  const hasBets = total > 0n;
 
   return (
     <div className="container py-6">
@@ -55,16 +52,15 @@ export default async function MarketDetailPage({
       </Link>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* LEFT — market info (2 cols) */}
+        {/* LEFT — market info */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Header */}
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <CategoryChip category={m.category} />
               <MarketStatusBadge status={status} />
               <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="h-3.5 w-3.5" />
-                {traderCount} trader{traderCount !== 1 ? "s" : ""}
+                {m.betCount} bet{m.betCount !== 1 ? "s" : ""}
               </span>
             </div>
             <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
@@ -72,43 +68,47 @@ export default async function MarketDetailPage({
             </h1>
           </div>
 
-          {/* Hero: odds or sealed */}
+          {/* Hero: real odds */}
           <Card>
             <CardContent className="p-5">
-              {sealed ? (
+              {isOpen ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-muted-foreground">
                         Implied probability
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2">
-                        <span className="font-display text-2xl font-extrabold text-blue-300">
-                          Hidden
+                      <div className="mt-0.5 flex items-baseline gap-2">
+                        <span className="font-display text-3xl font-extrabold text-yes-fg">
+                          {hasBets ? `${yesPct}%` : "—"}
                         </span>
-                        <Lock className="h-5 w-5 text-blue-400" strokeWidth={2.5} />
+                        <span className="text-sm font-semibold text-muted-foreground">YES</span>
                       </div>
                     </div>
-                    {isOpen ? (
-                      <div className="text-right">
-                        <div className="text-xs font-medium text-muted-foreground">Closes in</div>
-                        <Countdown
-                          deadlineSec={m.deadline}
-                          withIcon={false}
-                          className="font-display text-lg font-bold"
-                        />
-                      </div>
-                    ) : (
-                      <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
-                        Awaiting result
-                      </span>
-                    )}
+                    <div className="text-right">
+                      <div className="text-xs font-medium text-muted-foreground">Closes in</div>
+                      <Countdown
+                        deadlineSec={m.deadline}
+                        withIcon={false}
+                        className="font-display text-lg font-bold"
+                      />
+                    </div>
                   </div>
-                  <SealedBlock />
+                  {hasBets ? (
+                    <ProbabilityBar yesPct={yesPct} />
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-orange-200 bg-orange-50/50 px-4 py-3 text-sm text-orange-700">
+                      No bets yet — be the first to set the odds.
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total volume</span>
+                    <span className="font-display font-bold tabular-nums">${formatUSDC(total)}</span>
+                  </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Every position in this market is encrypted. Odds, sizes, and
-                    sides remain private until {isOpen ? "the market closes and is resolved" : "the resolver reveals the pools"}.
-                    This is what stops herding and front-running.
+                    Odds are public — they move with every bet, so price discovery
+                    works. But individual positions are encrypted: no one can see
+                    how much you bet or on which side.
                   </p>
                 </div>
               ) : (
@@ -132,7 +132,7 @@ export default async function MarketDetailPage({
                       </div>
                     </div>
                   </div>
-                  {!isVoided && total > 0n && <ProbabilityBar yesPct={yesPct} />}
+                  {!isVoided && hasBets && <ProbabilityBar yesPct={yesPct} />}
                   {isVoided && (
                     <p className="text-sm text-muted-foreground">
                       This market was voided. All bettors can withdraw their full stake.
@@ -143,13 +143,8 @@ export default async function MarketDetailPage({
             </CardContent>
           </Card>
 
-          {/* Activity chart */}
           <ActivityChart items={activity} />
-
-          {/* Activity list */}
           <ActivityList items={activity} />
-
-          {/* Settlement */}
           <SettlementCard
             description={m.description}
             oracle={m.oracle}
@@ -158,7 +153,7 @@ export default async function MarketDetailPage({
           />
         </div>
 
-        {/* RIGHT — actions (sticky, 1 col) */}
+        {/* RIGHT — actions */}
         <div className="lg:col-span-1">
           <div className="space-y-4 lg:sticky lg:top-20">
             {isOpen && <BetForm marketAddress={m.address} deadline={m.deadline} />}

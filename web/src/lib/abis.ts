@@ -175,17 +175,31 @@ export const marketAbi = [
   },
   {
     type: "function",
-    name: "yesPoolClear",
+    name: "yesPool",
     stateMutability: "view",
     inputs: [],
-    outputs: [{ type: "uint64" }],
+    outputs: [{ type: "uint256" }],
   },
   {
     type: "function",
-    name: "noPoolClear",
+    name: "noPool",
     stateMutability: "view",
     inputs: [],
-    outputs: [{ type: "uint64" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "betCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "yesProbabilityBps",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
   },
   {
     type: "function",
@@ -283,9 +297,8 @@ export const marketAbi = [
     name: "placeBet",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "encAmount", type: "bytes32" },
-      { name: "encSide", type: "bytes32" },
-      { name: "inputProof", type: "bytes" },
+      { name: "amount", type: "uint64" },
+      { name: "side", type: "bool" },
     ],
     outputs: [],
   },
@@ -294,17 +307,6 @@ export const marketAbi = [
     name: "resolve",
     stateMutability: "nonpayable",
     inputs: [{ name: "outcomeYes_", type: "bool" }],
-    outputs: [],
-  },
-  {
-    type: "function",
-    name: "finalize",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "yesPoolClear_", type: "uint64" },
-      { name: "noPoolClear_", type: "uint64" },
-      { name: "decryptionProof", type: "bytes" },
-    ],
     outputs: [],
   },
   {
@@ -324,32 +326,27 @@ export const marketAbi = [
   {
     type: "event",
     name: "BetPlaced",
-    inputs: [{ name: "bettor", type: "address", indexed: true }],
-  },
-  {
-    type: "event",
-    name: "Resolved",
     inputs: [
-      { name: "outcomeYes", type: "bool" },
-      { name: "yesHandle", type: "bytes32" },
-      { name: "noHandle", type: "bytes32" },
+      { name: "amount", type: "uint64" },
+      { name: "side", type: "bool" },
     ],
   },
   {
     type: "event",
-    name: "Finalized",
-    inputs: [
-      { name: "yesPoolClear", type: "uint64" },
-      { name: "noPoolClear", type: "uint64" },
-    ],
+    name: "MarketResolved",
+    inputs: [{ name: "outcomeYes", type: "bool" }],
+  },
+  {
+    type: "event",
+    name: "MarketVoided",
+    inputs: [{ name: "reason", type: "string" }],
   },
 ] as const;
 
 export const MARKET_STATUS = {
   OPEN: 0,
-  RESOLVING: 1,
-  RESOLVED: 2,
-  VOIDED: 3,
+  RESOLVED: 1,
+  VOIDED: 2,
 } as const;
 
 export type MarketStatusValue = (typeof MARKET_STATUS)[keyof typeof MARKET_STATUS];
