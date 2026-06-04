@@ -324,3 +324,24 @@ sign + `userDecrypt`.
   - Commit: `feat: dark navy + electric blue redesign with Framer Motion` pushed to branch.
   - **Lesson:** Avoid duplicate @keyframes blocks and invalid quoted CSS syntax (the
     quoted `"0%"` syntax in Tailwind config keyframes does NOT work in raw CSS @keyframes).
+- **Session 8 (this one).** MAJOR rearchitecture + "Solar Burst" redesign.
+  - **Privacy model fixed (was backwards):** pools now PUBLIC plaintext
+    (`uint256 yesPool/noPool`) so odds/price-discovery work; per-user stakes
+    PRIVATE (`euint64` via `FHE.add`) so wallets can't be tracked. `BetPlaced`
+    event is anonymous (amount+side, no address).
+  - **Contract v2:** `placeBet(uint64 amount, bool side)` plaintext via USDC
+    `approve`; contract wraps to cUSDC internally; single-step `resolve()` (no
+    finalize/decrypt); added `betCount` + `yesProbabilityBps`; status enum
+    Open/Resolved/Voided. Uses `IERC7984ERC20Wrapper`. Factory ctor (usdc, cUsdc).
+  - **Redeployed Sepolia:** MarketFactory v2 `0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334`
+    (verified). Seeded 3 demo markets + placed live bets → odds 60%/40%/100% YES.
+    Updated `web/src/lib/addresses.ts` + FACTORY_DEPLOY_BLOCK=10987800.
+  - **Tests rewritten** for plaintext bets — 11/11 passing, pro-rata 375/125/0 verified.
+  - **Solar Burst UI (design V1):** light theme, vivid orange + sky blue + white.
+    NO dark, NO purple. New `P5Background.tsx` (p5.js generative probability
+    particle field — seeded, pauses on tab hide). Market cards show REAL odds
+    (ProbabilityBar + % + volume + betCount). Removed ALL emojis → Lucide icons.
+    Rewrote ZamaExplainer to "Public odds, Private positions". Deleted dark
+    components (HeroTerminal, FloatingOrbs) + v1/v2/v3 demo pages.
+  - **Lesson:** `IERC7984` has no `wrap()` — use `IERC7984ERC20Wrapper`. Picked
+    user's chosen design (V1 Solar Burst) and built it for real with shadcn/ui.

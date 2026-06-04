@@ -28,9 +28,21 @@ become public; payouts are decryptable only by the winner.
 - `netlify.toml` — Netlify build + required COOP/COEP headers.
 
 ## Key addresses (Sepolia)
-- `MarketFactory` (ours, verified): `0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`
+- `MarketFactory` v2 (public-odds, verified): `0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334`
 - cUSDCMock (Zama official): `0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639`
 - Underlying USDC (Zama official): `0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF`
+- (old v1 factory, sealed-odds, deprecated: `0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`)
+
+## Privacy model (v2 — CORRECT)
+- **Pools are PUBLIC** plaintext (`uint256 yesPool/noPool`) → implied odds always
+  visible → real price discovery. A prediction market needs visible odds.
+- **Per-user stakes are PRIVATE** (`euint64` via `FHE.add`) → nobody can look up a
+  specific wallet's position. Whale-tracking is impossible.
+- `BetPlaced(amount, side)` is **anonymous** (no wallet address).
+- `placeBet(uint64 amount, bool side)` — plaintext bet via USDC `approve`; contract
+  wraps to cUSDC internally; payouts via ERC-7984 `confidentialTransfer`.
+- Single-step `resolve()` (pools already public — no finalize/decrypt phase).
+- Status enum: Open=0, Resolved=1, Voided=2.
 
 ## Stack gotchas (don't relearn the hard way)
 - `@zama-fhe/relayer-sdk` is **pinned to 0.4.1** (mock-utils requires it).
@@ -61,12 +73,17 @@ git push -u origin claude/loving-meitner-VH1fm
 ```
 Retry only on network errors with exponential backoff (2s/4s/8s/16s).
 
-## Design system (session 7)
-- **Color palette:** electric blue `#3b82f6` (primary), cyan `#22d3ee` (accent), gold `#f59e0b`. NO purple/violet.
-- **framer-motion v12** installed. GlareCard: spring damping=12, scale 1.02, mouse-tracking glare.
-- **HeroTerminal** = animated FHE code typewriter. **FloatingOrbs** = glassy 3D CSS blobs.
-- **ZamaExplainer** section on home page — critical for hackathon judges to see FHEVM stack.
-- Dark navy background — use `rgba(8,12,22,...)` for glassmorphism overlays.
+## Design system (session 8 — "Solar Burst", CURRENT)
+- **Light theme.** Vivid orange `#f97316` (primary), sky blue `#0ea5e9` (accent), white bg.
+  NO dark, NO purple. `--primary: 25 95% 53%`.
+- **framer-motion v12** — GlareCard spring (damping=12, scale 1.02, mouse glare).
+- **p5.js** generative background (`P5Background.tsx`) — flowing probability particle
+  field, seeded (42), pauses on tab hide, fixed -z-10 behind all UI.
+- **No emojis anywhere** — all Lucide icons (Lock, Award, Check, AlertTriangle, etc.).
+- Market cards show **real odds**: animated YES/NO ProbabilityBar + %, volume, betCount,
+  countdown. Empty state: "No bets yet — be the first".
+- **ZamaExplainer** = "Public odds, Private positions" 4-step breakdown for judges.
+- (Earlier dark-navy/electric-blue look from session 7 was replaced.)
 
 ## Lessons learned (avoid repeating)
 - Never duplicate `@keyframes` in CSS. Never use quoted `"0%"` syntax in raw CSS `@keyframes` (only valid in Tailwind config JS, not emitted CSS).

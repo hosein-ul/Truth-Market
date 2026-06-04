@@ -1,17 +1,17 @@
 [
   {
     "question": "Will BTC close above $200k on 2026-12-31?",
-    "address": "0xd12d2d292f7a07b6B2874957E42adBF466efa55a",
-    "tx": "0xc8861a2060549e685467c0958962f8dfa60ba54ccd9775554ba863f919c29d93"
+    "address": "0x47519023DB249318E85616BbE1D1B2AD3A5DC84D",
+    "tx": "0x1ab5808359d4e26e55e3383be4d07495760a11b7b4b4b384a12b77ad10f1f59f"
   },
   {
     "question": "Will SpaceX land humans on Mars before 2027?",
-    "address": "0x5EF0520fD70E40aBD10f32f370ede523da9FF0b4",
-    "tx": "0xe63da7d3428b365854cdc010e8ef8f71dab564363a332c2508f9fd239bec4444"
+    "address": "0x8CFdB746aac65223580D2b1774DC7187c3558eA0",
+    "tx": "0xc5260498cc84359eb4766ca5dca281759b9062d314cfdaf2f67b661069000237"
   },
   {
     "question": "Will ETH/BTC ratio exceed 0.10 within 30 days?",
-    "address": "0x83cD876790b93d211E32659AbA7abB12e151c41A",
-    "tx": "0x7e8d0d0b0e00f4a3fcb2f3f7d90adb1db47025efc759506db971115843076473"
+    "address": "0xD5164B0630A290C02BB4A4929673e913571E59a4",
+    "tx": "0x9e26c4740c4c536fa7e3c11ac0e3d2aed44f18000d7fc68dc2788b77d8564b68"
   }
 ]
