@@ -82,6 +82,9 @@ contract ConfidentialMarket is ZamaEthereumConfig {
     event MarketResolved(bool outcomeYes, uint64 yesPool, uint64 noPool);
     event MarketVoided(string reason);
     event Claimed(address indexed user);
+    /// @notice Anonymous — fired when a user exits a position pre-resolution.
+    /// Carries no amount, no side, no address.
+    event PositionClosed();
 
     // ─── Errors ─────────────────────────────────────────────────────────────
     error NotOpen();
@@ -178,6 +181,53 @@ contract ConfidentialMarket is ZamaEthereumConfig {
         hasBet[msg.sender] = true;
         betCount++;
         emit BetPlaced();
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // CASH OUT — exit a position before resolution, full stake refunded
+    // ════════════════════════════════════════════════════════════════════════
+
+    /// @notice Withdraw your entire (encrypted) stake from this market before
+    ///         it closes. Stake is subtracted from the encrypted pools and
+    ///         confidentially transferred back to you in cUSDC. Pre-resolution
+    ///         only; not allowed once the deadline has passed.
+    /// @dev    No fee, no PnL — this is an early exit, not a secondary sale.
+    ///         Public state changes (hasBet flips to false, betCount unchanged)
+    ///         do not leak the cleared amount. Side is never disclosed.
+    function cashOut() external {
+        if (status != Status.Open) revert NotOpen();
+        if (block.timestamp >= deadline) revert PastDeadline();
+        if (!hasBet[msg.sender]) revert NoPosition();
+        if (claimed[msg.sender]) revert AlreadyClaimed();
+
+        euint64 yesStake = userYesStake[msg.sender];
+        euint64 noStake = userNoStake[msg.sender];
+        euint64 total = FHE.add(yesStake, noStake);
+
+        // Subtract this user's encrypted stake from each encrypted pool. The
+        // invariant (pool == sum of all user stakes) guarantees no underflow.
+        yesPoolEnc = FHE.sub(yesPoolEnc, yesStake);
+        noPoolEnc = FHE.sub(noPoolEnc, noStake);
+        FHE.allowThis(yesPoolEnc);
+        FHE.allowThis(noPoolEnc);
+
+        // Zero this user's stakes so any future view reads return ciphertext-zero.
+        euint64 zero = FHE.asEuint64(uint64(0));
+        userYesStake[msg.sender] = zero;
+        userNoStake[msg.sender] = zero;
+        FHE.allowThis(userYesStake[msg.sender]);
+        FHE.allowThis(userNoStake[msg.sender]);
+        FHE.allow(userYesStake[msg.sender], msg.sender);
+        FHE.allow(userNoStake[msg.sender], msg.sender);
+
+        hasBet[msg.sender] = false;
+
+        // Confidentially transfer the full stake back to the user.
+        FHE.allowThis(total);
+        FHE.allowTransient(total, address(cUsdc));
+        cUsdc.confidentialTransfer(msg.sender, total);
+
+        emit PositionClosed();
     }
 
     // ════════════════════════════════════════════════════════════════════════

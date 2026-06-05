@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-05 (Session 11)
+**Last updated:** 2026-06-05 (Session 12)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -408,3 +408,11 @@ sign + `userDecrypt`.
   - **Landing page (point 5):** new `/` = `components/landing/Landing.tsx` — hero with art + framer-motion, Problem (4 cards), Solution (3 cards), side-by-side comparison table, How-it-works (4 steps), featured markets, final CTA. Solar Burst (orange/sky) palette.
   - **Dashboard split + theme (point 6):** feed moved to `/markets` (new `markets/page.tsx`), detail stays `/markets/[address]`. Added `.theme-dash` (light theme, golden-yellow `--primary` + near-black `--primary-foreground` + black `--accent`) scoped via `layout.tsx` in markets/create/portfolio, and remapped `bg-brand-gradient`→black, `text-gradient`→gold inside it. `Navbar` is theme-aware (adds `theme-dash` on app routes). `P5Background` now renders only on `/`.
   - **Build:** `npm run build` ✓ all routes. Verified screenshots: landing hero (visible flow-field art), problem/solution/comparison sections animate on scroll, dashboard (yellow "New market" button, black logo/chips, demo odds 59/39/62%, $56k vol, 158 positions), market detail (no resolver text). PR #4 updated (same branch).
+- **Session 12 (this one).** Five user-review fixes; involved a contract redeploy.
+  - **(1) Sealed balance now visible.** Mirror cleartext locally — `lib/balance.ts` tracks every wrap/bet/close in this browser; `/portfolio` shows the cleartext immediately and exposes a small "Verify on-chain" action that runs `userDecrypt` against the canonical ciphertext.
+  - **(2) Removed the $500 top-up CTA.** `BetForm` now does just-in-time mint+wrap of exactly the shortfall — single user-facing button "Bet $X on YES/NO — encrypted". A small italic line explains the auto-wrap when needed.
+  - **(3) Confidential balance + clearer privacy text.** `BetForm` shows `Confidential balance: $X USDC` at the top. Rewrote the privacy explainer so it doesn't sound browser-only — emphasises end-to-end encryption, that the smart contract operates on the ciphertext, and only the user's wallet can decrypt.
+  - **(4) Close position (Polymarket-style exit).** Added `ConfidentialMarket.cashOut()` — pre-resolution full-stake refund using `FHE.sub(yesPoolEnc, userYesStake)` + `confidentialTransfer(total)`, anonymous `event PositionClosed()`. All 9 tests still pass. Wired into `PositionCard` (detail page) and the Active section of `/portfolio` — orange "Close position — get $X back" button, confirms before sending.
+  - **(5) Fresh, concrete deadlines.** Rewrote `seed-demo-markets.ts` with UTC-fixed calendar dates anchored to the current real-world date (BTC June 30, Fed July 30, ETH/BTC July 15, SpaceX Aug 31, Apple Sep 2026, Man City PL 2026/27).
+  - **Redeploy.** `MarketFactory` v4 → `0x1e7702db95be7CCE29075ad6E5b76fC88B8B3D44` on Sepolia, verified on Etherscan. Re-seeded 6 markets. Updated `web/src/lib/addresses.ts`, ABI (added `cashOut`, `PositionClosed`), `deployments/sepolia/{addresses,demo-markets}.json`.
+  - **Build:** all routes ✓. Screenshots verified dashboard with fresh dates (360d, 117d, 87d, 56d countdowns), BetForm with cleartext balance + no $500 prompt.

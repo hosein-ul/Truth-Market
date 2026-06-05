@@ -161,7 +161,7 @@ export default async function MarketDetailPage({
                 outcomeYes={m.outcomeYes}
               />
             )}
-            <PositionCard marketAddress={m.address} />
+            <PositionCard marketAddress={m.address} status={status} deadline={m.deadline} />
             <OraclePanel
               marketAddress={m.address}
               oracle={m.oracle}

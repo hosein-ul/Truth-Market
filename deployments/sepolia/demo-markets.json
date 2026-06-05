@@ -1,17 +1,38 @@
 [
   {
-    "question": "Will BTC close above $200k on 2026-12-31?",
-    "address": "0x15D1112fc7DB8cC01e77285777a309D841f86e03",
-    "tx": "0x994675ce98d4ad72cc64fbcba80d19417c4e448b4ae165afd7ce0b55d2a6ed98"
+    "question": "Will BTC close above $150,000 on June 30, 2026?",
+    "address": "0x2554f1703c8A9938249169fa2956A04aC7134E2d",
+    "tx": "0xf1287e3044797df4aeb81b7a1d8b587d6743205b73901f1adeaaaaea0af99db6",
+    "deadline": "2026-06-30T23:59:00.000Z"
   },
   {
-    "question": "Will SpaceX land humans on Mars before 2027?",
-    "address": "0xf7794A208d67d459082D69409bE6C07e21694382",
-    "tx": "0xafa14441a169441f616bd96e301357b656a03061dd9c044a2177f54a2f9d1070"
+    "question": "Will the Fed cut rates at the July 30, 2026 FOMC meeting?",
+    "address": "0xE68449185a60AcCed801EB5dDD44B657e84F1176",
+    "tx": "0xf10da4ed004880f477753f372cb826f458f5a36dace1808a8faafc8bb741bbaf",
+    "deadline": "2026-07-31T23:59:00.000Z"
   },
   {
-    "question": "Will ETH/BTC ratio exceed 0.10 within 30 days?",
-    "address": "0x4cFa1cdA1732399f4861F4722A46B4439cBe318d",
-    "tx": "0xc9664f8dd1d0c381f797f248ae02759f4fa6f7af68fed6a9ddc394df362b163c"
+    "question": "Will SpaceX complete a crewed Starship orbital flight by Aug 31, 2026?",
+    "address": "0xC33B34e9d193aFcfc57D85B16969afdF931d9168",
+    "tx": "0xc0121b0854f3ba3670066c3883edbb878de58f7827e5b7c5f3a4bc089b58d6c7",
+    "deadline": "2026-08-31T23:59:00.000Z"
+  },
+  {
+    "question": "Will Apple announce a foldable iPhone at the Sep 2026 event?",
+    "address": "0xd927199b37179E6e5A13f2BfB0AC4685740770D7",
+    "tx": "0x8365443205271b1062030085c154273de6290fa6cc1bb0e9d42fe3dc850bfe84",
+    "deadline": "2026-09-30T23:59:00.000Z"
+  },
+  {
+    "question": "Will ETH/BTC ratio close above 0.06 on July 15, 2026?",
+    "address": "0x6A22eaeeEe815687965A72D642E839256c285A3e",
+    "tx": "0x0c788f6f90e1aa71e5bf24c7a9b9ca215c87129b7f2ac275c9726d09cf597fdd",
+    "deadline": "2026-07-15T23:59:00.000Z"
+  },
+  {
+    "question": "Will Manchester City win the 2026/27 Premier League title?",
+    "address": "0xA0E4b668b50C42FF4478b49880de44BB81FE2B30",
+    "tx": "0x26b0b2a9febe3a82780350c1b37a43cf519af79d2b9058f4ae9f124346d0ad8f",
+    "deadline": "2027-05-31T23:59:00.000Z"
   }
 ]

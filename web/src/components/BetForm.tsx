@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { toast } from "sonner";
-import { Lock, Check, BarChart3, ShieldCheck } from "lucide-react";
+import { Lock, Check, BarChart3, Wallet, Cpu } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { ADDRESSES } from "@/lib/addresses";
 import { erc20MintAbi, erc7984Abi, marketAbi } from "@/lib/abis";
@@ -12,15 +12,15 @@ import { humanizeError } from "@/lib/errors";
 import { publicClient } from "@/lib/viem";
 import { useFhevm } from "@/lib/useFhevm";
 import { toHex } from "@/lib/fhevm";
-import { recordLocalBet } from "@/lib/positions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WrapFlow, type WrapStage } from "@/components/WrapFlow";
+import { recordLocalBet } from "@/lib/positions";
+import { addToLocalBalance, getLocalBalance } from "@/lib/balance";
 import { cn } from "@/lib/utils";
 
 type Side = "YES" | "NO";
-const PRESETS = ["10", "50", "100", "250"];
-const TOPUP_USDC = 500_000_000n; // suggested one-time top-up: 500 USDC
+const PRESETS = ["10", "25", "50", "100"];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -39,21 +39,12 @@ export function BetForm({
   const [amount, setAmount] = useState("25");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<WrapStage>("idle");
+  const [localBal, setLocalBal] = useState<bigint>(0n);
 
-  const { data: publicBal, refetch: refetchBal } = useReadContract({
-    address: ADDRESSES.underlyingUSDC,
-    abi: erc20MintAbi,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address, refetchInterval: 8000 },
-  });
-  const { data: cBalHandle } = useReadContract({
-    address: ADDRESSES.confidentialUSDC,
-    abi: erc7984Abi,
-    functionName: "confidentialBalanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address, refetchInterval: 8000 },
-  });
+  useEffect(() => {
+    setLocalBal(getLocalBalance(address));
+  }, [address]);
+
   const { data: isOp, refetch: refetchOp } = useReadContract({
     address: ADDRESSES.confidentialUSDC,
     abi: erc7984Abi,
@@ -67,91 +58,61 @@ export function BetForm({
   }, [amount]);
 
   const expired = deadline - Math.floor(Date.now() / 1000) <= 0;
-  // Heuristic: a brand new user has zero cUSDC handle and zero operator state.
-  const ZH = "0x0000000000000000000000000000000000000000000000000000000000000000";
-  const hasConfBalance = !!cBalHandle && cBalHandle !== ZH;
-  const needsTopUp = !hasConfBalance;
-  const needsOperator = !isOp;
+  const needsWrap = amountWei > localBal;
+  const shortBy = needsWrap ? amountWei - localBal : 0n;
 
-  /** Top-up: mint USDC if needed → approve cUSDC wrapper → wrap → setOperator. */
-  async function handleTopUp() {
-    if (!address) return;
-    const toastId = toast.loading("Preparing your confidential balance…");
-    try {
-      setBusy(true);
-      const cur = (publicBal as bigint | undefined) ?? 0n;
-      if (cur < TOPUP_USDC) {
-        setStage("mint");
-        toast.loading("Minting test USDC for the top-up…", { id: toastId });
-        const h = await writeContractAsync({
-          address: ADDRESSES.underlyingUSDC,
-          abi: erc20MintAbi,
-          functionName: "mint",
-          args: [address, TOPUP_USDC - cur],
-        });
-        await publicClient.waitForTransactionReceipt({ hash: h });
-      }
-      setStage("approve");
-      toast.loading("Approving wrapper to spend USDC…", { id: toastId });
-      const ha = await writeContractAsync({
-        address: ADDRESSES.underlyingUSDC,
-        abi: erc20MintAbi,
-        functionName: "approve",
-        args: [ADDRESSES.confidentialUSDC, TOPUP_USDC],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: ha });
-
-      setStage("wrap");
-      toast.loading("Wrapping into confidential cUSDC…", { id: toastId });
-      const hw = await writeContractAsync({
-        address: ADDRESSES.confidentialUSDC,
-        abi: erc7984Abi,
-        functionName: "wrap",
-        args: [address, TOPUP_USDC],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: hw });
-
-      // Set this market as cUSDC operator (one-time, 30-day expiry).
-      const until = Math.floor(Date.now() / 1000) + 30 * 86400;
-      const hop = await writeContractAsync({
-        address: ADDRESSES.confidentialUSDC,
-        abi: erc7984Abi,
-        functionName: "setOperator",
-        args: [marketAddress, until],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: hop });
-
-      setStage("seal");
-      await sleep(700);
-      setStage("done");
-      toast.success("Confidential balance ready — bets are now private.", { id: toastId });
-      refetchBal();
-      refetchOp();
-      await sleep(1600);
-      setStage("idle");
-    } catch (e) {
-      setStage("error");
-      toast.error(humanizeError(e), { id: toastId });
-      await sleep(1200);
-      setStage("idle");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /** Encrypted bet: (amount, side) → externalEuint64 + externalEbool + proofs. */
+  /**
+   * Place a confidential bet. If the user's confidential balance can't cover
+   * the bet, we silently top it up by the exact shortfall first — no large
+   * pre-fund prompt. Approve→wrap→setOperator happens just-in-time.
+   */
   async function handleBet() {
     if (!address) return;
     if (amountWei <= 0n) { toast.error("Enter an amount greater than zero."); return; }
-    const toastId = toast.loading("Encrypting your bet…");
+    const toastId = toast.loading("Preparing your confidential bet…");
     try {
       setBusy(true);
       if (!instance) throw new Error("encryption layer not ready");
 
-      // Ensure operator is set (cheap recheck — flips false→true after the first bet anyway).
+      // 1. Top up the exact shortfall (mint test USDC + wrap to cUSDC) so the
+      //    user only ever funds what this bet needs.
+      if (shortBy > 0n) {
+        setStage("mint");
+        toast.loading(`Minting $${formatUSDC(shortBy, { decimals: 0 })} test USDC…`, { id: toastId });
+        const h = await writeContractAsync({
+          address: ADDRESSES.underlyingUSDC,
+          abi: erc20MintAbi,
+          functionName: "mint",
+          args: [address, shortBy],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: h });
+
+        setStage("approve");
+        toast.loading("Approving the confidential wrapper…", { id: toastId });
+        const ha = await writeContractAsync({
+          address: ADDRESSES.underlyingUSDC,
+          abi: erc20MintAbi,
+          functionName: "approve",
+          args: [ADDRESSES.confidentialUSDC, shortBy],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: ha });
+
+        setStage("wrap");
+        toast.loading("Wrapping into confidential cUSDC…", { id: toastId });
+        const hw = await writeContractAsync({
+          address: ADDRESSES.confidentialUSDC,
+          abi: erc7984Abi,
+          functionName: "wrap",
+          args: [address, shortBy],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: hw });
+        addToLocalBalance(address, shortBy);
+      }
+
+      // 2. One-time operator authorization for this market on cUSDC.
       if (!isOp) {
         setStage("approve");
-        toast.loading("Authorizing the market on cUSDC (one-time)…", { id: toastId });
+        toast.loading("Authorizing this market on cUSDC…", { id: toastId });
         const until = Math.floor(Date.now() / 1000) + 30 * 86400;
         const hop = await writeContractAsync({
           address: ADDRESSES.confidentialUSDC,
@@ -163,17 +124,17 @@ export function BetForm({
         refetchOp();
       }
 
+      // 3. Encrypt + submit.
       setStage("wrap");
-      toast.loading("Encrypting bet (amount + side stay sealed)…", { id: toastId });
+      toast.loading("Encrypting (amount + side) with Zama FHE…", { id: toastId });
       const enc = await instance
         .createEncryptedInput(marketAddress, address)
         .add64(amountWei)
         .addBool(side === "YES")
         .encrypt();
-      // enc.handles[0] = amount handle, enc.handles[1] = side handle; both share enc.inputProof.
 
       setStage("seal");
-      toast.loading("Submitting confidential placeBet…", { id: toastId });
+      toast.loading("Submitting confidential bet…", { id: toastId });
       const hash = await writeContractAsync({
         address: marketAddress,
         abi: marketAbi,
@@ -182,14 +143,14 @@ export function BetForm({
       });
       await publicClient.waitForTransactionReceipt({ hash });
 
-      // Your own browser composed this bet, so it knows the cleartext — keep a
-      // local running total so your position is always visible to you.
+      // 4. Local mirrors: deduct from confidential balance, log the position.
+      addToLocalBalance(address, -amountWei);
       recordLocalBet(address, marketAddress, side, amountWei);
+      setLocalBal(getLocalBalance(address));
 
       setStage("done");
       toast.success(`Encrypted bet placed on ${side}.`, { id: toastId });
-      refetchBal();
-      await sleep(1800);
+      await sleep(1600);
       setStage("idle");
     } catch (e) {
       setStage("error");
@@ -212,9 +173,7 @@ export function BetForm({
     );
   }
 
-  if (stage !== "idle") {
-    return <WrapFlow stage={stage} amount={amount} />;
-  }
+  if (stage !== "idle") return <WrapFlow stage={stage} amount={amount} />;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
@@ -226,14 +185,14 @@ export function BetForm({
         </span>
       </div>
 
-      {/* Confidential balance status */}
-      <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-secondary/40 px-3 py-2.5">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <ShieldCheck className={cn("h-3.5 w-3.5", hasConfBalance && isOp ? "text-emerald-600" : "text-amber-600")} />
+      {/* Confidential balance — cleartext mirror so the user always sees it */}
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-secondary/40 px-3.5 py-2.5">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <Wallet className="h-3.5 w-3.5" />
           Confidential balance
         </span>
-        <span className="text-xs font-semibold">
-          {hasConfBalance ? (isOp ? "Ready" : "Authorize market") : "Top up needed"}
+        <span className="font-display text-sm font-extrabold tabular-nums text-foreground">
+          ${formatUSDC(localBal)} <span className="text-[10px] font-semibold text-muted-foreground">USDC</span>
         </span>
       </div>
 
@@ -290,7 +249,7 @@ export function BetForm({
               className={cn(
                 "rounded-lg border py-1.5 text-sm font-semibold transition-colors",
                 amount === p
-                  ? "border-orange-300 bg-orange-50 text-orange-700"
+                  ? "border-primary/40 bg-primary/10 text-foreground"
                   : "border-border text-muted-foreground hover:text-foreground",
               )}
             >
@@ -300,38 +259,27 @@ export function BetForm({
         </div>
       </div>
 
-      {/* Privacy explainer */}
-      <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-700">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+      {/* Privacy explainer — emphasise it's the protocol, not just the browser */}
+      <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-800">
+        <Cpu className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
         <span>
-          Your bet (amount + side) is encrypted in your browser with the Zama
-          relayer SDK, and the contract operates on the ciphertext. No observer
-          can tie this bet — or your cumulative stake — to your wallet.
+          Your bet stays encrypted from end to end. The amount and side are encrypted
+          before they leave your device, and the smart contract operates directly on
+          the ciphertext — no node, indexer, or even the contract itself ever sees the
+          cleartext. Only your wallet can decrypt your stake.
         </span>
       </div>
 
       {/* Actions */}
       <div className="mt-4 space-y-2.5">
         {!isConnected ? (
-          <div className="flex justify-center [&>div]:w-full [&_button]:w-full">
-            <ConnectButton.Custom>
-              {({ openConnectModal }) => (
-                <Button onClick={openConnectModal} size="lg" variant="gradient" className="w-full">
-                  Connect wallet to bet
-                </Button>
-              )}
-            </ConnectButton.Custom>
-          </div>
-        ) : needsTopUp ? (
-          <Button
-            onClick={handleTopUp}
-            disabled={busy || fhStatus !== "ready"}
-            size="lg"
-            variant="gradient"
-            className="w-full"
-          >
-            {busy ? "Working…" : `Top up $${TOPUP_USDC / 1_000_000n} once to bet privately`}
-          </Button>
+          <ConnectButton.Custom>
+            {({ openConnectModal }) => (
+              <Button onClick={openConnectModal} size="lg" variant="gradient" className="w-full">
+                Connect wallet to bet
+              </Button>
+            )}
+          </ConnectButton.Custom>
         ) : (
           <Button
             onClick={handleBet}
@@ -342,6 +290,11 @@ export function BetForm({
           >
             {busy ? "Working…" : `Bet $${amount || "0"} on ${side} — encrypted`}
           </Button>
+        )}
+        {needsWrap && amountWei > 0n && isConnected && (
+          <p className="text-center text-[11px] text-muted-foreground">
+            We&apos;ll mint &amp; wrap the ${formatUSDC(shortBy, { decimals: 0 })} you need automatically — no separate top-up.
+          </p>
         )}
         {fhStatus !== "ready" && (
           <p className="text-center text-xs text-muted-foreground">
