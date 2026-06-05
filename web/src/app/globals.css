@@ -38,6 +38,22 @@
     --radius: 0.75rem;
   }
 
+  /* Dashboard ("zard-dark") theme — light surface, golden-yellow + black controls.
+     Scoped to the app/markets routes so it reads as a distinct product surface
+     from the orange/sky landing page. */
+  .theme-dash {
+    --primary: 43 96% 48%;          /* golden yellow */
+    --primary-foreground: 0 0% 9%;  /* near-black text on yellow */
+    --secondary: 48 33% 95%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 48 20% 95%;
+    --accent: 0 0% 10%;             /* black accent */
+    --accent-foreground: 0 0% 100%;
+    --ring: 43 96% 48%;
+    --border: 45 25% 90%;
+    --input: 45 25% 90%;
+  }
+
   * {
     @apply border-border;
   }
@@ -88,6 +104,26 @@
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  /* In the dashboard theme, shared components that hardcode the brand gradient
+     adopt a black control with the golden-yellow primary used for accents. */
+  .theme-dash .bg-brand-gradient {
+    background: linear-gradient(135deg, #18181b 0%, #000000 100%);
+  }
+  .theme-dash .shadow-orange-glow {
+    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3);
+  }
+  .theme-dash .text-gradient {
+    background: linear-gradient(120deg, #ca8a04 0%, #eab308 55%, #18181b 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .theme-dash .bg-grid {
+    background-image:
+      linear-gradient(hsl(43 96% 48% / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(43 96% 48% / 0.05) 1px, transparent 1px);
   }
 }
 

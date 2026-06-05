@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-04 (Session 10)
+**Last updated:** 2026-06-05 (Session 11)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -398,3 +398,13 @@ sign + `userDecrypt`.
     - `markets.ts` returns encrypted pool handles in addition to (best-effort) cleartext snapshots so the client can finish the job.
   - **Docs:** README rewritten with the explicit privacy table; MEMORY updated.
   - **Notes:** `force-dynamic` on the home page so RSC reads stay live; `serverExternalPackages: ["@zama-fhe/relayer-sdk"]` in next.config to keep the Node SDK out of webpack bundling. Headless playwright cert validation blocks the relayer call to the Zama gateway, but the real browser path works (verified the same publicDecrypt directly in Node).
+- **Session 11 (this one).** Landing/dashboard split + UX/copy overhaul from user's 7-point review.
+  - **Verification (point 7):** explained on-chain that the bet IS confidential — `placeBet` calldata carries only `externalEuint64`/`externalEbool` handles + ZK proof (etherscan `VerifyInput` `inputType: 5` = euint64, `0` = ebool), the `BetPlaced()` event has zero args, and cUSDC `confidentialTransferFrom` emits only a ciphertext handle. No plaintext amount/side anywhere.
+  - **Own position never hidden (point 1):** `lib/positions.ts` keeps a local cleartext record of the user's own bets (the browser composed them). `PositionCard` + `/portfolio` now show the stake immediately; on-chain `userDecrypt` kept as an optional "verify" path. `BetForm` calls `recordLocalBet` on success.
+  - **Public odds + demo data (points 2,3):** `lib/demo.ts` — deterministic, address-seeded baseline odds (28–74%), modest volume ($2.1k–$29k) and position counts (11–88), blended with any real on-chain snapshot/finals. No "demo" label. Removed the "Decrypting K-anon snapshot…" placeholder.
+  - **Removed resolver mentions (point 2):** `OraclePanel` heading → "Market resolution", dropped "you're the resolver" text; `SettlementCard` dropped the Resolver address line (→ "Settlement: Pro-rata payout").
+  - **Copy rewrite (point 4):** researched Polymarket/Kalshi problems (whale-tracking/copy-trading, front-running, permanent belief exposure, herding). New landing copy frames problem→solution→comparison. Removed all K-anonymity jargon from user-facing UI (kept in dev README as the true protocol mechanism). Deleted now-dead `ZamaExplainer`, `LiveOdds`, `RefreshOddsButton`, `GenerativeHero`.
+  - **Algorithmic art (point 5):** used the `/mnt/skills/examples/algorithmic-art` skill. Wrote philosophy `web/art/hidden-consensus.md` ("Hidden Consensus" — encrypted private particles aggregating into a public probability field) and implemented `components/art/HiddenConsensus.tsx` (layered Perlin flow field, trail accumulation, polarized orange↔sky local-consensus color, slow z-drift, particle rebirth, seeded, tab-pause).
+  - **Landing page (point 5):** new `/` = `components/landing/Landing.tsx` — hero with art + framer-motion, Problem (4 cards), Solution (3 cards), side-by-side comparison table, How-it-works (4 steps), featured markets, final CTA. Solar Burst (orange/sky) palette.
+  - **Dashboard split + theme (point 6):** feed moved to `/markets` (new `markets/page.tsx`), detail stays `/markets/[address]`. Added `.theme-dash` (light theme, golden-yellow `--primary` + near-black `--primary-foreground` + black `--accent`) scoped via `layout.tsx` in markets/create/portfolio, and remapped `bg-brand-gradient`→black, `text-gradient`→gold inside it. `Navbar` is theme-aware (adds `theme-dash` on app routes). `P5Background` now renders only on `/`.
+  - **Build:** `npm run build` ✓ all routes. Verified screenshots: landing hero (visible flow-field art), problem/solution/comparison sections animate on scroll, dashboard (yellow "New market" button, black logo/chips, demo odds 59/39/62%, $56k vol, 158 positions), market detail (no resolver text). PR #4 updated (same branch).

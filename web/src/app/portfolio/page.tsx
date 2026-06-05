@@ -12,6 +12,7 @@ import { marketFactoryAbi, marketAbi, erc7984Abi, MARKET_STATUS } from "@/lib/ab
 import { useFhevm } from "@/lib/useFhevm";
 import { formatUSDC } from "@/lib/format";
 import { humanizeError } from "@/lib/errors";
+import { getLocalPosition } from "@/lib/positions";
 import { SealedValue } from "@/components/Sealed";
 import { CategoryChip } from "@/components/CategoryChip";
 import { MarketStatusBadge } from "@/components/MarketStatusBadge";
@@ -99,16 +100,23 @@ export default function PortfolioPage() {
           ] as const,
       ),
     });
-    const result: Position[] = mine.map((m, i) => ({
-      market: m.market,
-      question: m.question,
-      category: m.category,
-      status: Number(details[i * 5]),
-      outcomeYes: Boolean(details[i * 5 + 1]),
-      claimed: Boolean(details[i * 5 + 2]),
-      yesHandle: details[i * 5 + 3] as `0x${string}`,
-      noHandle: details[i * 5 + 4] as `0x${string}`,
-    }));
+    const result: Position[] = mine.map((m, i) => {
+      // Your own position is never hidden from you: surface the cleartext stake
+      // from this browser's local record immediately. On-chain it stays encrypted.
+      const lp = getLocalPosition(address, m.market);
+      return {
+        market: m.market,
+        question: m.question,
+        category: m.category,
+        status: Number(details[i * 5]),
+        outcomeYes: Boolean(details[i * 5 + 1]),
+        claimed: Boolean(details[i * 5 + 2]),
+        yesHandle: details[i * 5 + 3] as `0x${string}`,
+        noHandle: details[i * 5 + 4] as `0x${string}`,
+        yesClear: lp ? BigInt(lp.yes) : undefined,
+        noClear: lp ? BigInt(lp.no) : undefined,
+      };
+    });
     setPositions(result);
   }, [address]);
 
@@ -314,7 +322,7 @@ export default function PortfolioPage() {
             Place your first sealed bet to start a portfolio.
           </p>
           <Button asChild variant="gradient" className="mt-4">
-            <Link href="/">Browse markets</Link>
+            <Link href="/markets">Browse markets</Link>
           </Button>
         </div>
       )}
@@ -437,7 +445,7 @@ function PositionRow({
             {!revealed && (
               <Button onClick={onReveal} variant="ghost" size="sm">
                 <Eye className="h-4 w-4" />
-                Reveal
+                Verify on-chain
               </Button>
             )}
             {action}

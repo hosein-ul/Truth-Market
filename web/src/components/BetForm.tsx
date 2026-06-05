@@ -12,6 +12,7 @@ import { humanizeError } from "@/lib/errors";
 import { publicClient } from "@/lib/viem";
 import { useFhevm } from "@/lib/useFhevm";
 import { toHex } from "@/lib/fhevm";
+import { recordLocalBet } from "@/lib/positions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WrapFlow, type WrapStage } from "@/components/WrapFlow";
@@ -180,6 +181,10 @@ export function BetForm({
         args: [toHex(enc.handles[0]), toHex(enc.inputProof), toHex(enc.handles[1]), toHex(enc.inputProof)],
       });
       await publicClient.waitForTransactionReceipt({ hash });
+
+      // Your own browser composed this bet, so it knows the cleartext — keep a
+      // local running total so your position is always visible to you.
+      recordLocalBet(address, marketAddress, side, amountWei);
 
       setStage("done");
       toast.success(`Encrypted bet placed on ${side}.`, { id: toastId });

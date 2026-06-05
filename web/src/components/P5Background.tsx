@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 export function P5Background() {
   const containerRef = useRef<HTMLDivElement>(null);
   const p5Ref = useRef<any>(null);
+  const pathname = usePathname();
+  // The landing page carries its own "Hidden Consensus" art; this ambient field
+  // is only for the marketing surface, not the dashboard.
+  const enabled = pathname === "/";
 
   useEffect(() => {
+    if (!enabled) return;
     if (!containerRef.current || p5Ref.current) return;
 
     let cleanup: (() => void) | null = null;
@@ -129,7 +135,8 @@ export function P5Background() {
     return () => {
       if (cleanup) cleanup();
     };
-  }, []);
+  }, [enabled]);
 
+  if (!enabled) return null;
   return <div ref={containerRef} className="pointer-events-none fixed inset-0 -z-10" aria-hidden />;
 }
