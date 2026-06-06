@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/Navbar";
@@ -15,6 +15,12 @@ const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-display",
   weight: ["500", "600", "700", "800"],
+  display: "swap",
+});
+const serif = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  weight: ["500", "600", "700", "800", "900"],
   display: "swap",
 });
 const mono = JetBrains_Mono({
@@ -33,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${mono.variable}`}
+      className={`${sans.variable} ${display.variable} ${serif.variable} ${mono.variable}`}
     >
       <body className="min-h-screen bg-background font-sans">
         <Providers>

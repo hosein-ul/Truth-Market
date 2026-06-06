@@ -19,6 +19,9 @@ export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  // Design-preview routes are full-bleed; hide the global chrome.
+  if (pathname?.startsWith("/preview")) return null;
+
   const isActive = (href: string) => pathname?.startsWith(href);
   // The app surface (markets/portfolio/create) carries the golden "zard-dark"
   // theme; the landing page keeps the orange/sky palette.

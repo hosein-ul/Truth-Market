@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Lock, ShieldCheck, ExternalLink } from "lucide-react";
+import { ADDRESSES } from "@/lib/addresses";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/preview")) return null;
   return (
     <footer className="mt-16 border-t border-border bg-secondary/30">
       <div className="container flex flex-col gap-6 py-10 md:flex-row md:items-center md:justify-between">
@@ -29,7 +35,7 @@ export function SiteFooter() {
           <div className="flex items-center gap-4 text-muted-foreground">
             <span>Sepolia testnet</span>
             <a
-              href="https://sepolia.etherscan.io/address/0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30"
+              href={`https://sepolia.etherscan.io/address/${ADDRESSES.marketFactory}`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 font-medium hover:text-foreground"
