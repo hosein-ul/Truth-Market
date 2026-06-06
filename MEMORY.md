@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-05 (Session 12)
+**Last updated:** 2026-06-06 (Session 13)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -416,3 +416,9 @@ sign + `userDecrypt`.
   - **(5) Fresh, concrete deadlines.** Rewrote `seed-demo-markets.ts` with UTC-fixed calendar dates anchored to the current real-world date (BTC June 30, Fed July 30, ETH/BTC July 15, SpaceX Aug 31, Apple Sep 2026, Man City PL 2026/27).
   - **Redeploy.** `MarketFactory` v4 → `0x1e7702db95be7CCE29075ad6E5b76fC88B8B3D44` on Sepolia, verified on Etherscan. Re-seeded 6 markets. Updated `web/src/lib/addresses.ts`, ABI (added `cashOut`, `PositionClosed`), `deployments/sepolia/{addresses,demo-markets}.json`.
   - **Build:** all routes ✓. Screenshots verified dashboard with fresh dates (360d, 117d, 87d, 56d countdowns), BetForm with cleartext balance + no $500 prompt.
+- **Session 13 (2026-06-06).** Added 30 real Polymarket-inspired markets — metadata, cover images, seed script.
+  - **`web/src/lib/market-metadata.ts`** (new): `MarketMeta` interface, `CATEGORY_GRADIENTS` map, `MARKET_META` address→metadata record (3 existing markets by address), and `getMarketMeta(address, question)` — tries address lookup first, falls back to keyword matching for newly deployed markets without an entry.
+  - **`web/src/components/MarketCard.tsx`** updated: added `h-36` cover image at card top using `getMarketMeta`, `loading="lazy"`, `crossOrigin="anonymous"`, `onError` fallback to category-coloured gradient. Inner content moved into a `flex-1 flex-col p-4` sub-div; outer div uses `overflow-hidden` to clip image at rounded corners.
+  - **`scripts/seed-30-markets.ts`** (new): 30 markets across Crypto (8), Politics (7), Sports (6), Science (4), Finance (3), Other (2). Same pattern as `seed-demo-markets.ts` — reads factory address from `deployments/sepolia/addresses.json`, iterates seeds, waits for `MarketCreated` event, saves to `deployments/sepolia/seed-30-markets.json`. Run with `npx hardhat run scripts/seed-30-markets.ts --network sepolia`.
+  - **Category filter** already works via `MarketsExplorer` filtering on `m.category` from on-chain data. No changes needed to filter logic.
+  - **Image notes:** Unsplash URLs use `crossOrigin="anonymous"` to satisfy Zama's COEP `require-corp` headers. If a photo returns 404, `onError` automatically falls back to the category gradient. After running the seed script, copy new addresses from `seed-30-markets.json` into `MARKET_META` for exact per-address image assignments.
