@@ -1,14 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Only run in remote (cloud) environments
-if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
-  exit 0
-fi
-
 # Set git identity so commits appear under the user's own GitHub account
 git config user.name "hosein-ul"
-git config user.email "rodigersjoe@gmail.com"
+git config user.email "samroise22@gmail.com"
 
 # Install root dependencies
 npm install --legacy-peer-deps
