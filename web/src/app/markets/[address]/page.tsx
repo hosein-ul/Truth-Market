@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, Lock, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket } from "lucide-react";
 import { getMarketDetail } from "@/lib/markets";
 import { getMarketActivity } from "@/lib/activity";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
@@ -17,6 +17,8 @@ import { SettlementCard } from "@/components/SettlementCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { displayStats } from "@/lib/demo";
 import { formatUSDC } from "@/lib/format";
+import { STATIC_MARKETS, STATIC_MARKET_ADDRESSES } from "@/lib/static-markets";
+import { getMarketMeta, CATEGORY_GRADIENTS } from "@/lib/market-metadata";
 
 export const revalidate = 15;
 
@@ -27,6 +29,68 @@ export default async function MarketDetailPage({
 }) {
   const { address } = await params;
   const addr = address as `0x${string}`;
+
+  // ── Static preview market (not yet deployed on-chain) ───────────────────────
+  if (STATIC_MARKET_ADDRESSES.has(addr.toLowerCase())) {
+    const sm = STATIC_MARKETS.find(
+      (m) => m.address.toLowerCase() === addr.toLowerCase(),
+    )!;
+    const meta = getMarketMeta(sm.address, sm.question);
+    const gradient = CATEGORY_GRADIENTS[sm.category] ?? CATEGORY_GRADIENTS.Other;
+
+    return (
+      <div className="container py-6">
+        <Link
+          href="/markets"
+          className="mb-5 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          All markets
+        </Link>
+
+        <div className="mx-auto max-w-2xl">
+          {/* Cover image */}
+          <div className={`relative mb-6 h-48 overflow-hidden rounded-2xl bg-gradient-to-br ${gradient}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={meta.imageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+              crossOrigin="anonymous"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-4 left-4">
+              <CategoryChip category={sm.category} />
+            </div>
+          </div>
+
+          <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
+            {sm.question}
+          </h1>
+
+          <div className="mt-6 rounded-2xl border border-dashed border-border bg-secondary/30 p-8 text-center">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Rocket className="h-5 w-5" />
+              <span className="font-semibold">Market not yet deployed on-chain</span>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This is a preview. Run the seed script to deploy it to Sepolia and open betting.
+            </p>
+            <div className="mt-4 rounded-xl bg-secondary px-4 py-2 font-mono text-xs text-foreground/80">
+              npx hardhat run scripts/seed-30-markets.ts --network sepolia
+            </div>
+            <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Closes in</span>
+              <Countdown deadlineSec={sm.deadline} className="font-semibold text-foreground" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Live on-chain market ─────────────────────────────────────────────────────
   const [m, activity] = await Promise.all([
     getMarketDetail(addr),
     getMarketActivity(addr, 14),

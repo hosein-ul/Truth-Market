@@ -21,14 +21,14 @@ export const CATEGORY_GRADIENTS: Record<string, string> = {
 };
 
 const u = (id: string) =>
-  `https://images.unsplash.com/photo-${id}?w=800&q=80`;
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=800&q=80`;
 
 // Static map: lowercase address → metadata.
 // Includes the 3 markets deployed before the seed scripts.
 export const MARKET_META: Record<string, MarketMeta> = {
   '0xf7794a208d67d459082d69409be6c07e21694382': {
     category: 'Science',
-    imageUrl: u('1446776811523-87a49e82e79c'),
+    imageUrl: u('1541873676-a322ad2f3b4f'),
     description: 'Resolves YES if SpaceX successfully lands humans on Mars before January 1, 2027.',
     tags: ['spacex', 'mars', 'space'],
   },
@@ -137,17 +137,17 @@ export function getMarketMeta(address: string, question: string): MarketMeta {
 
   // ── Sports ────────────────────────────────────────────────────────────────
   if (q.includes('real madrid') || q.includes('champions league') || q.includes('uefa')) {
-    return { category: 'Sports', imageUrl: u('1579952363873-27d3bfad9c88') };
+    return { category: 'Sports', imageUrl: u('1574629810335-1c9e7be3b0a4') };
   }
   if (
     q.includes('fifa') ||
     q.includes('world cup') ||
     (q.includes('brazil') && q.includes('football'))
   ) {
-    return { category: 'Sports', imageUrl: u('1508098682722-e99c643e7f0b') };
+    return { category: 'Sports', imageUrl: u('1574629810335-1c9e7be3b0a4') };
   }
   if (q.includes('djokovic') || q.includes('grand slam') || q.includes('tennis')) {
-    return { category: 'Sports', imageUrl: u('1595435934249-5df7ed86e1c0') };
+    return { category: 'Sports', imageUrl: u('1554068609-1c9d55d8e4fd') };
   }
   if (q.includes('knicks') || q.includes('nba') || q.includes('basketball')) {
     return { category: 'Sports', imageUrl: u('1546519638-68e109498ffc') };
@@ -173,7 +173,7 @@ export function getMarketMeta(address: string, question: string): MarketMeta {
     q.includes('soccer') ||
     q.includes('football')
   ) {
-    return { category: 'Sports', imageUrl: u('1579952363873-27d3bfad9c88') };
+    return { category: 'Sports', imageUrl: u('1574629810335-1c9e7be3b0a4') };
   }
 
   // ── Science / Tech ────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ export function getMarketMeta(address: string, question: string): MarketMeta {
     return { category: 'Science', imageUrl: u('1485827404703-89b55fcc595e') };
   }
   if (q.includes('space station')) {
-    return { category: 'Science', imageUrl: u('1446776709462-d6b525c57bd3') };
+    return { category: 'Science', imageUrl: u('1454789548928-e6d0ab2e2e3d') };
   }
   if (q.includes('apple') && (q.includes('chip') || q.includes('silicon') || q.includes('h100'))) {
     return { category: 'Science', imageUrl: u('1517336714731-489689fd1ca8') };
@@ -196,7 +196,7 @@ export function getMarketMeta(address: string, question: string): MarketMeta {
     q.includes('rocket') ||
     q.includes('nasa')
   ) {
-    return { category: 'Science', imageUrl: u('1446776811523-87a49e82e79c') };
+    return { category: 'Science', imageUrl: u('1541873676-a322ad2f3b4f') };
   }
   if (
     q.includes(' ai ') ||
@@ -225,10 +225,10 @@ export function getMarketMeta(address: string, question: string): MarketMeta {
     q.includes('rate cut') ||
     q.includes('interest rate')
   ) {
-    return { category: 'Finance', imageUrl: u('1526304640581-d338cdaa14e2') };
+    return { category: 'Finance', imageUrl: u('1611974789855-9c2a0a7236a3') };
   }
   if (q.includes('inflation') || q.includes('cpi') || q.includes('consumer price')) {
-    return { category: 'Finance', imageUrl: u('1580048915913-4a8a94b60fc1') };
+    return { category: 'Finance', imageUrl: u('1611974789855-9c2a0a7236a3') };
   }
   if (
     (q.includes('gold') && q.includes('/oz')) ||
@@ -245,7 +245,7 @@ export function getMarketMeta(address: string, question: string): MarketMeta {
     q.includes('recession') ||
     q.includes('balance sheet')
   ) {
-    return { category: 'Finance', imageUrl: u('1526304640581-d338cdaa14e2') };
+    return { category: 'Finance', imageUrl: u('1611974789855-9c2a0a7236a3') };
   }
 
   // ── Other ─────────────────────────────────────────────────────────────────

@@ -6,12 +6,24 @@ import { MarketsExplorer } from "@/components/MarketsExplorer";
 import { Button } from "@/components/ui/button";
 import { displayStats } from "@/lib/demo";
 import { formatUSDC } from "@/lib/format";
+import { STATIC_MARKETS } from "@/lib/static-markets";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
 export default async function MarketsDashboardPage() {
-  const markets = await getMarketSummaries();
+  const onChain = await getMarketSummaries();
+
+  // Merge on-chain markets with static preview markets.
+  // On-chain always wins — if a static market has been deployed its address
+  // won't match (real addresses are random), so both would appear until the
+  // static entry is removed from static-markets.ts after seeding.
+  const onChainAddrs = new Set(onChain.map((m) => m.address.toLowerCase()));
+  const staticToShow = STATIC_MARKETS.filter(
+    (m) => !onChainAddrs.has(m.address.toLowerCase()),
+  );
+  const markets = [...onChain, ...staticToShow];
+
   const open = markets.filter((m) => m.status === MARKET_STATUS.OPEN).length;
 
   // Aggregate display figures blend on-chain truth with seeded baselines.
