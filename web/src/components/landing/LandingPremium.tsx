@@ -267,7 +267,6 @@ export function LandingPremium({ featured }: { featured: MarketSummary[] }) {
                   border: "1px solid rgba(0,0,0,0.08)",
                   background: "rgba(237,232,223,0.5)",
                   borderTop: "none",
-                  divideColor: "rgba(0,0,0,0.08)",
                 }}
               >
                 {[

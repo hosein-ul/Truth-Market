@@ -39,11 +39,11 @@ const PHOTOS = {
   coins_stack:          `${BASE}1649274496773-c40eacd66e2d${Q}`,
 
   // POLITICS / GOVERNMENT
-  us_capitol:           `${BASE}1501139083538-0139ad88d29a${Q}`,
-  government_flag:      `${BASE}1529107386315-ec3a1e2ad02b${Q}`,
-  eiffel_paris:         `${BASE}1499856844487-8b2d0a8ec2e3${Q}`,
-  uk_parliament:        `${BASE}1486299267070-83823f5448d5${Q}`,
-  nuclear_plant:        `${BASE}1509391366360-2e47e03e369e${Q}`,
+  us_capitol:           `${BASE}1557804506-669a67965ba0${Q}`,       // podium/speech (confirmed working)
+  government_flag:      `${BASE}1620712943543-bcc4688e7485${Q}`,   // person at screen, govt-adjacent
+  eiffel_paris:         `${BASE}1557804506-669a67965ba0${Q}`,       // podium speech (political resign/news)
+  uk_parliament:        `${BASE}1620712943543-bcc4688e7485${Q}`,   // tech/global (confirmed working)
+  nuclear_plant:        `${BASE}1485827404703-89b55fcc595e${Q}`,   // AI robot (energy/science, confirmed working)
   tech_person:          `${BASE}1620712943543-bcc4688e7485${Q}`,
   podium_speech:        `${BASE}1557804506-669a67965ba0${Q}`,
   diplomacy_flags:      `${BASE}1532375810709-75b1da3537e3${Q}`,
@@ -56,7 +56,7 @@ const PHOTOS = {
   basketball_court:     `${BASE}1546519638-68e109498ffc${Q}`,
   tennis_court:         `${BASE}1595435934249-5df7ed86e1c0${Q}`,
   formula1_race:        `${BASE}1558618666-fcd25c85cd64${Q}`,
-  mma_boxing:           `${BASE}1549719032-f0c0f97c72b5${Q}`,
+  mma_boxing:           `${BASE}1546519638-68e109498ffc${Q}`,      // basketball court/arena (confirmed working)
   football_stadium:     `${BASE}1540747913346-19e16fa184b7${Q}`,
 
   // SCIENCE & TECH
@@ -69,8 +69,8 @@ const PHOTOS = {
 
   // FINANCE
   gold_bars:            `${BASE}1610375461246-83df859d849d${Q}`,
-  federal_reserve:      `${BASE}1526304640581-d338cdaa14e2${Q}`,
-  inflation_market:     `${BASE}1580048915913-4a8a94b60fc1${Q}`,
+  federal_reserve:      `${BASE}1611974789855-9c2a0a7236a3${Q}`,   // stock/trading chart (confirmed working)
+  inflation_market:     `${BASE}1649274496773-c40eacd66e2d${Q}`,   // coins stack (confirmed working)
   stock_chart:          `${BASE}1611974789855-9c2a0a7236a3${Q}`,
 
   // OTHER
@@ -83,32 +83,45 @@ function matchByQuestion(q: string): MarketMeta {
   const t = q.toLowerCase();
 
   // ── CRYPTO ──
-  if (t.includes('bitcoin') && (t.includes('150') || t.includes('200k') || t.includes('hit') || t.includes('above')))
-    return { category: 'Crypto', imageUrl: PHOTOS.btc_gold_coin };
-  if (t.includes('bitcoin') && t.includes('dominance'))
-    return { category: 'Crypto', imageUrl: PHOTOS.trading_chart };
-  if (t.includes('bitcoin') && t.includes('etf'))
+  // Solana FIRST — "Solana flip Ethereum" contains "ethereum", must check sol before eth
+  if (t.includes('solana') || (t.includes(' sol') && !t.includes('dissolv')))
+    return { category: 'Crypto', imageUrl: PHOTOS.circuit_blue };
+
+  // ETH/BTC cross-pair BEFORE any generic btc/eth catch-all
+  if (t.includes('eth/btc') || t.includes('btc/eth') || (t.includes('eth') && t.includes('btc') && t.includes('ratio')))
+    return { category: 'Crypto', imageUrl: PHOTOS.eth_star_gold };
+  // ETH ETF before generic eth
+  if (t.includes('eth etf') || (t.includes('etf') && (t.includes('eth') || t.includes('ether'))))
+    return { category: 'Crypto', imageUrl: PHOTOS.eth_chip };
+
+  // Bitcoin-specific matches (include both "bitcoin" and bare "btc")
+  const hasBtc = t.includes('bitcoin') || t.includes(' btc') || t.startsWith('btc ') || t.includes('btc ');
+  // "BTC close above" (on-chain price-level markets) → monitor/trading image
+  if (hasBtc && t.includes('close') && t.includes('above'))
     return { category: 'Crypto', imageUrl: PHOTOS.btc_monitor };
-  if (t.includes('bitcoin') && t.includes('central bank'))
+  if (hasBtc && (t.includes('150') || t.includes('200k') || t.includes('above') || t.includes('hit')))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_gold_coin };
+  if (hasBtc && t.includes('dominance'))
+    return { category: 'Crypto', imageUrl: PHOTOS.trading_chart };
+  if (hasBtc && t.includes('etf'))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_monitor };
+  if (hasBtc && t.includes('central bank'))
     return { category: 'Crypto', imageUrl: PHOTOS.btc_coins_pile };
-  if (t.includes('bitcoin') || t.includes('btc'))
+  if (hasBtc)
     return { category: 'Crypto', imageUrl: PHOTOS.btc_nuggets };
 
+  // Ethereum-specific matches
   if (t.includes('ethereum') && t.includes('10,000'))
     return { category: 'Crypto', imageUrl: PHOTOS.eth_diamond };
-  if ((t.includes('eth/btc') || t.includes('eth')) && t.includes('ratio'))
-    return { category: 'Crypto', imageUrl: PHOTOS.eth_star_gold };
-  if (t.includes('ethereum') || t.includes(' eth'))
-    return { category: 'Crypto', imageUrl: PHOTOS.eth_diamond };
+  if (t.includes('ethereum') || t.includes(' eth ') || t.endsWith(' eth') || t.includes(' eth?') || t.includes('/eth'))
+    return { category: 'Crypto', imageUrl: PHOTOS.eth_coin_pink };
 
-  if (t.includes('solana') || t.includes(' sol'))
-    return { category: 'Crypto', imageUrl: PHOTOS.circuit_blue };
-  if (t.includes('coinbase') || t.includes('s&p 500'))
+  if (t.includes('coinbase') || (t.includes('s&p') && t.includes('500')))
     return { category: 'Crypto', imageUrl: PHOTOS.stock_chart };
   if (t.includes('crypto market cap') || t.includes('trillion'))
-    return { category: 'Crypto', imageUrl: PHOTOS.btc_pile };
+    return { category: 'Crypto', imageUrl: PHOTOS.coins_stack };
   if (t.includes('crypto') || t.includes('blockchain') || t.includes('defi'))
-    return { category: 'Crypto', imageUrl: PHOTOS.trading_chart };
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_pile };
 
   // ── POLITICS ──
   if (t.includes('trump') || t.includes('impeach'))
@@ -118,7 +131,7 @@ function matchByQuestion(q: string): MarketMeta {
   if (t.includes('iran') && t.includes('nuclear'))
     return { category: 'Politics', imageUrl: PHOTOS.nuclear_plant };
   if (t.includes('government shutdown') || t.includes('us federal'))
-    return { category: 'Politics', imageUrl: PHOTOS.us_capitol };
+    return { category: 'Politics', imageUrl: PHOTOS.government_flag };
   if (t.includes('macron') || t.includes('france'))
     return { category: 'Politics', imageUrl: PHOTOS.eiffel_paris };
   if (t.includes('uk') || t.includes('eu') || t.includes('brexit'))
@@ -159,8 +172,10 @@ function matchByQuestion(q: string): MarketMeta {
     return { category: 'Science', imageUrl: PHOTOS.ai_laptop };
   if (t.includes('agi') || t.includes('artificial general') || t.includes('superintelligence'))
     return { category: 'Science', imageUrl: PHOTOS.ai_robot };
-  if (t.includes('apple') && t.includes('chip'))
+  if (t.includes('apple') && (t.includes('chip') || t.includes('silicon') || t.includes('h100')))
     return { category: 'Science', imageUrl: PHOTOS.cpu_chip };
+  if (t.includes('apple') && (t.includes('iphone') || t.includes('foldable') || t.includes('mac') || t.includes('vision')))
+    return { category: 'Science', imageUrl: PHOTOS.btc_motherboard };
   if (t.includes('nvidia') || t.includes('h100') || t.includes('gpu') || t.includes('chip') || t.includes('silicon'))
     return { category: 'Science', imageUrl: PHOTOS.cpu_chip };
   if (t.includes('ai') || t.includes('machine learning') || t.includes('llm'))
