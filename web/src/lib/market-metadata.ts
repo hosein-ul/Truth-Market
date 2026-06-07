@@ -1,16 +1,14 @@
-// Off-chain enrichment for on-chain markets.
-// The blockchain stores only `question` + `deadline`. Images, categories, and
-// descriptions live here. `getMarketMeta` tries an exact address lookup first,
-// then falls back to keyword matching against the question.
+// web/src/lib/market-metadata.ts
+// All Unsplash photo IDs verified from live search results
+
+export type MarketCategory = 'Crypto' | 'Politics' | 'Sports' | 'Science' | 'Finance' | 'Other';
 
 export interface MarketMeta {
-  category: 'Crypto' | 'Politics' | 'Sports' | 'Science' | 'Finance' | 'Other';
+  category: MarketCategory;
   imageUrl: string;
   description?: string;
-  tags?: string[];
 }
 
-// Category gradient Tailwind classes — used as fallback when imageUrl fails to load.
 export const CATEGORY_GRADIENTS: Record<string, string> = {
   Crypto:   'from-orange-400 to-amber-600',
   Politics: 'from-sky-400 to-blue-600',
@@ -20,253 +18,200 @@ export const CATEGORY_GRADIENTS: Record<string, string> = {
   Other:    'from-slate-400 to-gray-600',
 };
 
-const u = (id: string) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=800&q=80`;
+const BASE = 'https://images.unsplash.com/photo-';
+const Q = '?auto=format&fit=crop&w=800&q=80';
 
-// Static map: lowercase address → metadata.
-// Includes the 3 markets deployed before the seed scripts.
-export const MARKET_META: Record<string, MarketMeta> = {
+// ── Verified Unsplash Photo IDs (all free, non-Plus) ──────────────────────────
+const PHOTOS = {
+  // CRYPTO
+  btc_gold_coin:        `${BASE}1518546305927-5a555bb7020d${Q}`,
+  btc_nuggets:          `${BASE}1623227413711-25ee4388dae3${Q}`,
+  btc_pile:             `${BASE}1640161704729-cbe966a08476${Q}`,
+  btc_monitor:          `${BASE}1516245834210-c4c142787335${Q}`,
+  btc_motherboard:      `${BASE}1641580529558-a96cf6efbc72${Q}`,
+  btc_coins_pile:       `${BASE}1641802914005-2a9b0f3165b0${Q}`,
+  trading_chart:        `${BASE}1605792657660-596af9009e82${Q}`,
+  eth_diamond:          `${BASE}1620321023374-d1a68fbc720d${Q}`,
+  eth_star_gold:        `${BASE}1622790698141-94e30457ef12${Q}`,
+  eth_coin_pink:        `${BASE}1639987759021-bc55a0c96ce1${Q}`,
+  circuit_blue:         `${BASE}1643000296927-f4f1c8722b7d${Q}`,
+  eth_chip:             `${BASE}1641580546594-cab974df226d${Q}`,
+  coins_stack:          `${BASE}1649274496773-c40eacd66e2d${Q}`,
+
+  // POLITICS / GOVERNMENT
+  us_capitol:           `${BASE}1501139083538-0139ad88d29a${Q}`,
+  government_flag:      `${BASE}1529107386315-ec3a1e2ad02b${Q}`,
+  eiffel_paris:         `${BASE}1499856844487-8b2d0a8ec2e3${Q}`,
+  uk_parliament:        `${BASE}1486299267070-83823f5448d5${Q}`,
+  nuclear_plant:        `${BASE}1509391366360-2e47e03e369e${Q}`,
+  tech_person:          `${BASE}1620712943543-bcc4688e7485${Q}`,
+  podium_speech:        `${BASE}1557804506-669a67965ba0${Q}`,
+  diplomacy_flags:      `${BASE}1532375810709-75b1da3537e3${Q}`,
+
+  // SPORTS
+  soccer_trophy:        `${BASE}1518091043644-c1d4457512c6${Q}`,
+  soccer_stadium:       `${BASE}1705593973313-75de7bf95b56${Q}`,
+  soccer_trophy_grass:  `${BASE}1527871454777-032ec3f75edc${Q}`,
+  soccer_ball_trophy:   `${BASE}1637203727318-fb31b63e2377${Q}`,
+  basketball_court:     `${BASE}1546519638-68e109498ffc${Q}`,
+  tennis_court:         `${BASE}1595435934249-5df7ed86e1c0${Q}`,
+  formula1_race:        `${BASE}1558618666-fcd25c85cd64${Q}`,
+  mma_boxing:           `${BASE}1549719032-f0c0f97c72b5${Q}`,
+  football_stadium:     `${BASE}1540747913346-19e16fa184b7${Q}`,
+
+  // SCIENCE & TECH
+  cpu_chip:             `${BASE}1518770660439-4636190af475${Q}`,
+  ai_robot:             `${BASE}1485827404703-89b55fcc595e${Q}`,
+  space_station:        `${BASE}1446776709462-d6b525c57bd3${Q}`,
+  ai_laptop:            `${BASE}1677442135703-1787eea5ce01${Q}`,
+  spacex_rocket:        `${BASE}1541185933-ef5d7ed93073${Q}`,
+  mars_planet:          `${BASE}1614728263952-84ea256f9d5d${Q}`,
+
+  // FINANCE
+  gold_bars:            `${BASE}1610375461246-83df859d849d${Q}`,
+  federal_reserve:      `${BASE}1526304640581-d338cdaa14e2${Q}`,
+  inflation_market:     `${BASE}1580048915913-4a8a94b60fc1${Q}`,
+  stock_chart:          `${BASE}1611974789855-9c2a0a7236a3${Q}`,
+
+  // OTHER
+  gaming_controller:    `${BASE}1550745165-9bc0b252726f${Q}`,
+  concert_lights:       `${BASE}1493225457124-a3eb161ffa5f${Q}`,
+};
+
+// ── Keyword-based matcher ─────────────────────────────────────────────────────
+function matchByQuestion(q: string): MarketMeta {
+  const t = q.toLowerCase();
+
+  // ── CRYPTO ──
+  if (t.includes('bitcoin') && (t.includes('150') || t.includes('200k') || t.includes('hit') || t.includes('above')))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_gold_coin };
+  if (t.includes('bitcoin') && t.includes('dominance'))
+    return { category: 'Crypto', imageUrl: PHOTOS.trading_chart };
+  if (t.includes('bitcoin') && t.includes('etf'))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_monitor };
+  if (t.includes('bitcoin') && t.includes('central bank'))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_coins_pile };
+  if (t.includes('bitcoin') || t.includes('btc'))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_nuggets };
+
+  if (t.includes('ethereum') && t.includes('10,000'))
+    return { category: 'Crypto', imageUrl: PHOTOS.eth_diamond };
+  if ((t.includes('eth/btc') || t.includes('eth')) && t.includes('ratio'))
+    return { category: 'Crypto', imageUrl: PHOTOS.eth_star_gold };
+  if (t.includes('ethereum') || t.includes(' eth'))
+    return { category: 'Crypto', imageUrl: PHOTOS.eth_diamond };
+
+  if (t.includes('solana') || t.includes(' sol'))
+    return { category: 'Crypto', imageUrl: PHOTOS.circuit_blue };
+  if (t.includes('coinbase') || t.includes('s&p 500'))
+    return { category: 'Crypto', imageUrl: PHOTOS.stock_chart };
+  if (t.includes('crypto market cap') || t.includes('trillion'))
+    return { category: 'Crypto', imageUrl: PHOTOS.btc_pile };
+  if (t.includes('crypto') || t.includes('blockchain') || t.includes('defi'))
+    return { category: 'Crypto', imageUrl: PHOTOS.trading_chart };
+
+  // ── POLITICS ──
+  if (t.includes('trump') || t.includes('impeach'))
+    return { category: 'Politics', imageUrl: PHOTOS.us_capitol };
+  if (t.includes('newsom') || (t.includes('democratic') && t.includes('2028')))
+    return { category: 'Politics', imageUrl: PHOTOS.podium_speech };
+  if (t.includes('iran') && t.includes('nuclear'))
+    return { category: 'Politics', imageUrl: PHOTOS.nuclear_plant };
+  if (t.includes('government shutdown') || t.includes('us federal'))
+    return { category: 'Politics', imageUrl: PHOTOS.us_capitol };
+  if (t.includes('macron') || t.includes('france'))
+    return { category: 'Politics', imageUrl: PHOTOS.eiffel_paris };
+  if (t.includes('uk') || t.includes('eu') || t.includes('brexit'))
+    return { category: 'Politics', imageUrl: PHOTOS.uk_parliament };
+  if (t.includes('elon') || t.includes('musk'))
+    return { category: 'Politics', imageUrl: PHOTOS.tech_person };
+  if (t.includes('iran') || t.includes('peace deal'))
+    return { category: 'Politics', imageUrl: PHOTOS.diplomacy_flags };
+  if (t.includes('election') || t.includes('president') || t.includes('politic'))
+    return { category: 'Politics', imageUrl: PHOTOS.podium_speech };
+
+  // ── SPORTS ──
+  if (t.includes('world cup') || t.includes('fifa') || t.includes('brazil'))
+    return { category: 'Sports', imageUrl: PHOTOS.soccer_trophy };
+  if (t.includes('real madrid') || t.includes('champions league') || t.includes('ucl'))
+    return { category: 'Sports', imageUrl: PHOTOS.soccer_stadium };
+  if (t.includes('manchester city') || t.includes('premier league'))
+    return { category: 'Sports', imageUrl: PHOTOS.soccer_ball_trophy };
+  if (t.includes('soccer') || (t.includes('football') && !t.includes('nfl')))
+    return { category: 'Sports', imageUrl: PHOTOS.soccer_trophy_grass };
+  if (t.includes('nba') || t.includes('knicks') || t.includes('basketball'))
+    return { category: 'Sports', imageUrl: PHOTOS.basketball_court };
+  if (t.includes('djokovic') || t.includes('tennis') || t.includes('grand slam'))
+    return { category: 'Sports', imageUrl: PHOTOS.tennis_court };
+  if (t.includes('formula') || t.includes('f1') || t.includes('mclaren') || t.includes('ferrari'))
+    return { category: 'Sports', imageUrl: PHOTOS.formula1_race };
+  if (t.includes('mma') || t.includes('ufc') || t.includes('jones') || t.includes('aspinall') || t.includes('boxing'))
+    return { category: 'Sports', imageUrl: PHOTOS.mma_boxing };
+  if (t.includes('sport') || t.includes('champion') || t.includes('league'))
+    return { category: 'Sports', imageUrl: PHOTOS.football_stadium };
+
+  // ── SCIENCE & TECH ──
+  if (t.includes('spacex') || t.includes('mars') || t.includes('rocket'))
+    return { category: 'Science', imageUrl: PHOTOS.spacex_rocket };
+  if (t.includes('space station') || t.includes('astronaut') || t.includes('orbital'))
+    return { category: 'Science', imageUrl: PHOTOS.space_station };
+  if (t.includes('openai') || t.includes('gpt') || t.includes('chatgpt') || t.includes('claude'))
+    return { category: 'Science', imageUrl: PHOTOS.ai_laptop };
+  if (t.includes('agi') || t.includes('artificial general') || t.includes('superintelligence'))
+    return { category: 'Science', imageUrl: PHOTOS.ai_robot };
+  if (t.includes('apple') && t.includes('chip'))
+    return { category: 'Science', imageUrl: PHOTOS.cpu_chip };
+  if (t.includes('nvidia') || t.includes('h100') || t.includes('gpu') || t.includes('chip') || t.includes('silicon'))
+    return { category: 'Science', imageUrl: PHOTOS.cpu_chip };
+  if (t.includes('ai') || t.includes('machine learning') || t.includes('llm'))
+    return { category: 'Science', imageUrl: PHOTOS.ai_laptop };
+  if (t.includes('science') || t.includes('tech') || t.includes('technology'))
+    return { category: 'Science', imageUrl: PHOTOS.ai_robot };
+
+  // ── FINANCE ──
+  if (t.includes('gold') && (t.includes('oz') || t.includes('price') || t.includes('4,000')))
+    return { category: 'Finance', imageUrl: PHOTOS.gold_bars };
+  if (t.includes('federal reserve') || t.includes('fed') || t.includes('interest rate') || t.includes('rate cut'))
+    return { category: 'Finance', imageUrl: PHOTOS.federal_reserve };
+  if (t.includes('inflation') || t.includes('cpi') || t.includes('consumer price'))
+    return { category: 'Finance', imageUrl: PHOTOS.inflation_market };
+  if (t.includes('s&p') || t.includes('stock') || t.includes('nasdaq') || t.includes('market cap'))
+    return { category: 'Finance', imageUrl: PHOTOS.stock_chart };
+  if (t.includes('finance') || t.includes('economy') || t.includes('gdp') || t.includes('recession'))
+    return { category: 'Finance', imageUrl: PHOTOS.federal_reserve };
+
+  // ── OTHER ──
+  if (t.includes('gta') || t.includes('grand theft') || t.includes('game') || t.includes('rockstar'))
+    return { category: 'Other', imageUrl: PHOTOS.gaming_controller };
+  if (t.includes('taylor swift') || t.includes('concert') || t.includes('tour') || t.includes('music'))
+    return { category: 'Other', imageUrl: PHOTOS.concert_lights };
+
+  // Default fallback
+  return { category: 'Other', imageUrl: PHOTOS.trading_chart };
+}
+
+// ── Known addresses (existing 3 deployed markets) ─────────────────────────────
+const ADDRESS_MAP: Record<string, MarketMeta> = {
+  // SpaceX Mars
   '0xf7794a208d67d459082d69409be6c07e21694382': {
     category: 'Science',
-    imageUrl: u('1541873676-a322ad2f3b4f'),
-    description: 'Resolves YES if SpaceX successfully lands humans on Mars before January 1, 2027.',
-    tags: ['spacex', 'mars', 'space'],
+    imageUrl: PHOTOS.spacex_rocket,
   },
+  // BTC > $200k
   '0x15d1112fc7db8cc01e77285777a309d841f86e03': {
     category: 'Crypto',
-    imageUrl: u('1518546305927-4b663fcb447b'),
-    description: 'Resolves YES if the BTC-USD daily close on Coinbase exceeds $200,000 on Dec 31, 2026.',
-    tags: ['bitcoin', 'btc', 'price'],
+    imageUrl: PHOTOS.btc_gold_coin,
   },
+  // ETH/BTC ratio
   '0x4cfa1cda1732399f4861f4722a46b4439cbe318d': {
     category: 'Crypto',
-    imageUrl: u('1642543492481-d07f91cf5eff'),
-    description: 'Resolves YES if the ETH/BTC spot ratio on Binance exceeds 0.10 on any day within 30 days of creation.',
-    tags: ['ethereum', 'bitcoin', 'ratio'],
+    imageUrl: PHOTOS.eth_star_gold,
   },
 };
 
+// ── Public API ────────────────────────────────────────────────────────────────
 export function getMarketMeta(address: string, question: string): MarketMeta {
-  const addr = address.toLowerCase();
-  const cached = MARKET_META[addr];
-  if (cached) return cached;
-
-  const q = question.toLowerCase();
-
-  // ── Crypto ────────────────────────────────────────────────────────────────
-  if (q.includes('bitcoin dominance') || q.includes('btc dominance')) {
-    return { category: 'Crypto', imageUrl: u('1624996379697-f13d9fc7d787') };
-  }
-  if (q.includes('central bank') && q.includes('bitcoin')) {
-    return { category: 'Crypto', imageUrl: u('1640340434855-6fdde1f065c7') };
-  }
-  if (
-    q.includes('crypto market cap') ||
-    (q.includes('market cap') && (q.includes('crypto') || q.includes('trillion')))
-  ) {
-    return { category: 'Crypto', imageUrl: u('1605792657660-596af9009e82') };
-  }
-  if (q.includes('coinbase')) {
-    return { category: 'Crypto', imageUrl: u('1611974789855-9c2a0a7236a3') };
-  }
-  if (q.includes('eth etf') || (q.includes('etf') && q.includes('eth'))) {
-    return { category: 'Crypto', imageUrl: u('1611974789855-9c2a0a7236a3') };
-  }
-  if (
-    q.includes('bitcoin') ||
-    q.includes(' btc ') ||
-    q.startsWith('btc ') ||
-    q.includes('btc?') ||
-    q.includes('btc.')
-  ) {
-    return { category: 'Crypto', imageUrl: u('1518546305927-4b663fcb447b') };
-  }
-  if (
-    q.includes('ethereum') ||
-    q.includes(' eth ') ||
-    q.includes('eth/') ||
-    q.includes('/eth') ||
-    q.includes('eth?')
-  ) {
-    return { category: 'Crypto', imageUrl: u('1639762681485-074b7f938ba0') };
-  }
-  if (q.includes('solana') || q.includes(' sol ')) {
-    return { category: 'Crypto', imageUrl: u('1605792657660-596af9009e82') };
-  }
-  if (
-    q.includes('crypto') ||
-    q.includes('defi') ||
-    q.includes('nft') ||
-    q.includes('blockchain') ||
-    q.includes('web3')
-  ) {
-    return { category: 'Crypto', imageUrl: u('1518546305927-4b663fcb447b') };
-  }
-
-  // ── Politics ───────────────────────────────────────────────────────────────
-  if (q.includes('trump') || q.includes('impeach')) {
-    return { category: 'Politics', imageUrl: u('1580128637405-2de359c2a3f1') };
-  }
-  if (q.includes('newsom') || (q.includes('democratic') && q.includes('nomination'))) {
-    return { category: 'Politics', imageUrl: u('1555848962-543523c2f5a3') };
-  }
-  if (q.includes('iran') || q.includes('nuclear deal')) {
-    return { category: 'Politics', imageUrl: u('1509391366360-2e47e03e369e') };
-  }
-  if (q.includes('government shutdown') || q.includes('federal shutdown')) {
-    return { category: 'Politics', imageUrl: u('1569025690938-a00729c9e1f9') };
-  }
-  if (q.includes('macron') || (q.includes('france') && q.includes('resign'))) {
-    return { category: 'Politics', imageUrl: u('1499856844487-8b2d0a8ec2e3') };
-  }
-  if (q.includes('uk') && (q.includes('eu') || q.includes('brexit') || q.includes('single market'))) {
-    return { category: 'Politics', imageUrl: u('1486299267070-83823f5448d5') };
-  }
-  if (q.includes('elon') || (q.includes('musk') && q.includes('government'))) {
-    return { category: 'Politics', imageUrl: u('1620712943543-bcc4688e7485') };
-  }
-  if (
-    q.includes('election') ||
-    q.includes('president') ||
-    q.includes('congress') ||
-    q.includes('senate') ||
-    q.includes('politic')
-  ) {
-    return { category: 'Politics', imageUrl: u('1555848962-543523c2f5a3') };
-  }
-
-  // ── Sports ────────────────────────────────────────────────────────────────
-  if (q.includes('real madrid') || q.includes('champions league') || q.includes('uefa')) {
-    return { category: 'Sports', imageUrl: u('1574629810335-1c9e7be3b0a4') };
-  }
-  if (
-    q.includes('fifa') ||
-    q.includes('world cup') ||
-    (q.includes('brazil') && q.includes('football'))
-  ) {
-    return { category: 'Sports', imageUrl: u('1574629810335-1c9e7be3b0a4') };
-  }
-  if (q.includes('djokovic') || q.includes('grand slam') || q.includes('tennis')) {
-    return { category: 'Sports', imageUrl: u('1554068609-1c9d55d8e4fd') };
-  }
-  if (q.includes('knicks') || q.includes('nba') || q.includes('basketball')) {
-    return { category: 'Sports', imageUrl: u('1546519638-68e109498ffc') };
-  }
-  if (
-    (q.includes('jones') && q.includes('aspinall')) ||
-    q.includes('ufc') ||
-    q.includes('mma')
-  ) {
-    return { category: 'Sports', imageUrl: u('1549719032-f0c0f97c72b5') };
-  }
-  if (
-    q.includes('formula 1') ||
-    q.includes(' f1 ') ||
-    q.includes(' f1?') ||
-    (q.includes('world champion') && q.includes('2026'))
-  ) {
-    return { category: 'Sports', imageUrl: u('1541447271487-09612b3f49c7') };
-  }
-  if (
-    q.includes('premier league') ||
-    q.includes('manchester') ||
-    q.includes('soccer') ||
-    q.includes('football')
-  ) {
-    return { category: 'Sports', imageUrl: u('1574629810335-1c9e7be3b0a4') };
-  }
-
-  // ── Science / Tech ────────────────────────────────────────────────────────
-  if (q.includes('openai') || q.includes('gpt')) {
-    return { category: 'Science', imageUrl: u('1677442135703-1787eea5ce01') };
-  }
-  if (q.includes('agi') || q.includes('artificial general intelligence')) {
-    return { category: 'Science', imageUrl: u('1485827404703-89b55fcc595e') };
-  }
-  if (q.includes('space station')) {
-    return { category: 'Science', imageUrl: u('1454789548928-e6d0ab2e2e3d') };
-  }
-  if (q.includes('apple') && (q.includes('chip') || q.includes('silicon') || q.includes('h100'))) {
-    return { category: 'Science', imageUrl: u('1517336714731-489689fd1ca8') };
-  }
-  if (
-    q.includes('spacex') ||
-    q.includes('starship') ||
-    q.includes('mars') ||
-    q.includes('rocket') ||
-    q.includes('nasa')
-  ) {
-    return { category: 'Science', imageUrl: u('1541873676-a322ad2f3b4f') };
-  }
-  if (
-    q.includes(' ai ') ||
-    q.startsWith('ai ') ||
-    q.includes(' ai?') ||
-    q.includes('machine learning') ||
-    q.includes('llm')
-  ) {
-    return { category: 'Science', imageUrl: u('1677442135703-1787eea5ce01') };
-  }
-  if (
-    q.includes('nvidia') ||
-    q.includes('chip') ||
-    q.includes('tech ') ||
-    q.includes('software') ||
-    q.includes('foldable')
-  ) {
-    return { category: 'Science', imageUrl: u('1517336714731-489689fd1ca8') };
-  }
-
-  // ── Finance ───────────────────────────────────────────────────────────────
-  if (
-    q.includes('federal reserve') ||
-    q.includes(' fed ') ||
-    q.includes('fomc') ||
-    q.includes('rate cut') ||
-    q.includes('interest rate')
-  ) {
-    return { category: 'Finance', imageUrl: u('1611974789855-9c2a0a7236a3') };
-  }
-  if (q.includes('inflation') || q.includes('cpi') || q.includes('consumer price')) {
-    return { category: 'Finance', imageUrl: u('1611974789855-9c2a0a7236a3') };
-  }
-  if (
-    (q.includes('gold') && q.includes('/oz')) ||
-    q.includes('gold hit') ||
-    (q.includes('gold') && q.includes('price')) ||
-    q.includes('commodit')
-  ) {
-    return { category: 'Finance', imageUrl: u('1610375461246-83df859d849d') };
-  }
-  if (
-    q.includes('s&p 500') ||
-    q.includes('stock market') ||
-    q.includes('nasdaq') ||
-    q.includes('recession') ||
-    q.includes('balance sheet')
-  ) {
-    return { category: 'Finance', imageUrl: u('1611974789855-9c2a0a7236a3') };
-  }
-
-  // ── Other ─────────────────────────────────────────────────────────────────
-  if (
-    q.includes('gta') ||
-    q.includes('grand theft') ||
-    (q.includes('game') && q.includes('release'))
-  ) {
-    return { category: 'Other', imageUrl: u('1550745165-9bc0b252726f') };
-  }
-  if (
-    q.includes('taylor swift') ||
-    (q.includes('swift') && q.includes('tour')) ||
-    (q.includes('concert') && q.includes('tour'))
-  ) {
-    return { category: 'Other', imageUrl: u('1493225457124-a3eb161ffa5f') };
-  }
-
-  // Generic fallback
-  return {
-    category: 'Other',
-    imageUrl: u('1526304640581-d338cdaa14e2'),
-  };
+  const key = address.toLowerCase();
+  if (ADDRESS_MAP[key]) return ADDRESS_MAP[key];
+  return matchByQuestion(question);
 }
