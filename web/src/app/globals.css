@@ -152,41 +152,6 @@
 ::-webkit-scrollbar-thumb:hover { background: hsl(210 20% 78%); }
 
 /* ═══════════════════════════════════════════════════════════
-   Dark mode — opt-in via `html.dark`. Default is light.
-   Overrides ALL theme variants below.
-   ═══════════════════════════════════════════════════════════ */
-html.dark {
-  --background: 222 47% 6%;          /* near-black */
-  --foreground: 210 40% 96%;         /* near-white */
-  --card: 222 47% 9%;
-  --card-foreground: 210 40% 96%;
-  --popover: 222 47% 9%;
-  --popover-foreground: 210 40% 96%;
-  --primary: 25 95% 58%;             /* orange stays vivid */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 222 30% 14%;
-  --secondary-foreground: 210 28% 80%;
-  --muted: 222 30% 14%;
-  --muted-foreground: 215 18% 60%;
-  --accent: 199 89% 58%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 350 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 222 30% 17%;
-  --input: 222 30% 17%;
-  --ring: 25 95% 58%;
-}
-html.dark .bg-brand-gradient {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-}
-html.dark .text-gradient {
-  background: linear-gradient(120deg, #fb923c 0%, #f97316 60%, #ef4444 100%);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-}
-html.dark ::-webkit-scrollbar-thumb { background: hsl(222 20% 24%); border-color: hsl(222 47% 6%); }
-html.dark ::selection { background: hsl(25 95% 58% / 0.25); }
-
-/* ═══════════════════════════════════════════════════════════
    PREMIUM THEMES — outside @layer so they override :root
    ═══════════════════════════════════════════════════════════ */
 
@@ -339,6 +304,62 @@ html.theme-noir [data-rk] button[data-testid="rk-connect-button"] {
 }
 html.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover {
   background: #222 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — applied via `html.dark`, default is light.
+   Placed AFTER theme blocks so it wins the cascade for ANY theme
+   variant. Boosted specificity via the compound `html.dark` so it
+   still beats theme classes with the same specificity weight.
+   ═══════════════════════════════════════════════════════════ */
+html.dark,
+html.dark.theme-noir,
+html.dark.theme-premium,
+html.dark.theme-quantum,
+html.dark.theme-lattice {
+  --background: 222 47% 6%;          /* near-black */
+  --foreground: 210 40% 96%;         /* near-white */
+  --card: 222 47% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 47% 9%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 25 95% 58%;             /* vivid orange */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 30% 14%;
+  --secondary-foreground: 210 28% 80%;
+  --muted: 222 30% 14%;
+  --muted-foreground: 215 18% 60%;
+  --accent: 199 89% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 30% 17%;
+  --input: 222 30% 17%;
+  --ring: 25 95% 58%;
+}
+html.dark .bg-brand-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+}
+html.dark .text-gradient {
+  /* Use background-image (not shorthand) to avoid resetting background-clip. */
+  background-image: linear-gradient(120deg, #fb923c 0%, #f97316 60%, #ef4444 100%) !important;
+  background-color: transparent !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+html.dark ::-webkit-scrollbar-thumb { background: hsl(222 20% 24%); border-color: hsl(222 47% 6%); }
+html.dark ::selection { background: hsl(25 95% 58% / 0.25); }
+
+/* In dark mode, the noir-specific monochrome connect button override would
+   produce flat-black on flat-black. Override it back to orange. */
+html.dark.theme-noir [data-rk] button[data-testid="rk-connect-button"] {
+  background: #f97316 !important;
+  color: #ffffff !important;
+}
+html.dark.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover {
+  background: #ea580c !important;
 }
 
 /* ═══════════════════════════════════════════════════════════
