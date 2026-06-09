@@ -34,5 +34,23 @@
     "address": "0xA0E4b668b50C42FF4478b49880de44BB81FE2B30",
     "tx": "0x26b0b2a9febe3a82780350c1b37a43cf519af79d2b9058f4ae9f124346d0ad8f",
     "deadline": "2027-05-31T23:59:00.000Z"
+  },
+  {
+    "question": "Will ETH close above $5,000 on August 31, 2026?",
+    "address": "0xccA98c54781e8EA776f1F587206Cc59067e16fd1",
+    "tx": "0xa9912984cff366b0d8493f9db2691e541bb06889dc8c3035875248fa3f855b42",
+    "deadline": "2026-08-31T23:59:00.000Z"
+  },
+  {
+    "question": "Will a spot SOL ETF be approved in the US by December 31, 2026?",
+    "address": "0x579a1471b7C6bac6Ae607d36896dC6f880EdA250",
+    "tx": "0x39f60c9f15d9b4351940cb436fdf130a7a49cd1ec0fde81b4c439c0e6d11fc05",
+    "deadline": "2026-12-31T23:59:00.000Z"
+  },
+  {
+    "question": "Will Bitcoin dominance fall below 40% by Sep 30, 2026?",
+    "address": "0x8D4456CD2A37F827cC79b0C6d7Da603fC0a2498a",
+    "tx": "0xcf8fbaafdaf5d720fdfd2bfb891a8e22865a4143e2988313c23498e4ccc17910",
+    "deadline": "2026-09-30T23:59:00.000Z"
   }
 ]
