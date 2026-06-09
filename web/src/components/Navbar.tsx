@@ -7,6 +7,7 @@ import { Lock, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Faucet } from "@/components/Faucet";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -76,6 +77,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <div className="hidden sm:block">
             <Faucet />
           </div>

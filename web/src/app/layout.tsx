@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ThemedBackground } from "@/components/ThemedBackground";
+import { ColorModeScript } from "@/components/ThemeToggle";
 import { ACTIVE_THEME } from "@/theme.config";
 
 const sans = Inter({
@@ -48,6 +49,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${sans.variable} ${display.variable} ${serif.variable} ${mono.variable} ${ceremony.variable} theme-${ACTIVE_THEME}`}
     >
+      <head>
+        <ColorModeScript />
+      </head>
       <body className="min-h-screen bg-background font-sans">
         <Providers>
           <ThemedBackground />

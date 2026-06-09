@@ -152,6 +152,41 @@
 ::-webkit-scrollbar-thumb:hover { background: hsl(210 20% 78%); }
 
 /* ═══════════════════════════════════════════════════════════
+   Dark mode — opt-in via `html.dark`. Default is light.
+   Overrides ALL theme variants below.
+   ═══════════════════════════════════════════════════════════ */
+html.dark {
+  --background: 222 47% 6%;          /* near-black */
+  --foreground: 210 40% 96%;         /* near-white */
+  --card: 222 47% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 47% 9%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 25 95% 58%;             /* orange stays vivid */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 30% 14%;
+  --secondary-foreground: 210 28% 80%;
+  --muted: 222 30% 14%;
+  --muted-foreground: 215 18% 60%;
+  --accent: 199 89% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 30% 17%;
+  --input: 222 30% 17%;
+  --ring: 25 95% 58%;
+}
+html.dark .bg-brand-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+html.dark .text-gradient {
+  background: linear-gradient(120deg, #fb923c 0%, #f97316 60%, #ef4444 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+html.dark ::-webkit-scrollbar-thumb { background: hsl(222 20% 24%); border-color: hsl(222 47% 6%); }
+html.dark ::selection { background: hsl(25 95% 58% / 0.25); }
+
+/* ═══════════════════════════════════════════════════════════
    PREMIUM THEMES — outside @layer so they override :root
    ═══════════════════════════════════════════════════════════ */
 
@@ -294,38 +329,70 @@ html.theme-lattice .text-gradient {
   --rk-radii-modal: 16px;
 }
 
-/* Noir theme: override RainbowKit connect button to monochrome black */
-html.theme-noir [data-rk] button[data-testid="rk-connect-button"],
-html.theme-noir [data-rk] button.iekbcc0 {
+/* Noir theme: connect TRIGGER button monochrome. Use the testid only — NEVER
+   the global iekbcc0 class, which RK applies to every button (including modal
+   wallet rows). That mistake is why the wallet list turned all-black. */
+html.theme-noir [data-rk] button[data-testid="rk-connect-button"] {
   background: #0a0a0a !important;
   color: #f9f9fb !important;
   box-shadow: none !important;
 }
-html.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover,
-html.theme-noir [data-rk] button.iekbcc0:hover {
+html.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover {
   background: #222 !important;
 }
 
-/* Connect-a-Wallet modal: force white rows + dark text regardless of theme.
-   RainbowKit renders the modal outside the app's theme root, so dark OS
-   preferences or our own dark themes can make wallet rows unreadable (black
-   text on black). These rules override that unconditionally. */
-[data-rk] [class*="iekbcc"][role="menuitem"],
+/* ═══════════════════════════════════════════════════════════
+   Connect-a-Wallet modal — ALWAYS readable, in every theme.
+   RK provides modal theming via CSS vars; we override the ones
+   that control wallet rows + modal surface + text so the modal
+   surface is always crisp light (or its dark-mode twin), never
+   inheriting the cipher-noir black-on-black cascade.
+   ═══════════════════════════════════════════════════════════ */
+[data-rk] {
+  --rk-colors-modalBackground: #ffffff;
+  --rk-colors-modalText: #0f172a;
+  --rk-colors-modalTextDim: #6b7280;
+  --rk-colors-modalTextSecondary: #6b7280;
+  --rk-colors-modalBorder: rgba(0,0,0,0.08);
+  --rk-colors-menuItemBackground: #f3f4f6;
+  --rk-colors-actionButtonBorder: rgba(0,0,0,0.08);
+  --rk-colors-actionButtonBorderMobile: rgba(0,0,0,0.08);
+  --rk-colors-actionButtonSecondaryBackground: #f3f4f6;
+  --rk-colors-closeButton: #0f172a;
+  --rk-colors-closeButtonBackground: #f3f4f6;
+  --rk-colors-generalBorder: rgba(0,0,0,0.08);
+  --rk-colors-generalBorderDim: rgba(0,0,0,0.04);
+  --rk-colors-profileForeground: #f3f4f6;
+  --rk-colors-profileAction: #ffffff;
+  --rk-colors-profileActionHover: #f3f4f6;
+}
+
+/* dark mode wallet modal */
+html.dark [data-rk] {
+  --rk-colors-modalBackground: #0f172a;
+  --rk-colors-modalText: #f3f4f6;
+  --rk-colors-modalTextDim: #94a3b8;
+  --rk-colors-modalTextSecondary: #94a3b8;
+  --rk-colors-modalBorder: rgba(255,255,255,0.08);
+  --rk-colors-menuItemBackground: #1e293b;
+  --rk-colors-actionButtonBorder: rgba(255,255,255,0.08);
+  --rk-colors-actionButtonSecondaryBackground: #1e293b;
+  --rk-colors-closeButton: #f3f4f6;
+  --rk-colors-closeButtonBackground: #1e293b;
+  --rk-colors-generalBorder: rgba(255,255,255,0.08);
+  --rk-colors-profileForeground: #1e293b;
+  --rk-colors-profileAction: #0f172a;
+  --rk-colors-profileActionHover: #1e293b;
+}
+
+/* Belt-and-braces: also force the wallet row background/text in case RK
+   ever changes their CSS-var contract or applies an inline override. */
+[data-rk] [data-testid^="rk-wallet-option"],
 [data-rk] button[data-testid^="rk-wallet-option"] {
-  background: #ffffff !important;
-  border: 1px solid rgba(0,0,0,0.08) !important;
+  background: var(--rk-colors-menuItemBackground) !important;
+  color: var(--rk-colors-modalText) !important;
 }
-[data-rk] [class*="iekbcc"][role="menuitem"]:hover,
-[data-rk] button[data-testid^="rk-wallet-option"]:hover {
-  background: #f3f4f6 !important;
-}
-[data-rk] [class*="iekbcc"][role="menuitem"] *,
+[data-rk] [data-testid^="rk-wallet-option"] *,
 [data-rk] button[data-testid^="rk-wallet-option"] * {
-  color: #111827 !important;
-}
-/* Modal backdrop + container always light */
-[data-rk] [class*="iekbcc"][role="dialog"],
-[data-rk] [class*="iekbcc"][data-testid="rk-modal-content"] {
-  background: #ffffff !important;
-  color: #111827 !important;
+  color: var(--rk-colors-modalText) !important;
 }

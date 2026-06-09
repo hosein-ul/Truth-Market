@@ -63,6 +63,19 @@ export function BetForm({
   });
   const underlyingBal = (rawUsdc as bigint | undefined) ?? 0n;
 
+  // Existing allowance toward the cUSDC wrapper. We approve ONCE for an enormous
+  // amount, then every later prediction skips approve → saves one signature per
+  // bet. allowanceLeft → only need to re-approve when it drops below the wrap
+  // amount we're about to ask for.
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: ADDRESSES.underlyingUSDC,
+    abi: erc20MintAbi,
+    functionName: "allowance",
+    args: address ? [address, ADDRESSES.confidentialUSDC] : undefined,
+    query: { enabled: !!address, refetchInterval: 12000 },
+  });
+  const allowanceLeft = (allowance as bigint | undefined) ?? 0n;
+
   const amountWei = useMemo(() => {
     try { return parseUSDC(amount); } catch { return 0n; }
   }, [amount]);
@@ -86,16 +99,22 @@ export function BetForm({
 
       // 1. Wrap the exact shortfall from existing test USDC.
       //    Never mint here — the faucet is the single source of test funds.
+      //    Approve happens at most ONCE per wallet (MAX_UINT256). Future
+      //    predictions skip straight to wrap.
       if (shortBy > 0n) {
-        setStage("approve");
-        toast.loading("Approving the confidential wrapper…", { id: toastId });
-        const ha = await writeContractAsync({
-          address: ADDRESSES.underlyingUSDC,
-          abi: erc20MintAbi,
-          functionName: "approve",
-          args: [ADDRESSES.confidentialUSDC, shortBy],
-        });
-        await publicClient.waitForTransactionReceipt({ hash: ha });
+        if (allowanceLeft < shortBy) {
+          setStage("approve");
+          toast.loading("Approving the confidential wrapper (one-time)…", { id: toastId });
+          const MAX = (1n << 256n) - 1n;
+          const ha = await writeContractAsync({
+            address: ADDRESSES.underlyingUSDC,
+            abi: erc20MintAbi,
+            functionName: "approve",
+            args: [ADDRESSES.confidentialUSDC, MAX],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: ha });
+          refetchAllowance();
+        }
 
         setStage("wrap");
         toast.loading("Wrapping into confidential cUSDC…", { id: toastId });
@@ -111,15 +130,18 @@ export function BetForm({
       }
 
       // 2. One-time operator authorization for this market on cUSDC.
+      //    Authorize until uint48 max (~year 8921) so the user never has to
+      //    re-authorize this market again.
       if (!isOp) {
         setStage("approve");
-        toast.loading("Authorizing this market on cUSDC…", { id: toastId });
-        const until = Math.floor(Date.now() / 1000) + 30 * 86400;
+        toast.loading("Authorizing this market on cUSDC (one-time)…", { id: toastId });
+        // uint48 max is 2^48 − 1 ≈ 281T, well within Number.MAX_SAFE_INTEGER.
+        const UINT48_MAX = 281474976710655;
         const hop = await writeContractAsync({
           address: ADDRESSES.confidentialUSDC,
           abi: erc7984Abi,
           functionName: "setOperator",
-          args: [marketAddress, until],
+          args: [marketAddress, UINT48_MAX],
         });
         await publicClient.waitForTransactionReceipt({ hash: hop });
         refetchOp();
@@ -288,7 +310,7 @@ export function BetForm({
             variant={side === "YES" ? "yes" : "no"}
             className="w-full text-base"
           >
-            {busy ? "Working…" : `Back ${side} with $${amount || "0"} — encrypted`}
+            {busy ? "Working…" : `Predict ${side} · $${amount || "0"} sealed`}
           </Button>
         )}
         {needsWrap && amountWei > 0n && isConnected && (
