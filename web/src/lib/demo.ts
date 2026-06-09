@@ -39,8 +39,8 @@ export function demoStats(address: string): DisplayStats {
   const h3 = fnv1a(a + ":bets");
 
   const yesPct = 28 + (h1 % 47); // 28..74
-  const volumeUsd = 2_100 + (h2 % 26_900); // $2,100 .. $29,000
-  const betCount = 11 + (h3 % 78); // 11..88
+  const volumeUsd = 20_000 + (h2 % 30_001); // $20,000 .. $50,000
+  const betCount = 24 + (h3 % 96); // 24..119
 
   return {
     yesPct,

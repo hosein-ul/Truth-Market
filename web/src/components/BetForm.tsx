@@ -53,6 +53,16 @@ export function BetForm({
     query: { enabled: !!address, refetchInterval: 12000 },
   });
 
+  // Plaintext test-USDC balance — topped up via the faucet, never minted here.
+  const { data: rawUsdc, refetch: refetchRaw } = useReadContract({
+    address: ADDRESSES.underlyingUSDC,
+    abi: erc20MintAbi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 12000 },
+  });
+  const underlyingBal = (rawUsdc as bigint | undefined) ?? 0n;
+
   const amountWei = useMemo(() => {
     try { return parseUSDC(amount); } catch { return 0n; }
   }, [amount]);
@@ -60,33 +70,23 @@ export function BetForm({
   const expired = deadline - Math.floor(Date.now() / 1000) <= 0;
   const needsWrap = amountWei > localBal;
   const shortBy = needsWrap ? amountWei - localBal : 0n;
+  const canCover = shortBy <= underlyingBal;
 
-  /**
-   * Place a confidential bet. If the user's confidential balance can't cover
-   * the bet, we silently top it up by the exact shortfall first — no large
-   * pre-fund prompt. Approve→wrap→setOperator happens just-in-time.
-   */
   async function handleBet() {
     if (!address) return;
     if (amountWei <= 0n) { toast.error("Enter an amount greater than zero."); return; }
-    const toastId = toast.loading("Preparing your confidential bet…");
+    if (shortBy > 0n && !canCover) {
+      toast.error('Not enough test USDC — use the faucet at the top to add funds first.');
+      return;
+    }
+    const toastId = toast.loading("Preparing your confidential position…");
     try {
       setBusy(true);
       if (!instance) throw new Error("encryption layer not ready");
 
-      // 1. Top up the exact shortfall (mint test USDC + wrap to cUSDC) so the
-      //    user only ever funds what this bet needs.
+      // 1. Wrap the exact shortfall from existing test USDC.
+      //    Never mint here — the faucet is the single source of test funds.
       if (shortBy > 0n) {
-        setStage("mint");
-        toast.loading(`Minting $${formatUSDC(shortBy, { decimals: 0 })} test USDC…`, { id: toastId });
-        const h = await writeContractAsync({
-          address: ADDRESSES.underlyingUSDC,
-          abi: erc20MintAbi,
-          functionName: "mint",
-          args: [address, shortBy],
-        });
-        await publicClient.waitForTransactionReceipt({ hash: h });
-
         setStage("approve");
         toast.loading("Approving the confidential wrapper…", { id: toastId });
         const ha = await writeContractAsync({
@@ -107,6 +107,7 @@ export function BetForm({
         });
         await publicClient.waitForTransactionReceipt({ hash: hw });
         addToLocalBalance(address, shortBy);
+        refetchRaw();
       }
 
       // 2. One-time operator authorization for this market on cUSDC.
@@ -134,7 +135,7 @@ export function BetForm({
         .encrypt();
 
       setStage("seal");
-      toast.loading("Submitting confidential bet…", { id: toastId });
+      toast.loading("Submitting confidential position…", { id: toastId });
       const hash = await writeContractAsync({
         address: marketAddress,
         abi: marketAbi,
@@ -149,7 +150,7 @@ export function BetForm({
       setLocalBal(getLocalBalance(address));
 
       setStage("done");
-      toast.success(`Encrypted bet placed on ${side}.`, { id: toastId });
+      toast.success(`Position placed on ${side} — encrypted.`, { id: toastId });
       await sleep(1600);
       setStage("idle");
     } catch (e) {
@@ -167,7 +168,7 @@ export function BetForm({
       <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <BarChart3 className="h-4 w-4" />
-          Betting is closed for this market.
+          This market has closed — predictions are no longer accepted.
         </div>
       </div>
     );
@@ -178,7 +179,7 @@ export function BetForm({
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-display text-lg font-bold tracking-tight">Place a bet</h3>
+        <h3 className="font-display text-lg font-bold tracking-tight">Take a position</h3>
         <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
           <Lock className="h-3 w-3" strokeWidth={2.5} />
           Encrypted on-chain
@@ -263,10 +264,9 @@ export function BetForm({
       <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-800">
         <Cpu className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
         <span>
-          Your bet stays encrypted from end to end. The amount and side are encrypted
-          before they leave your device, and the smart contract operates directly on
-          the ciphertext — no node, indexer, or even the contract itself ever sees the
-          cleartext. Only your wallet can decrypt your stake.
+          Your position stays encrypted end to end. Amount and side are sealed before
+          leaving your device — the contract operates on ciphertext only. No node,
+          indexer, or oracle can read your position. Only your wallet can decrypt it.
         </span>
       </div>
 
@@ -276,7 +276,7 @@ export function BetForm({
           <ConnectButton.Custom>
             {({ openConnectModal }) => (
               <Button onClick={openConnectModal} size="lg" variant="gradient" className="w-full">
-                Connect wallet to bet
+                Connect wallet to predict
               </Button>
             )}
           </ConnectButton.Custom>
@@ -288,13 +288,19 @@ export function BetForm({
             variant={side === "YES" ? "yes" : "no"}
             className="w-full text-base"
           >
-            {busy ? "Working…" : `Bet $${amount || "0"} on ${side} — encrypted`}
+            {busy ? "Working…" : `Back ${side} with $${amount || "0"} — encrypted`}
           </Button>
         )}
         {needsWrap && amountWei > 0n && isConnected && (
-          <p className="text-center text-[11px] text-muted-foreground">
-            We&apos;ll mint &amp; wrap the ${formatUSDC(shortBy, { decimals: 0 })} you need automatically — no separate top-up.
-          </p>
+          canCover ? (
+            <p className="text-center text-[11px] text-muted-foreground">
+              We&apos;ll wrap the ${formatUSDC(shortBy, { decimals: 0 })} shortfall from your test USDC — one extra signature.
+            </p>
+          ) : (
+            <p className="text-center text-[11px] font-medium text-destructive">
+              Not enough test USDC. Tap <span className="font-bold">Test USDC</span> at the top to top up first.
+            </p>
+          )
         )}
         {fhStatus !== "ready" && (
           <p className="text-center text-xs text-muted-foreground">

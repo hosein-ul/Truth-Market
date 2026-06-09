@@ -205,7 +205,7 @@ export default async function MarketDetailPage({
             </CardContent>
           </Card>
 
-          <ActivityChart items={activity} />
+          <ActivityChart items={activity} seed={m.address} betCount={stats.betCount} />
           <ActivityList items={activity} />
           <SettlementCard
             description={m.description}

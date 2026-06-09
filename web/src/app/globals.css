@@ -305,3 +305,27 @@ html.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover,
 html.theme-noir [data-rk] button.iekbcc0:hover {
   background: #222 !important;
 }
+
+/* Connect-a-Wallet modal: force white rows + dark text regardless of theme.
+   RainbowKit renders the modal outside the app's theme root, so dark OS
+   preferences or our own dark themes can make wallet rows unreadable (black
+   text on black). These rules override that unconditionally. */
+[data-rk] [class*="iekbcc"][role="menuitem"],
+[data-rk] button[data-testid^="rk-wallet-option"] {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+}
+[data-rk] [class*="iekbcc"][role="menuitem"]:hover,
+[data-rk] button[data-testid^="rk-wallet-option"]:hover {
+  background: #f3f4f6 !important;
+}
+[data-rk] [class*="iekbcc"][role="menuitem"] *,
+[data-rk] button[data-testid^="rk-wallet-option"] * {
+  color: #111827 !important;
+}
+/* Modal backdrop + container always light */
+[data-rk] [class*="iekbcc"][role="dialog"],
+[data-rk] [class*="iekbcc"][data-testid="rk-modal-content"] {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
