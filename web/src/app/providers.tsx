@@ -7,6 +7,7 @@ import { WagmiProvider } from "wagmi";
 import { useEffect, useState } from "react";
 import { wagmiConfig } from "@/lib/wagmi";
 import { FhevmProvider } from "@/lib/useFhevm";
+import { WalletPickerProvider } from "@/components/WalletPicker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -49,10 +50,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={isDark ? darkRainbow : lightRainbow} modalSize="compact">
           <FhevmProvider>
-            <TooltipProvider delayDuration={200}>
-              {children}
-              <Toaster />
-            </TooltipProvider>
+            <WalletPickerProvider>
+              <TooltipProvider delayDuration={200}>
+                {children}
+                <Toaster />
+              </TooltipProvider>
+            </WalletPickerProvider>
           </FhevmProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

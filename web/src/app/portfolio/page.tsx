@@ -5,7 +5,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Eye, Wallet, Lock, Trophy, Inbox, LogOut } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletPicker } from "@/components/WalletPicker";
 import { publicClient } from "@/lib/viem";
 import { ADDRESSES } from "@/lib/addresses";
 import { marketFactoryAbi, marketAbi, erc7984Abi, MARKET_STATUS } from "@/lib/abis";
@@ -38,6 +38,7 @@ export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const { instance, status: fhevmStatus } = useFhevm();
   const { writeContractAsync } = useWriteContract();
+  const walletPicker = useWalletPicker();
 
   const [positions, setPositions] = useState<Position[] | null>(null);
   const [balHandle, setBalHandle] = useState<`0x${string}` | null>(null);
@@ -280,13 +281,9 @@ export default function PortfolioPage() {
             Connect your wallet to see your sealed balance and positions.
           </p>
           <div className="mt-5 flex justify-center">
-            <ConnectButton.Custom>
-              {({ openConnectModal }) => (
-                <Button onClick={openConnectModal} variant="gradient" size="lg">
-                  Connect wallet
-                </Button>
-              )}
-            </ConnectButton.Custom>
+            <Button onClick={walletPicker.open} variant="gradient" size="lg">
+              Connect wallet
+            </Button>
           </div>
         </div>
       </div>

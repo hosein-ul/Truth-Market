@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletPicker } from "@/components/WalletPicker";
 import { toast } from "sonner";
 import { Droplets, Coins, ArrowRight, Lock, Check } from "lucide-react";
 import { ADDRESSES } from "@/lib/addresses";
@@ -36,6 +36,7 @@ export function Faucet({
 }) {
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const walletPicker = useWalletPicker();
   const [busy, setBusy] = useState(false);
   const [justMinted, setJustMinted] = useState(false);
 
@@ -125,15 +126,9 @@ export function Faucet({
         </div>
 
         {!isConnected ? (
-          <div className="[&>div]:w-full [&_button]:w-full">
-            <ConnectButton.Custom>
-              {({ openConnectModal }) => (
-                <Button onClick={openConnectModal} variant="gradient" size="lg" className="w-full">
-                  Connect wallet
-                </Button>
-              )}
-            </ConnectButton.Custom>
-          </div>
+          <Button onClick={walletPicker.open} variant="gradient" size="lg" className="w-full">
+            Connect wallet
+          </Button>
         ) : (
           <Button
             onClick={handleMint}

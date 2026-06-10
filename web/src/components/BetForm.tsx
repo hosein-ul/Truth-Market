@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import { Lock, Check, BarChart3, Wallet, Cpu } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletPicker } from "@/components/WalletPicker";
 import { ADDRESSES } from "@/lib/addresses";
 import { erc20MintAbi, erc7984Abi, marketAbi } from "@/lib/abis";
 import { formatUSDC, parseUSDC } from "@/lib/format";
@@ -34,6 +34,7 @@ export function BetForm({
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const { instance, status: fhStatus } = useFhevm();
+  const walletPicker = useWalletPicker();
 
   const [side, setSide] = useState<Side>("YES");
   const [amount, setAmount] = useState("25");
@@ -295,13 +296,9 @@ export function BetForm({
       {/* Actions */}
       <div className="mt-4 space-y-2.5">
         {!isConnected ? (
-          <ConnectButton.Custom>
-            {({ openConnectModal }) => (
-              <Button onClick={openConnectModal} size="lg" variant="gradient" className="w-full">
-                Connect wallet to predict
-              </Button>
-            )}
-          </ConnectButton.Custom>
+          <Button onClick={walletPicker.open} size="lg" variant="gradient" className="w-full">
+            Connect wallet to predict
+          </Button>
         ) : (
           <Button
             onClick={handleBet}
