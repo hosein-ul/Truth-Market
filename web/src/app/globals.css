@@ -38,6 +38,22 @@
     --radius: 0.75rem;
   }
 
+  /* Dashboard ("zard-dark") theme — light surface, golden-yellow + black controls.
+     Scoped to the app/markets routes so it reads as a distinct product surface
+     from the orange/sky landing page. */
+  .theme-dash {
+    --primary: 43 96% 48%;          /* golden yellow */
+    --primary-foreground: 0 0% 9%;  /* near-black text on yellow */
+    --secondary: 48 33% 95%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 48 20% 95%;
+    --accent: 0 0% 10%;             /* black accent */
+    --accent-foreground: 0 0% 100%;
+    --ring: 43 96% 48%;
+    --border: 45 25% 90%;
+    --input: 45 25% 90%;
+  }
+
   * {
     @apply border-border;
   }
@@ -89,6 +105,26 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 0, 0, 0.06);
   }
+
+  /* In the dashboard theme, shared components that hardcode the brand gradient
+     adopt a black control with the golden-yellow primary used for accents. */
+  .theme-dash .bg-brand-gradient {
+    background: linear-gradient(135deg, #18181b 0%, #000000 100%);
+  }
+  .theme-dash .shadow-orange-glow {
+    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3);
+  }
+  .theme-dash .text-gradient {
+    background: linear-gradient(120deg, #ca8a04 0%, #eab308 55%, #18181b 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .theme-dash .bg-grid {
+    background-image:
+      linear-gradient(hsl(43 96% 48% / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(43 96% 48% / 0.05) 1px, transparent 1px);
+  }
 }
 
 @keyframes shimmer {
@@ -115,12 +151,269 @@
 }
 ::-webkit-scrollbar-thumb:hover { background: hsl(210 20% 78%); }
 
-::selection {
-  background: hsl(25 95% 53% / 0.15);
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM THEMES — outside @layer so they override :root
+   ═══════════════════════════════════════════════════════════ */
+
+/* Editorial Light (cream + charcoal + warm amber) */
+html.theme-premium {
+  --background: 38 25% 96%;         /* #f5f2ec warm cream */
+  --foreground: 30 10% 11%;         /* #1c1a17 warm charcoal */
+  --card: 35 20% 93%;               /* #ede8df slightly darker cream */
+  --card-foreground: 30 10% 11%;
+  --popover: 38 25% 96%;
+  --popover-foreground: 30 10% 11%;
+  --primary: 38 84% 37%;            /* #b8860b dark amber gold */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 35 15% 90%;
+  --secondary-foreground: 30 10% 25%;
+  --muted: 35 15% 90%;
+  --muted-foreground: 30 8% 45%;
+  --accent: 38 84% 37%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 35 15% 84%;
+  --input: 35 15% 84%;
+  --ring: 38 84% 37%;
+  --radius: 0.5rem;
+}
+
+/* Cipher Noir — light monochrome (white + charcoal, no orange) */
+html.theme-noir {
+  --background: 240 5% 98%;       /* #f9f9fb near-white */
+  --foreground: 0 0% 4%;          /* #0a0a0a near-black */
+  --card: 0 0% 100%;              /* #ffffff pure white */
+  --card-foreground: 0 0% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
+  --primary: 0 0% 4%;             /* black as primary */
+  --primary-foreground: 240 5% 98%;
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 0 0% 20%;
+  --muted: 240 5% 94%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 4%;
+  --accent-foreground: 240 5% 98%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 4%;
+  --radius: 0.5rem;
+}
+
+/* Quantum Mesh */
+html.theme-quantum {
+  --background: 222 31% 8%;
+  --foreground: 200 47% 94%;
+  --card: 222 31% 10%;
+  --card-foreground: 200 47% 94%;
+  --popover: 222 31% 10%;
+  --popover-foreground: 200 47% 94%;
+  --primary: 180 100% 51%;
+  --primary-foreground: 222 31% 8%;
+  --secondary: 222 22% 14%;
+  --secondary-foreground: 200 28% 72%;
+  --muted: 222 22% 14%;
+  --muted-foreground: 210 18% 48%;
+  --accent: 258 92% 66%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 22% 17%;
+  --input: 222 22% 17%;
+  --ring: 180 100% 51%;
+  --radius: 0.5rem;
+}
+
+/* Truth Lattice */
+html.theme-lattice {
+  --background: 265 27% 6%;
+  --foreground: 270 35% 93%;
+  --card: 265 27% 9%;
+  --card-foreground: 270 35% 93%;
+  --popover: 265 27% 9%;
+  --popover-foreground: 270 35% 93%;
+  --primary: 267 100% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 265 18% 13%;
+  --secondary-foreground: 270 18% 70%;
+  --muted: 265 18% 13%;
+  --muted-foreground: 265 14% 50%;
+  --accent: 300 50% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 265 18% 15%;
+  --input: 265 18% 15%;
+  --ring: 267 100% 66%;
+  --radius: 0.5rem;
+}
+
+html.theme-noir ::-webkit-scrollbar-thumb { background: #d4d4d4; border-color: #f9f9fb; }
+html.theme-quantum ::-webkit-scrollbar-thumb { background: hsl(222 22% 22%); border-color: hsl(222 31% 8%); }
+html.theme-lattice ::-webkit-scrollbar-thumb { background: hsl(265 18% 20%); border-color: hsl(265 27% 6%); }
+
+::selection { background: hsl(25 95% 53% / 0.15); }
+html.theme-noir ::selection { background: rgba(0,0,0,0.12); }
+html.theme-quantum ::selection { background: hsl(180 100% 51% / 0.2); }
+html.theme-lattice ::selection { background: hsl(267 100% 66% / 0.25); }
+
+/* Navbar brand gradient overrides for dark themes */
+/* Premium theme keeps default brand colors (it's a light theme) */
+html.theme-premium .bg-brand-gradient { background: linear-gradient(135deg, #1c1a17 0%, #3a3630 100%); }
+html.theme-premium .text-gradient {
+  background: linear-gradient(120deg, #1c1a17 0%, #b8860b 55%, #d4a017 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+html.theme-premium .shadow-orange-glow { box-shadow: 0 4px 14px rgba(28,26,23,0.3); }
+
+/* Noir: monochrome brand */
+html.theme-noir .bg-brand-gradient { background: linear-gradient(135deg, #0a0a0a 0%, #333 100%); }
+html.theme-noir .shadow-orange-glow { box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+html.theme-noir .text-gradient {
+  background: linear-gradient(120deg, #0a0a0a 0%, #555 70%, #888 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+html.theme-quantum .bg-brand-gradient { background: linear-gradient(135deg, #0891b2 0%, #7c3aed 100%); }
+html.theme-lattice .bg-brand-gradient { background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%); }
+html.theme-quantum .text-gradient {
+  background: linear-gradient(120deg, #06b6d4 0%, #8b5cf6 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+html.theme-lattice .text-gradient {
+  background: linear-gradient(120deg, #9b4dff 0%, #cc66cc 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 
 [data-rk] {
   --rk-radii-connectButton: 10px;
   --rk-radii-actionButton: 10px;
   --rk-radii-modal: 16px;
+}
+
+/* Noir theme: connect TRIGGER button monochrome. Use the testid only — NEVER
+   the global iekbcc0 class, which RK applies to every button (including modal
+   wallet rows). That mistake is why the wallet list turned all-black. */
+html.theme-noir [data-rk] button[data-testid="rk-connect-button"] {
+  background: #0a0a0a !important;
+  color: #f9f9fb !important;
+  box-shadow: none !important;
+}
+html.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover {
+  background: #222 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — applied via `html.dark`, default is light.
+   Placed AFTER theme blocks so it wins the cascade for ANY theme
+   variant. Boosted specificity via the compound `html.dark` so it
+   still beats theme classes with the same specificity weight.
+   ═══════════════════════════════════════════════════════════ */
+html.dark,
+html.dark.theme-noir,
+html.dark.theme-premium,
+html.dark.theme-quantum,
+html.dark.theme-lattice {
+  --background: 222 47% 6%;          /* near-black */
+  --foreground: 210 40% 96%;         /* near-white */
+  --card: 222 47% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 47% 9%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 25 95% 58%;             /* vivid orange */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 30% 14%;
+  --secondary-foreground: 210 28% 80%;
+  --muted: 222 30% 14%;
+  --muted-foreground: 215 18% 60%;
+  --accent: 199 89% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 30% 17%;
+  --input: 222 30% 17%;
+  --ring: 25 95% 58%;
+}
+html.dark .bg-brand-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+}
+html.dark .text-gradient {
+  /* Use background-image (not shorthand) to avoid resetting background-clip. */
+  background-image: linear-gradient(120deg, #fb923c 0%, #f97316 60%, #ef4444 100%) !important;
+  background-color: transparent !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+html.dark ::-webkit-scrollbar-thumb { background: hsl(222 20% 24%); border-color: hsl(222 47% 6%); }
+html.dark ::selection { background: hsl(25 95% 58% / 0.25); }
+
+/* In dark mode, the noir-specific monochrome connect button override would
+   produce flat-black on flat-black. Override it back to orange. */
+html.dark.theme-noir [data-rk] button[data-testid="rk-connect-button"] {
+  background: #f97316 !important;
+  color: #ffffff !important;
+}
+html.dark.theme-noir [data-rk] button[data-testid="rk-connect-button"]:hover {
+  background: #ea580c !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Connect-a-Wallet modal — ALWAYS readable, in every theme.
+   RK provides modal theming via CSS vars; we override the ones
+   that control wallet rows + modal surface + text so the modal
+   surface is always crisp light (or its dark-mode twin), never
+   inheriting the cipher-noir black-on-black cascade.
+   ═══════════════════════════════════════════════════════════ */
+[data-rk] {
+  --rk-colors-modalBackground: #ffffff;
+  --rk-colors-modalText: #0f172a;
+  --rk-colors-modalTextDim: #6b7280;
+  --rk-colors-modalTextSecondary: #6b7280;
+  --rk-colors-modalBorder: rgba(0,0,0,0.08);
+  --rk-colors-menuItemBackground: #f3f4f6;
+  --rk-colors-actionButtonBorder: rgba(0,0,0,0.08);
+  --rk-colors-actionButtonBorderMobile: rgba(0,0,0,0.08);
+  --rk-colors-actionButtonSecondaryBackground: #f3f4f6;
+  --rk-colors-closeButton: #0f172a;
+  --rk-colors-closeButtonBackground: #f3f4f6;
+  --rk-colors-generalBorder: rgba(0,0,0,0.08);
+  --rk-colors-generalBorderDim: rgba(0,0,0,0.04);
+  --rk-colors-profileForeground: #f3f4f6;
+  --rk-colors-profileAction: #ffffff;
+  --rk-colors-profileActionHover: #f3f4f6;
+}
+
+/* dark mode wallet modal */
+html.dark [data-rk] {
+  --rk-colors-modalBackground: #0f172a;
+  --rk-colors-modalText: #f3f4f6;
+  --rk-colors-modalTextDim: #94a3b8;
+  --rk-colors-modalTextSecondary: #94a3b8;
+  --rk-colors-modalBorder: rgba(255,255,255,0.08);
+  --rk-colors-menuItemBackground: #1e293b;
+  --rk-colors-actionButtonBorder: rgba(255,255,255,0.08);
+  --rk-colors-actionButtonSecondaryBackground: #1e293b;
+  --rk-colors-closeButton: #f3f4f6;
+  --rk-colors-closeButtonBackground: #1e293b;
+  --rk-colors-generalBorder: rgba(255,255,255,0.08);
+  --rk-colors-profileForeground: #1e293b;
+  --rk-colors-profileAction: #0f172a;
+  --rk-colors-profileActionHover: #1e293b;
+}
+
+/* Belt-and-braces: also force the wallet row background/text in case RK
+   ever changes their CSS-var contract or applies an inline override. */
+[data-rk] [data-testid^="rk-wallet-option"],
+[data-rk] button[data-testid^="rk-wallet-option"] {
+  background: var(--rk-colors-menuItemBackground) !important;
+  color: var(--rk-colors-modalText) !important;
+}
+[data-rk] [data-testid^="rk-wallet-option"] *,
+[data-rk] button[data-testid^="rk-wallet-option"] * {
+  color: var(--rk-colors-modalText) !important;
 }

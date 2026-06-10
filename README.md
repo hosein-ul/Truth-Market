@@ -135,13 +135,28 @@ Next.js 15 / App Router with shadcn/ui, wagmi v2, RainbowKit, the Zama Relayer
 SDK (web build), and a Solar Burst design system (light, vivid orange + sky
 blue + white).
 
-Pages:
+The frontend is split into two distinct surfaces:
+
+- **Landing (`/`)** — marketing page on the orange/sky "Solar Burst" palette, with the
+  `HiddenConsensus` generative flow-field art (see `web/art/hidden-consensus.md`),
+  scroll-driven motion, a Polymarket/Kalshi comparison, and a how-it-works walkthrough.
+- **App / dashboard (`/markets`, `/markets/[address]`, `/create`, `/portfolio`)** — a
+  separate "zard-dark" surface (light theme, golden-yellow + black controls, scoped via
+  the `.theme-dash` class) for actually trading.
+
 | Route                 | Purpose |
 |-----------------------|---------|
-| `/`                   | Market feed. Hero with generative Perlin flow-field art, feature pillars, market explorer with live K-anonymous odds. |
-| `/markets/[address]`  | Market detail: snapshot odds via client-side relayer publicDecrypt, encrypted bet panel, refresh-odds button, claim, oracle/finalize controls. |
+| `/`                   | Landing page (marketing + algorithmic art + motion). |
+| `/markets`            | Dashboard: market explorer with public odds, search/filter, volume + position stats. |
+| `/markets/[address]`  | Market detail: public odds, encrypted bet panel, your own position (always visible to you), claim, resolution controls. |
 | `/create`             | Open a new confidential market. |
-| `/portfolio`          | Encrypted per-wallet position list with self-reveal (EIP-712 + `userDecrypt`). |
+| `/portfolio`          | Your positions (shown from a local record, with an on-chain `userDecrypt` verify) + sealed balance. |
+
+Public odds and volume blend whatever the protocol has revealed on-chain with a
+deterministic, address-seeded baseline (`web/src/lib/demo.ts`), so a brand-new market
+still reads as a real market; per-wallet positions stay encrypted end-to-end. Your own
+position is never hidden from you — the browser that composed the bet keeps a local
+cleartext record (`web/src/lib/positions.ts`).
 
 The collateral UX hides the confidential token under "USDC" — the first bet
 triggers a one-time top-up that mints test USDC, wraps it into Zama's cUSDC,

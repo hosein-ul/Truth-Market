@@ -128,7 +128,7 @@ export function OraclePanel({
           <Gavel className="h-4 w-4" />
         </span>
         <h3 className="font-display text-base font-bold tracking-tight text-foreground">
-          {canFinalize ? "Finalize pools" : isOracle ? "Resolver controls" : "Resolution"}
+          {canFinalize ? "Finalize pools" : "Market resolution"}
         </h3>
       </div>
 
@@ -163,7 +163,7 @@ export function OraclePanel({
         )}
         {isOracle && status === MARKET_STATUS.OPEN && now < deadline && (
           <p className="text-xs text-orange-700">
-            You&apos;re the resolver. You can record the outcome once the market deadline passes.
+            The outcome can be recorded once the market deadline passes.
           </p>
         )}
       </div>

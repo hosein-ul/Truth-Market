@@ -28,10 +28,10 @@ become public; payouts are decryptable only by the winner.
 - `netlify.toml` — Netlify build + required COOP/COEP headers.
 
 ## Key addresses (Sepolia)
-- `MarketFactory` v2 (public-odds, verified): `0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334`
+- `MarketFactory` v4 (encrypted bets + cashOut, verified): `0x1e7702db95be7CCE29075ad6E5b76fC88B8B3D44`
 - cUSDCMock (Zama official): `0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639`
 - Underlying USDC (Zama official): `0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF`
-- (old v1 factory, sealed-odds, deprecated: `0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`)
+- (deprecated: v3 `0x69Dbcf4426dF9f6AD16c035b005635efF22579F6`, v2 `0x6702fB99B26CC37292c5b93d5aDFA5789Fa27334`, v1 `0x2Aed78F76fD40a1BAf6F00BDEe30Ec0ABcb06A30`)
 
 ## Privacy model (v2 — CORRECT)
 - **Pools are PUBLIC** plaintext (`uint256 yesPool/noPool`) → implied odds always

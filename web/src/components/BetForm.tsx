@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { toast } from "sonner";
-import { Lock, Check, BarChart3, ShieldCheck } from "lucide-react";
+import { Lock, Check, BarChart3, Wallet, Cpu } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { ADDRESSES } from "@/lib/addresses";
 import { erc20MintAbi, erc7984Abi, marketAbi } from "@/lib/abis";
@@ -15,11 +15,12 @@ import { toHex } from "@/lib/fhevm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WrapFlow, type WrapStage } from "@/components/WrapFlow";
+import { recordLocalBet } from "@/lib/positions";
+import { addToLocalBalance, getLocalBalance } from "@/lib/balance";
 import { cn } from "@/lib/utils";
 
 type Side = "YES" | "NO";
-const PRESETS = ["10", "50", "100", "250"];
-const TOPUP_USDC = 500_000_000n; // suggested one-time top-up: 500 USDC
+const PRESETS = ["10", "25", "50", "100"];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -38,21 +39,12 @@ export function BetForm({
   const [amount, setAmount] = useState("25");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<WrapStage>("idle");
+  const [localBal, setLocalBal] = useState<bigint>(0n);
 
-  const { data: publicBal, refetch: refetchBal } = useReadContract({
-    address: ADDRESSES.underlyingUSDC,
-    abi: erc20MintAbi,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address, refetchInterval: 8000 },
-  });
-  const { data: cBalHandle } = useReadContract({
-    address: ADDRESSES.confidentialUSDC,
-    abi: erc7984Abi,
-    functionName: "confidentialBalanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address, refetchInterval: 8000 },
-  });
+  useEffect(() => {
+    setLocalBal(getLocalBalance(address));
+  }, [address]);
+
   const { data: isOp, refetch: refetchOp } = useReadContract({
     address: ADDRESSES.confidentialUSDC,
     abi: erc7984Abi,
@@ -61,118 +53,111 @@ export function BetForm({
     query: { enabled: !!address, refetchInterval: 12000 },
   });
 
+  // Plaintext test-USDC balance — topped up via the faucet, never minted here.
+  const { data: rawUsdc, refetch: refetchRaw } = useReadContract({
+    address: ADDRESSES.underlyingUSDC,
+    abi: erc20MintAbi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 12000 },
+  });
+  const underlyingBal = (rawUsdc as bigint | undefined) ?? 0n;
+
+  // Existing allowance toward the cUSDC wrapper. We approve ONCE for an enormous
+  // amount, then every later prediction skips approve → saves one signature per
+  // bet. allowanceLeft → only need to re-approve when it drops below the wrap
+  // amount we're about to ask for.
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: ADDRESSES.underlyingUSDC,
+    abi: erc20MintAbi,
+    functionName: "allowance",
+    args: address ? [address, ADDRESSES.confidentialUSDC] : undefined,
+    query: { enabled: !!address, refetchInterval: 12000 },
+  });
+  const allowanceLeft = (allowance as bigint | undefined) ?? 0n;
+
   const amountWei = useMemo(() => {
     try { return parseUSDC(amount); } catch { return 0n; }
   }, [amount]);
 
   const expired = deadline - Math.floor(Date.now() / 1000) <= 0;
-  // Heuristic: a brand new user has zero cUSDC handle and zero operator state.
-  const ZH = "0x0000000000000000000000000000000000000000000000000000000000000000";
-  const hasConfBalance = !!cBalHandle && cBalHandle !== ZH;
-  const needsTopUp = !hasConfBalance;
-  const needsOperator = !isOp;
+  const needsWrap = amountWei > localBal;
+  const shortBy = needsWrap ? amountWei - localBal : 0n;
+  const canCover = shortBy <= underlyingBal;
 
-  /** Top-up: mint USDC if needed → approve cUSDC wrapper → wrap → setOperator. */
-  async function handleTopUp() {
-    if (!address) return;
-    const toastId = toast.loading("Preparing your confidential balance…");
-    try {
-      setBusy(true);
-      const cur = (publicBal as bigint | undefined) ?? 0n;
-      if (cur < TOPUP_USDC) {
-        setStage("mint");
-        toast.loading("Minting test USDC for the top-up…", { id: toastId });
-        const h = await writeContractAsync({
-          address: ADDRESSES.underlyingUSDC,
-          abi: erc20MintAbi,
-          functionName: "mint",
-          args: [address, TOPUP_USDC - cur],
-        });
-        await publicClient.waitForTransactionReceipt({ hash: h });
-      }
-      setStage("approve");
-      toast.loading("Approving wrapper to spend USDC…", { id: toastId });
-      const ha = await writeContractAsync({
-        address: ADDRESSES.underlyingUSDC,
-        abi: erc20MintAbi,
-        functionName: "approve",
-        args: [ADDRESSES.confidentialUSDC, TOPUP_USDC],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: ha });
-
-      setStage("wrap");
-      toast.loading("Wrapping into confidential cUSDC…", { id: toastId });
-      const hw = await writeContractAsync({
-        address: ADDRESSES.confidentialUSDC,
-        abi: erc7984Abi,
-        functionName: "wrap",
-        args: [address, TOPUP_USDC],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: hw });
-
-      // Set this market as cUSDC operator (one-time, 30-day expiry).
-      const until = Math.floor(Date.now() / 1000) + 30 * 86400;
-      const hop = await writeContractAsync({
-        address: ADDRESSES.confidentialUSDC,
-        abi: erc7984Abi,
-        functionName: "setOperator",
-        args: [marketAddress, until],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: hop });
-
-      setStage("seal");
-      await sleep(700);
-      setStage("done");
-      toast.success("Confidential balance ready — bets are now private.", { id: toastId });
-      refetchBal();
-      refetchOp();
-      await sleep(1600);
-      setStage("idle");
-    } catch (e) {
-      setStage("error");
-      toast.error(humanizeError(e), { id: toastId });
-      await sleep(1200);
-      setStage("idle");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /** Encrypted bet: (amount, side) → externalEuint64 + externalEbool + proofs. */
   async function handleBet() {
     if (!address) return;
     if (amountWei <= 0n) { toast.error("Enter an amount greater than zero."); return; }
-    const toastId = toast.loading("Encrypting your bet…");
+    if (shortBy > 0n && !canCover) {
+      toast.error('Not enough test USDC — use the faucet at the top to add funds first.');
+      return;
+    }
+    const toastId = toast.loading("Preparing your confidential position…");
     try {
       setBusy(true);
       if (!instance) throw new Error("encryption layer not ready");
 
-      // Ensure operator is set (cheap recheck — flips false→true after the first bet anyway).
+      // 1. Wrap the exact shortfall from existing test USDC.
+      //    Never mint here — the faucet is the single source of test funds.
+      //    Approve happens at most ONCE per wallet (MAX_UINT256). Future
+      //    predictions skip straight to wrap.
+      if (shortBy > 0n) {
+        if (allowanceLeft < shortBy) {
+          setStage("approve");
+          toast.loading("Approving the confidential wrapper (one-time)…", { id: toastId });
+          const MAX = (1n << 256n) - 1n;
+          const ha = await writeContractAsync({
+            address: ADDRESSES.underlyingUSDC,
+            abi: erc20MintAbi,
+            functionName: "approve",
+            args: [ADDRESSES.confidentialUSDC, MAX],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: ha });
+          refetchAllowance();
+        }
+
+        setStage("wrap");
+        toast.loading("Wrapping into confidential cUSDC…", { id: toastId });
+        const hw = await writeContractAsync({
+          address: ADDRESSES.confidentialUSDC,
+          abi: erc7984Abi,
+          functionName: "wrap",
+          args: [address, shortBy],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: hw });
+        addToLocalBalance(address, shortBy);
+        refetchRaw();
+      }
+
+      // 2. One-time operator authorization for this market on cUSDC.
+      //    Authorize until uint48 max (~year 8921) so the user never has to
+      //    re-authorize this market again.
       if (!isOp) {
         setStage("approve");
-        toast.loading("Authorizing the market on cUSDC (one-time)…", { id: toastId });
-        const until = Math.floor(Date.now() / 1000) + 30 * 86400;
+        toast.loading("Authorizing this market on cUSDC (one-time)…", { id: toastId });
+        // uint48 max is 2^48 − 1 ≈ 281T, well within Number.MAX_SAFE_INTEGER.
+        const UINT48_MAX = 281474976710655;
         const hop = await writeContractAsync({
           address: ADDRESSES.confidentialUSDC,
           abi: erc7984Abi,
           functionName: "setOperator",
-          args: [marketAddress, until],
+          args: [marketAddress, UINT48_MAX],
         });
         await publicClient.waitForTransactionReceipt({ hash: hop });
         refetchOp();
       }
 
+      // 3. Encrypt + submit.
       setStage("wrap");
-      toast.loading("Encrypting bet (amount + side stay sealed)…", { id: toastId });
+      toast.loading("Encrypting (amount + side) with Zama FHE…", { id: toastId });
       const enc = await instance
         .createEncryptedInput(marketAddress, address)
         .add64(amountWei)
         .addBool(side === "YES")
         .encrypt();
-      // enc.handles[0] = amount handle, enc.handles[1] = side handle; both share enc.inputProof.
 
       setStage("seal");
-      toast.loading("Submitting confidential placeBet…", { id: toastId });
+      toast.loading("Submitting confidential position…", { id: toastId });
       const hash = await writeContractAsync({
         address: marketAddress,
         abi: marketAbi,
@@ -181,10 +166,14 @@ export function BetForm({
       });
       await publicClient.waitForTransactionReceipt({ hash });
 
+      // 4. Local mirrors: deduct from confidential balance, log the position.
+      addToLocalBalance(address, -amountWei);
+      recordLocalBet(address, marketAddress, side, amountWei);
+      setLocalBal(getLocalBalance(address));
+
       setStage("done");
-      toast.success(`Encrypted bet placed on ${side}.`, { id: toastId });
-      refetchBal();
-      await sleep(1800);
+      toast.success(`Position placed on ${side} — encrypted.`, { id: toastId });
+      await sleep(1600);
       setStage("idle");
     } catch (e) {
       setStage("error");
@@ -201,34 +190,32 @@ export function BetForm({
       <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <BarChart3 className="h-4 w-4" />
-          Betting is closed for this market.
+          This market has closed — predictions are no longer accepted.
         </div>
       </div>
     );
   }
 
-  if (stage !== "idle") {
-    return <WrapFlow stage={stage} amount={amount} />;
-  }
+  if (stage !== "idle") return <WrapFlow stage={stage} amount={amount} />;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-display text-lg font-bold tracking-tight">Place a bet</h3>
+        <h3 className="font-display text-lg font-bold tracking-tight">Take a position</h3>
         <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
           <Lock className="h-3 w-3" strokeWidth={2.5} />
           Encrypted on-chain
         </span>
       </div>
 
-      {/* Confidential balance status */}
-      <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-secondary/40 px-3 py-2.5">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <ShieldCheck className={cn("h-3.5 w-3.5", hasConfBalance && isOp ? "text-emerald-600" : "text-amber-600")} />
+      {/* Confidential balance — cleartext mirror so the user always sees it */}
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-secondary/40 px-3.5 py-2.5">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <Wallet className="h-3.5 w-3.5" />
           Confidential balance
         </span>
-        <span className="text-xs font-semibold">
-          {hasConfBalance ? (isOp ? "Ready" : "Authorize market") : "Top up needed"}
+        <span className="font-display text-sm font-extrabold tabular-nums text-foreground">
+          ${formatUSDC(localBal)} <span className="text-[10px] font-semibold text-muted-foreground">USDC</span>
         </span>
       </div>
 
@@ -285,7 +272,7 @@ export function BetForm({
               className={cn(
                 "rounded-lg border py-1.5 text-sm font-semibold transition-colors",
                 amount === p
-                  ? "border-orange-300 bg-orange-50 text-orange-700"
+                  ? "border-primary/40 bg-primary/10 text-foreground"
                   : "border-border text-muted-foreground hover:text-foreground",
               )}
             >
@@ -295,38 +282,26 @@ export function BetForm({
         </div>
       </div>
 
-      {/* Privacy explainer */}
-      <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-700">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+      {/* Privacy explainer — emphasise it's the protocol, not just the browser */}
+      <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-800">
+        <Cpu className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
         <span>
-          Your bet (amount + side) is encrypted in your browser with the Zama
-          relayer SDK, and the contract operates on the ciphertext. No observer
-          can tie this bet — or your cumulative stake — to your wallet.
+          Your position stays encrypted end to end. Amount and side are sealed before
+          leaving your device — the contract operates on ciphertext only. No node,
+          indexer, or oracle can read your position. Only your wallet can decrypt it.
         </span>
       </div>
 
       {/* Actions */}
       <div className="mt-4 space-y-2.5">
         {!isConnected ? (
-          <div className="flex justify-center [&>div]:w-full [&_button]:w-full">
-            <ConnectButton.Custom>
-              {({ openConnectModal }) => (
-                <Button onClick={openConnectModal} size="lg" variant="gradient" className="w-full">
-                  Connect wallet to bet
-                </Button>
-              )}
-            </ConnectButton.Custom>
-          </div>
-        ) : needsTopUp ? (
-          <Button
-            onClick={handleTopUp}
-            disabled={busy || fhStatus !== "ready"}
-            size="lg"
-            variant="gradient"
-            className="w-full"
-          >
-            {busy ? "Working…" : `Top up $${TOPUP_USDC / 1_000_000n} once to bet privately`}
-          </Button>
+          <ConnectButton.Custom>
+            {({ openConnectModal }) => (
+              <Button onClick={openConnectModal} size="lg" variant="gradient" className="w-full">
+                Connect wallet to predict
+              </Button>
+            )}
+          </ConnectButton.Custom>
         ) : (
           <Button
             onClick={handleBet}
@@ -335,8 +310,19 @@ export function BetForm({
             variant={side === "YES" ? "yes" : "no"}
             className="w-full text-base"
           >
-            {busy ? "Working…" : `Bet $${amount || "0"} on ${side} — encrypted`}
+            {busy ? "Working…" : `Predict ${side} · $${amount || "0"} sealed`}
           </Button>
+        )}
+        {needsWrap && amountWei > 0n && isConnected && (
+          canCover ? (
+            <p className="text-center text-[11px] text-muted-foreground">
+              We&apos;ll wrap the ${formatUSDC(shortBy, { decimals: 0 })} shortfall from your test USDC — one extra signature.
+            </p>
+          ) : (
+            <p className="text-center text-[11px] font-medium text-destructive">
+              Not enough test USDC. Tap <span className="font-bold">Test USDC</span> at the top to top up first.
+            </p>
+          )
         )}
         {fhStatus !== "ready" && (
           <p className="text-center text-xs text-muted-foreground">

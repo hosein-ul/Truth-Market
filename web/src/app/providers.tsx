@@ -1,9 +1,10 @@
 "use client";
 
-import { RainbowKitProvider, lightTheme } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, lightTheme, darkTheme } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
 import { WagmiProvider } from "wagmi";
+import { useEffect, useState } from "react";
 import { wagmiConfig } from "@/lib/wagmi";
 import { FhevmProvider } from "@/lib/useFhevm";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,7 +16,14 @@ const queryClient = new QueryClient({
   },
 });
 
-const rainbowTheme = lightTheme({
+const lightRainbow = lightTheme({
+  accentColor: "#f97316",
+  accentColorForeground: "#ffffff",
+  borderRadius: "large",
+  fontStack: "system",
+});
+
+const darkRainbow = darkTheme({
   accentColor: "#f97316",
   accentColorForeground: "#ffffff",
   borderRadius: "large",
@@ -23,10 +31,23 @@ const rainbowTheme = lightTheme({
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Mirror the html.dark class so the RainbowKit modal flips palette with the
+  // site theme toggle. Without this, switching to dark mode would leave the
+  // wallet modal stuck in its initial theme.
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    const sync = () => setIsDark(el.classList.contains("dark"));
+    sync();
+    const mo = new MutationObserver(sync);
+    mo.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rainbowTheme} modalSize="compact">
+        <RainbowKitProvider theme={isDark ? darkRainbow : lightRainbow} modalSize="compact">
           <FhevmProvider>
             <TooltipProvider delayDuration={200}>
               {children}

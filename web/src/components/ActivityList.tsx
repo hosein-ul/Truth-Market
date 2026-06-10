@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const META: Record<ActivityKind, { label: string; icon: React.ReactNode; cls: string }> = {
   bet: {
-    label: "Encrypted bet placed",
+    label: "Encrypted prediction placed",
     icon: <Lock className="h-3.5 w-3.5" strokeWidth={2.5} />,
     cls: "bg-sky-50 text-sky-700",
   },
@@ -37,13 +37,13 @@ export function ActivityList({ items }: { items: ActivityItem[] }) {
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Recent activity</CardTitle>
         <span className="text-xs text-muted-foreground">
-          {bets} bet{bets !== 1 ? "s" : ""} · all anonymous
+          {bets} position{bets !== 1 ? "s" : ""} · all anonymous
         </span>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-8 text-center text-sm text-muted-foreground">
-            No bets yet — be the first to take a position.
+            No predictions yet — be the first to take a position.
           </div>
         ) : (
           <ul className="divide-y divide-border">

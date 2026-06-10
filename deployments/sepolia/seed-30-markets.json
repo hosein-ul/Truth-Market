@@ -1,0 +1,212 @@
+[
+  {
+    "question": "Will Bitcoin hit $150,000 before 2027?",
+    "address": "0x0757f42edD545E3AFdC68c613dcD55a32e637315",
+    "tx": "0x0e7f5f554dbb38a9060225c30c7d7da42f484846fa7dd241be13205ff3b1dcf7",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will Ethereum reach $10,000 in 2026?",
+    "address": "0xa79d30cb80149e8e29D81bdE1Df34aC8cDf07f48",
+    "tx": "0x2fb54a754bd81e4e01d03adce87abdbdcb50285d1be257c817301b676b6e6d1b",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will Solana flip Ethereum by market cap in 2026?",
+    "address": "0xC0dbE1f23Df160b5655687381E3505586c3a69bB",
+    "tx": "0x5c36a0060dc56ab344e17def1a3464078d6e877d65cb540cb717462a17a116fc",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will a spot ETH ETF see $1B daily inflow in 2026?",
+    "address": "0x21c9ddc67463354b45C895D67d931044f227CEB6",
+    "tx": "0x5fa0dc4eee72a9d2eb477133f4858ec327964cee2fa031a51a9490b66c557486",
+    "deadline": "2026-09-30T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will Bitcoin dominance drop below 40% in 2026?",
+    "address": "0x580cAaF0215deBCAa05e2A4e6698A5Fc2CC71005",
+    "tx": "0x9d3b2018f89580ce4be089490ca8bfb0d399fb0f118dfb9a5b87d13fc03c4865",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will Coinbase be listed on the S&P 500 by end of 2026?",
+    "address": "0xF757484319D0A4d8a21EE744B30E37849951f470",
+    "tx": "0x2d0e13815bf2e19bb3371f9f037b01ba101b8e604dc9be274a50fcfa61e4edfd",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will the total crypto market cap exceed $10 trillion in 2026?",
+    "address": "0x97f15ecd932E2ea4b88FA3ec75B2e46DcE06a23b",
+    "tx": "0xd090ad42322052590ce75e1e2f69bdeca5a256a7f9e1f4eeea6037a9876e79aa",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will a major central bank hold Bitcoin on its balance sheet by 2027?",
+    "address": "0x32d8F2E558Ba083adCfBe4570c1403E516612aDE",
+    "tx": "0x8d9b0e87bbff3f057e88d97c8ea4be0b0d802cd49f173a9c5f2de8b3965e700b",
+    "deadline": "2027-01-31T23:59:00.000Z",
+    "category": "Crypto"
+  },
+  {
+    "question": "Will Donald Trump be impeached before 2027?",
+    "address": "0xB1449C4796919aDb8a387bd772Ca2399bEF153b1",
+    "tx": "0xd37ef501f4d9a2e41f256ff3c83c5dcaf53c3070740215c9e54aa80bf8e78bf8",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will Gavin Newsom win the 2028 Democratic presidential nomination?",
+    "address": "0x8ea1Aef9Bac34744877a965D0ADEBf3c3c53AdEa",
+    "tx": "0xcc50e3371c0a1c37ba5b756bc63d95cc396fd4f822a4af54405e17ace841d380",
+    "deadline": "2027-12-31T23:59:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will the US-Iran nuclear deal be signed by end of 2026?",
+    "address": "0x106d309282B177d07FfeFB611e94cB90555D7233",
+    "tx": "0xb95325501b55cedf862b75fba07b8294efca9d1d6bed7ef0e5f550746e28616e",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will there be a US federal government shutdown in 2026?",
+    "address": "0x2b20c848790Ab51D870040d85EC542AB66Baa8F6",
+    "tx": "0x9b51aca86313ad6d7866898526fa86a6f3011fa9e2bf2e12ef5d59543dbf7cff",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will Emmanuel Macron resign before end of 2026?",
+    "address": "0x10F1d3d7EADcbA6876ca6a5E150e0D16d44a7957",
+    "tx": "0xb0867ba6caecfecc5d26c46d9ee833fe8881dceca7267952dcf84d79de0a2a96",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will the UK rejoin the EU single market by 2028?",
+    "address": "0x30BAe1F45cCEd179Ded06520d1032dc6D16922B5",
+    "tx": "0xd25a665ce93c4895bd1201d4e01d9ee79dd78bd98e4bd2dfe01d76db097c4c40",
+    "deadline": "2028-01-01T00:00:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will Elon Musk leave a US government role before 2027?",
+    "address": "0x2eF0bb54b4c9f36967959B080ADD70898c090952",
+    "tx": "0xb8590bbb680a5af900bc8dc6b04519aec2581a960ad76c6d82c6e0441cc6b730",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Politics"
+  },
+  {
+    "question": "Will Real Madrid win the 2026 UEFA Champions League?",
+    "address": "0xEBFfCD1a1ad4501b2eC2759a5C64a2b6b668a297",
+    "tx": "0xfb2e3128a217b5e6b1df1c29bd9ebd1e1aefdcff2857eff16d148508d76b47d3",
+    "deadline": "2026-09-01T23:59:00.000Z",
+    "category": "Sports"
+  },
+  {
+    "question": "Will the 2026 FIFA World Cup be won by Brazil?",
+    "address": "0x65FC6D1460eFb86cfe5eB6c1dF2A8BEE547282C2",
+    "tx": "0x8c83bfb61a130339b380324ad26b323831d95d6217d5d0f39a43e0274f5af9ff",
+    "deadline": "2026-07-19T23:59:00.000Z",
+    "category": "Sports"
+  },
+  {
+    "question": "Will Novak Djokovic win another Grand Slam in 2026?",
+    "address": "0x6B1f0FD257B9C059aE6e5CF678a31C3dd22160B9",
+    "tx": "0x33277c66dca5362beca7c0ac14a16610bbd4a4016de7e3f9ad089cb7ef6646fa",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Sports"
+  },
+  {
+    "question": "Will the New York Knicks win the 2026-27 NBA Championship?",
+    "address": "0xc2A229Cfd0ff2909a83D8C9535DBc95e78928Ce0",
+    "tx": "0x3e7eef717d3de8a93b1f2dccbce889196c8377988163038d7f937639f6a35a63",
+    "deadline": "2027-06-30T23:59:00.000Z",
+    "category": "Sports"
+  },
+  {
+    "question": "Will Jon Jones vs. Tom Aspinall fight happen in 2026?",
+    "address": "0x9558f209e634508F792D8BB4AD1Efa902521dE02",
+    "tx": "0xb12dacf4d11a6204940a341a104dd6f3eb07862fe066a2e2175b0f61bd09873e",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Sports"
+  },
+  {
+    "question": "Will Formula 1 have a new World Champion in 2026?",
+    "address": "0x9332220Bd1D7f4b2b8Ca414aCAEb704B14fd7F5b",
+    "tx": "0xbc225cb3149ad30568f172304c8b3562de5757b883d5c876f0a7febc19f8f93d",
+    "deadline": "2026-11-30T23:59:00.000Z",
+    "category": "Sports"
+  },
+  {
+    "question": "Will OpenAI release GPT-5 before end of 2026?",
+    "address": "0xBe192F722C659FeB2629aC0De4bDce2ba1D165A4",
+    "tx": "0xe3e6f091ee3933f923719e5ad0a3113e92c578253fe9cb0c459fa6187bcd95f2",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Science"
+  },
+  {
+    "question": "Will AGI be declared by any major lab before 2027?",
+    "address": "0x845a2b9d93377Bd431BAe4751086fd013eB27ca5",
+    "tx": "0x131f94f5a3774e48ae8c6dd1003d50346abe05617f50ee13c4cbe45e5d2bfb29",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Science"
+  },
+  {
+    "question": "Will a human-rated commercial space station be operational by 2028?",
+    "address": "0x3D5e391A386E9478dc0cE508Ee1CFBf246f6E4f1",
+    "tx": "0x2d7ffd37811bbcdff9f5079302c228f42dde77668901d8a8a2cd4a9fe7f0f501",
+    "deadline": "2028-01-01T00:00:00.000Z",
+    "category": "Science"
+  },
+  {
+    "question": "Will Apple release an AI chip beating Nvidia H100 performance by 2027?",
+    "address": "0x4f462f45D7C81D2B4b3D8c9F5bA92C7f147443dD",
+    "tx": "0x4bf965065401466f2c64fe0c7334f02912ae5b3ec796571fde1a061f512ca347",
+    "deadline": "2027-06-30T23:59:00.000Z",
+    "category": "Science"
+  },
+  {
+    "question": "Will the US Federal Reserve cut rates 3+ times in 2026?",
+    "address": "0x3016E4DFA741d24cFC5f7b32123720d5688F07B4",
+    "tx": "0x417a7e4c29e524f4bafae39e1b04aad5e63c32d929cba4b8cdd571b3b5aded33",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Finance"
+  },
+  {
+    "question": "Will US inflation fall below 2% by Q4 2026?",
+    "address": "0xE1D85C8063C20e6934f496b0b53013d70868C420",
+    "tx": "0xc39ed27a12e520c69aba28821a744964565504ff0cf43c1b8a7489e0e50ef667",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Finance"
+  },
+  {
+    "question": "Will gold hit $4,000/oz in 2026?",
+    "address": "0x1903BeEEc9c10cFB84078DE14c949A49ab5de3e1",
+    "tx": "0x8768e93441b569971f1cfe53c5967c04ecb1e6be434617ffbdcf2f400d1a5e99",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Finance"
+  },
+  {
+    "question": "Will GTA VI be released before end of 2026?",
+    "address": "0x639cb3Fec318EED36b6D6270E1fE02423fafAd24",
+    "tx": "0xc5f2f8b769ba5d2db9773308536fdd0cf6ed4579b6d439a9808fe52e877a7057",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Other"
+  },
+  {
+    "question": "Will Taylor Swift announce a 2027 world tour?",
+    "address": "0x624A5E75858b564AF243927277a91d126D89E152",
+    "tx": "0x1ba9f01cb7d2e592f51c3ff2db2e6594cf80fa26e1a553292b3d3623c87d3073",
+    "deadline": "2026-12-31T23:59:00.000Z",
+    "category": "Other"
+  }
+]

@@ -1,15 +1,12 @@
-import { FileText, Clock, UserCheck, ShieldCheck } from "lucide-react";
-import { shortAddr } from "@/lib/format";
+import { FileText, Clock, Scale, ShieldCheck } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export function SettlementCard({
   description,
-  oracle,
   deadline,
   disputeWindow,
 }: {
   description: string;
-  oracle: string;
   deadline: number;
   disputeWindow: number;
 }) {
@@ -39,8 +36,8 @@ export function SettlementCard({
           <Info icon={<Clock className="h-4 w-4" />} label="Closes">
             {deadlineDate}
           </Info>
-          <Info icon={<UserCheck className="h-4 w-4" />} label="Resolver">
-            {shortAddr(oracle)}
+          <Info icon={<Scale className="h-4 w-4" />} label="Settlement">
+            Pro-rata payout
           </Info>
         </div>
 

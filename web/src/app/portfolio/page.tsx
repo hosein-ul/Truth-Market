@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Eye, Wallet, Lock, Trophy, Inbox } from "lucide-react";
+import { Eye, Wallet, Lock, Trophy, Inbox, LogOut } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { publicClient } from "@/lib/viem";
 import { ADDRESSES } from "@/lib/addresses";
@@ -12,6 +12,8 @@ import { marketFactoryAbi, marketAbi, erc7984Abi, MARKET_STATUS } from "@/lib/ab
 import { useFhevm } from "@/lib/useFhevm";
 import { formatUSDC } from "@/lib/format";
 import { humanizeError } from "@/lib/errors";
+import { getLocalPosition } from "@/lib/positions";
+import { getLocalBalance, addToLocalBalance } from "@/lib/balance";
 import { SealedValue } from "@/components/Sealed";
 import { CategoryChip } from "@/components/CategoryChip";
 import { MarketStatusBadge } from "@/components/MarketStatusBadge";
@@ -41,6 +43,7 @@ export default function PortfolioPage() {
   const [balHandle, setBalHandle] = useState<`0x${string}` | null>(null);
   const [bal, setBal] = useState<bigint | null>(null);
   const [busyClaim, setBusyClaim] = useState<string | null>(null);
+  const [busyClose, setBusyClose] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!address) return;
@@ -99,24 +102,35 @@ export default function PortfolioPage() {
           ] as const,
       ),
     });
-    const result: Position[] = mine.map((m, i) => ({
-      market: m.market,
-      question: m.question,
-      category: m.category,
-      status: Number(details[i * 5]),
-      outcomeYes: Boolean(details[i * 5 + 1]),
-      claimed: Boolean(details[i * 5 + 2]),
-      yesHandle: details[i * 5 + 3] as `0x${string}`,
-      noHandle: details[i * 5 + 4] as `0x${string}`,
-    }));
+    const result: Position[] = mine.map((m, i) => {
+      // Your own position is never hidden from you: surface the cleartext stake
+      // from this browser's local record immediately. On-chain it stays encrypted.
+      const lp = getLocalPosition(address, m.market);
+      return {
+        market: m.market,
+        question: m.question,
+        category: m.category,
+        status: Number(details[i * 5]),
+        outcomeYes: Boolean(details[i * 5 + 1]),
+        claimed: Boolean(details[i * 5 + 2]),
+        yesHandle: details[i * 5 + 3] as `0x${string}`,
+        noHandle: details[i * 5 + 4] as `0x${string}`,
+        yesClear: lp ? BigInt(lp.yes) : undefined,
+        noClear: lp ? BigInt(lp.no) : undefined,
+      };
+    });
     setPositions(result);
   }, [address]);
 
   useEffect(() => {
     if (!address) {
       setPositions(null);
+      setBal(null);
       return;
     }
+    // The browser composed every wrap/bet/claim — show the cleartext mirror
+    // immediately. On-chain ciphertext remains the authoritative source.
+    setBal(getLocalBalance(address));
     load().catch((e) => {
       console.error(e);
       setPositions([]);
@@ -200,6 +214,39 @@ export default function PortfolioPage() {
     }
   }
 
+  async function closePosition(p: Position) {
+    if (!address) return;
+    const stake = (p.yesClear ?? 0n) + (p.noClear ?? 0n);
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Close this position and withdraw $${formatUSDC(stake)} back to your confidential balance?`,
+      )
+    ) {
+      return;
+    }
+    const toastId = toast.loading("Closing position — full stake will be refunded…");
+    try {
+      setBusyClose(p.market);
+      const hash = await writeContractAsync({
+        address: p.market,
+        abi: marketAbi,
+        functionName: "cashOut",
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+      addToLocalBalance(address, stake);
+      setBal(getLocalBalance(address));
+      toast.success(`Position closed. $${formatUSDC(stake)} returned to your balance.`, {
+        id: toastId,
+      });
+      load();
+    } catch (e) {
+      toast.error(humanizeError(e), { id: toastId });
+    } finally {
+      setBusyClose(null);
+    }
+  }
+
   async function claim(p: Position) {
     const toastId = toast.loading("Claiming…");
     try {
@@ -262,36 +309,34 @@ export default function PortfolioPage() {
     <div className="container py-8">
       <h1 className="font-display text-3xl font-extrabold tracking-tight">Portfolio</h1>
 
-      {/* Balance card */}
+      {/* Balance card — always shows cleartext mirror; verify decrypts on-chain */}
       <Card className="mt-5 overflow-hidden">
         <div className="bg-mesh">
           <CardContent className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
             <div>
               <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
                 <Lock className="h-4 w-4 text-sky-600" />
-                Sealed balance
+                Confidential balance
               </div>
               <div className="mt-1.5">
-                {bal !== null ? (
-                  <span className="font-display text-4xl font-extrabold tabular-nums">
-                    ${formatUSDC(bal)}{" "}
-                    <span className="text-lg font-bold text-muted-foreground">USDC</span>
-                  </span>
-                ) : (
-                  <SealedValue size="lg" placeholder="$0,000.00" />
-                )}
+                <span className="font-display text-4xl font-extrabold tabular-nums">
+                  ${formatUSDC(bal ?? 0n)}{" "}
+                  <span className="text-lg font-bold text-muted-foreground">USDC</span>
+                </span>
               </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Encrypted on-chain · only your wallet can decrypt
+              </p>
             </div>
-            {bal === null && (
-              <Button
-                onClick={revealBalance}
-                disabled={fhevmStatus !== "ready" || !balHandle}
-                variant="outline"
-              >
-                <Eye className="h-4 w-4" />
-                Reveal balance
-              </Button>
-            )}
+            <Button
+              onClick={revealBalance}
+              disabled={fhevmStatus !== "ready" || !balHandle}
+              variant="outline"
+              size="sm"
+            >
+              <Eye className="h-4 w-4" />
+              Verify on-chain
+            </Button>
           </CardContent>
         </div>
       </Card>
@@ -314,7 +359,7 @@ export default function PortfolioPage() {
             Place your first sealed bet to start a portfolio.
           </p>
           <Button asChild variant="gradient" className="mt-4">
-            <Link href="/">Browse markets</Link>
+            <Link href="/markets">Browse markets</Link>
           </Button>
         </div>
       )}
@@ -350,7 +395,25 @@ export default function PortfolioPage() {
       {active.length > 0 && (
         <Section title="Active positions" icon={<Lock className="h-4 w-4 text-sky-600" />}>
           {active.map((p) => (
-            <PositionRow key={p.market} p={p} onReveal={() => revealPosition(p)} />
+            <PositionRow
+              key={p.market}
+              p={p}
+              onReveal={() => revealPosition(p)}
+              action={
+                p.yesClear !== undefined ? (
+                  <Button
+                    onClick={() => closePosition(p)}
+                    disabled={busyClose === p.market}
+                    variant="outline"
+                    size="sm"
+                    className="border-no/40 text-no-fg hover:bg-no-bg"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {busyClose === p.market ? "Closing…" : "Close"}
+                  </Button>
+                ) : undefined
+              }
+            />
           ))}
         </Section>
       )}
@@ -437,7 +500,7 @@ function PositionRow({
             {!revealed && (
               <Button onClick={onReveal} variant="ghost" size="sm">
                 <Eye className="h-4 w-4" />
-                Reveal
+                Verify on-chain
               </Button>
             )}
             {action}

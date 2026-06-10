@@ -7,10 +7,11 @@ import { Lock, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Faucet } from "@/components/Faucet";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "Markets" },
+  { href: "/markets", label: "Markets" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/create", label: "Create" },
 ];
@@ -19,11 +20,24 @@ export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname?.startsWith(href);
+  // Design-preview routes are full-bleed; hide the global chrome.
+  if (pathname?.startsWith("/preview")) return null;
+
+  const isActive = (href: string) => pathname?.startsWith(href);
+  // The app surface (markets/portfolio/create) carries the golden "zard-dark"
+  // theme; the landing page keeps the orange/sky palette.
+  const isDash =
+    pathname?.startsWith("/markets") ||
+    pathname?.startsWith("/portfolio") ||
+    pathname?.startsWith("/create");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg",
+        isDash && "theme-dash",
+      )}
+    >
       <div className="container flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 group">
           <motion.span
@@ -53,7 +67,7 @@ export function Navbar() {
               {isActive(item.href) && (
                 <motion.span
                   layoutId="nav-active"
-                  className="absolute inset-0 rounded-lg bg-orange-50 border border-orange-200/50"
+                  className="absolute inset-0 rounded-lg bg-primary/10 border border-primary/20"
                   transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 />
               )}
@@ -63,6 +77,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <div className="hidden sm:block">
             <Faucet />
           </div>
@@ -101,7 +116,7 @@ export function Navbar() {
                   className={cn(
                     "rounded-lg px-3 py-2.5 text-sm font-semibold",
                     isActive(item.href)
-                      ? "bg-orange-50 text-foreground"
+                      ? "bg-primary/10 text-foreground"
                       : "text-muted-foreground",
                   )}
                 >

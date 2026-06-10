@@ -199,6 +199,7 @@ export const marketAbi = [
     outputs: [],
   },
   { type: "function", name: "refreshOdds", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  { type: "function", name: "cashOut", stateMutability: "nonpayable", inputs: [], outputs: [] },
   {
     type: "function",
     name: "resolve",
@@ -242,6 +243,7 @@ export const marketAbi = [
   },
   { type: "event", name: "MarketVoided", inputs: [{ name: "reason", type: "string" }] },
   { type: "event", name: "Claimed", inputs: [{ name: "user", type: "address", indexed: true }] },
+  { type: "event", name: "PositionClosed", inputs: [] },
 ] as const;
 
 export const MARKET_STATUS = {
