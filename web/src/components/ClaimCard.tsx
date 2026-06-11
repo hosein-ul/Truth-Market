@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import { Trophy, RotateCcw, Lock } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletPicker } from "@/components/WalletPicker";
 import { marketAbi } from "@/lib/abis";
 import { humanizeError } from "@/lib/errors";
 import { publicClient } from "@/lib/viem";
@@ -21,6 +21,7 @@ export function ClaimCard({
 }) {
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const walletPicker = useWalletPicker();
   const [busy, setBusy] = useState(false);
 
   const { data: hasBet } = useReadContract({
@@ -91,13 +92,9 @@ export function ClaimCard({
 
       <div className="mt-4">
         {!isConnected ? (
-          <ConnectButton.Custom>
-            {({ openConnectModal }) => (
-              <Button onClick={openConnectModal} variant="gradient" className="w-full">
-                Connect wallet
-              </Button>
-            )}
-          </ConnectButton.Custom>
+          <Button onClick={walletPicker.open} variant="gradient" className="w-full">
+            Connect wallet
+          </Button>
         ) : !hasBet ? (
           <div className="rounded-xl bg-secondary px-3 py-2.5 text-sm text-muted-foreground">
             You don't have a position in this market.

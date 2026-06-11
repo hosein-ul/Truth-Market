@@ -5,9 +5,12 @@ import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Lock, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useAccount } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Faucet } from "@/components/Faucet";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useWalletPicker } from "@/components/WalletPicker";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -19,6 +22,8 @@ const NAV = [
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { isConnected } = useAccount();
+  const walletPicker = useWalletPicker();
 
   // Design-preview routes are full-bleed; hide the global chrome.
   if (pathname?.startsWith("/preview")) return null;
@@ -82,11 +87,17 @@ export function Navbar() {
             <Faucet />
           </div>
           <div className="hidden sm:block">
-            <ConnectButton
-              showBalance={false}
-              chainStatus="icon"
-              accountStatus={{ smallScreen: "avatar", largeScreen: "full" }}
-            />
+            {isConnected ? (
+              <ConnectButton
+                showBalance={false}
+                chainStatus="icon"
+                accountStatus={{ smallScreen: "avatar", largeScreen: "full" }}
+              />
+            ) : (
+              <Button onClick={walletPicker.open} variant="gradient" size="sm">
+                Connect wallet
+              </Button>
+            )}
           </div>
           <button
             className="grid h-10 w-10 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
@@ -132,7 +143,13 @@ export function Navbar() {
                   </button>
                 }
               />
-              <ConnectButton showBalance={false} chainStatus="icon" />
+              {isConnected ? (
+                <ConnectButton showBalance={false} chainStatus="icon" />
+              ) : (
+                <Button onClick={() => { setOpen(false); walletPicker.open(); }} variant="gradient" className="w-full">
+                  Connect wallet
+                </Button>
+              )}
             </div>
           </motion.div>
         )}

@@ -6,7 +6,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { decodeEventLog } from "viem";
 import { toast } from "sonner";
 import { Sparkles, BarChart3, EyeOff } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletPicker } from "@/components/WalletPicker";
 import { ADDRESSES } from "@/lib/addresses";
 import { marketFactoryAbi } from "@/lib/abis";
 import { publicClient } from "@/lib/viem";
@@ -32,6 +32,7 @@ export default function CreatePage() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const walletPicker = useWalletPicker();
 
   const [question, setQuestion] = useState("");
   const [description, setDescription] = useState("");
@@ -194,19 +195,15 @@ export default function CreatePage() {
                   {busy ? "Creating…" : "Create market"}
                 </Button>
               ) : (
-                <ConnectButton.Custom>
-                  {({ openConnectModal }) => (
-                    <Button
-                      type="button"
-                      onClick={openConnectModal}
-                      variant="gradient"
-                      size="lg"
-                      className="w-full sm:w-auto"
-                    >
-                      Connect wallet to create
-                    </Button>
-                  )}
-                </ConnectButton.Custom>
+                <Button
+                  type="button"
+                  onClick={walletPicker.open}
+                  variant="gradient"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  Connect wallet to create
+                </Button>
               )}
             </div>
           </form>
