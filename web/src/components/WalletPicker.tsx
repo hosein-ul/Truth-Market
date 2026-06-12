@@ -189,6 +189,14 @@ function WalletOption({
       className={`relative rounded-2xl ${disabled ? "opacity-60" : "cursor-pointer"}`}
       onClick={disabled ? undefined : onClick}
     >
+      {/* ShineBorder sits outside MagicCard so inset-0 matches the wrapper */}
+      <ShineBorder
+        borderWidth={2}
+        duration={9}
+        shineColor={shineColors}
+        className="rounded-2xl"
+      />
+
       <MagicCard
         mode="orb"
         glowFrom={glowFrom}
@@ -199,14 +207,6 @@ function WalletOption({
         borderColor="rgba(255,255,255,0.10)"
         className="h-full rounded-2xl"
       >
-        {/* animated shine border around the card */}
-        <ShineBorder
-          borderWidth={1.5}
-          duration={9}
-          shineColor={shineColors}
-          className="rounded-2xl"
-        />
-
         <div className="flex h-full flex-col items-start p-5 text-left">
           <div
             className={`mb-3 grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${iconGradient} text-white shadow-lg ${iconShadow}`}
