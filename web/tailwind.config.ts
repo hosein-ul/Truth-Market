@@ -125,6 +125,16 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-4px)" },
         },
+        // Magic UI — rainbow border (default 2s) + shine border
+        rainbow: {
+          "0%": { backgroundPosition: "0%" },
+          "100%": { backgroundPosition: "200%" },
+        },
+        shine: {
+          "0%": { backgroundPosition: "0% 0%" },
+          "50%": { backgroundPosition: "100% 100%" },
+          to: { backgroundPosition: "0% 0%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -132,6 +142,8 @@ const config: Config = {
         shimmer: "shimmer 2.5s linear infinite",
         "fade-up": "fade-up 0.4s ease-out forwards",
         float: "float 4s ease-in-out infinite",
+        rainbow: "rainbow var(--speed, 2s) infinite linear",
+        shine: "shine var(--duration, 14s) infinite linear",
       },
     },
   },

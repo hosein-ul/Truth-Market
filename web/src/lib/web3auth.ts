@@ -5,8 +5,12 @@ import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { sepolia } from "wagmi/chains";
 
+// `||` (not `??`) so an EMPTY env value also falls back to the demo client id.
+// Web3Auth throws "Invalid clientId" on an empty string, which would crash the
+// whole app at module load. The demo id keeps the embedded wallet working until
+// the user sets their own from https://dashboard.web3auth.io.
 const CLIENT_ID =
-  process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID ??
+  process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID ||
   "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zy6Xu-2Q5Y4Ns";
 
 const RPC_URL =

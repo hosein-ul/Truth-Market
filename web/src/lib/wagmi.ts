@@ -28,10 +28,20 @@ const rkConnectors = connectorsForWallets(
   { appName: "TruthMarket", projectId },
 );
 
-const web3AuthConnector =
-  typeof window !== "undefined"
-    ? Web3AuthConnector({ web3AuthInstance: getWeb3Auth() as any })
-    : null;
+// Build the embedded-wallet connector defensively: if Web3Auth can't init
+// (e.g. missing/invalid client id, offline), we still ship the app with the
+// external-wallet (RainbowKit) flow intact instead of crashing at module load.
+function buildWeb3AuthConnector() {
+  if (typeof window === "undefined") return null;
+  try {
+    return Web3AuthConnector({ web3AuthInstance: getWeb3Auth() as any });
+  } catch (e) {
+    console.warn("[wagmi] Web3Auth connector unavailable:", e);
+    return null;
+  }
+}
+
+const web3AuthConnector = buildWeb3AuthConnector();
 
 export const wagmiConfig = createConfig({
   chains: [sepolia],
