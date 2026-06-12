@@ -417,3 +417,72 @@ html.dark [data-rk] {
 [data-rk] button[data-testid^="rk-wallet-option"] * {
   color: var(--rk-colors-modalText) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   WalletPicker — shine border + rainbow button animations
+   ═══════════════════════════════════════════════════════════ */
+
+/* Rotating conic-gradient shine border */
+@keyframes wallet-card-shine {
+  0%   { --card-angle: 0deg; }
+  100% { --card-angle: 360deg; }
+}
+
+@property --card-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.wallet-card-shine {
+  position: relative;
+  isolation: isolate;
+}
+.wallet-card-shine::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--card-angle),
+    transparent 0deg,
+    rgba(255,255,255,0.6) 60deg,
+    transparent 120deg
+  );
+  animation: wallet-card-shine 2.8s linear infinite;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.wallet-card-shine:hover::before {
+  opacity: 1;
+}
+
+/* Rainbow button */
+@keyframes rainbow-slide {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn-rainbow {
+  background: linear-gradient(
+    270deg,
+    #ff0080, #ff4d00, #ffcc00, #00ff88, #00cfff, #8b5cf6, #ff0080
+  );
+  background-size: 300% 300%;
+  animation: rainbow-slide 3s ease infinite;
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 0 18px rgba(139,92,246,0.35), 0 2px 8px rgba(0,0,0,0.18);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+.btn-rainbow:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 0 28px rgba(139,92,246,0.5), 0 4px 16px rgba(0,0,0,0.22);
+  filter: brightness(1.08);
+}
+.btn-rainbow:active {
+  transform: scale(0.98);
+}
