@@ -111,8 +111,8 @@ function PickerDialog({ onClose }: { onClose: () => void }) {
           <WalletOption
             onClick={handleExternal}
             icon={<Wallet className="h-5 w-5" />}
-            iconGradient="from-violet-400 to-pink-500"
-            iconShadow="shadow-violet-500/30"
+            iconGradient="from-sky-400 to-cyan-500"
+            iconShadow="shadow-sky-500/30"
             glowFrom="#ee4f27"
             glowTo="#6b21ef"
             innerBackground="#0c0c14"
@@ -120,8 +120,8 @@ function PickerDialog({ onClose }: { onClose: () => void }) {
             title="External Wallet"
             description="MetaMask, Coinbase, Rainbow, or any wallet you already have."
             features={[
-              { icon: <Shield className="h-3 w-3 text-violet-400" />, label: "Full control of your keys" },
-              { icon: <Fingerprint className="h-3 w-3 text-violet-400" />, label: "Signs each transaction" },
+              { icon: <Shield className="h-3 w-3 text-sky-400" />, label: "Full control of your keys" },
+              { icon: <Fingerprint className="h-3 w-3 text-sky-400" />, label: "Signs each transaction" },
             ]}
             cta="Connect wallet"
           />
@@ -131,8 +131,8 @@ function PickerDialog({ onClose }: { onClose: () => void }) {
             onClick={w3aConnector && !busy ? handleEmbedded : undefined}
             disabled={!w3aConnector || busy}
             icon={<Zap className="h-5 w-5" />}
-            iconGradient="from-pink-400 to-violet-500"
-            iconShadow="shadow-pink-500/30"
+            iconGradient="from-blue-400 to-sky-500"
+            iconShadow="shadow-blue-500/30"
             glowFrom="#ee4f27"
             glowTo="#6b21ef"
             innerBackground="#0c0c14"
@@ -140,8 +140,8 @@ function PickerDialog({ onClose }: { onClose: () => void }) {
             title="TruthMarket Wallet"
             description="One-time deposit, then predict with zero popups or signing."
             features={[
-              { icon: <Zap className="h-3 w-3 text-pink-400" />, label: "No signing per transaction" },
-              { icon: <Lock className="h-3 w-3 text-pink-400" />, label: "Withdraw anytime" },
+              { icon: <Zap className="h-3 w-3 text-blue-400" />, label: "No signing per transaction" },
+              { icon: <Lock className="h-3 w-3 text-blue-400" />, label: "Withdraw anytime" },
             ]}
             cta={busy ? "Connecting…" : "Connect wallet"}
           />
