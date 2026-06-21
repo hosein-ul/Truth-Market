@@ -94,8 +94,18 @@ post-K-anon snapshot, available at
 contracts/
 ├─ ConfidentialMarket.sol   per-market: encrypted bet, K-anon snapshot, resolve, finalize, claim
 ├─ MarketFactory.sol        deploys + indexes markets
+├─ UmaResolver.sol          optional UMA Optimistic Oracle V3 resolution adapter (see docs/UMA.md)
+├─ uma/interfaces/          vendored minimal UMA interfaces
 └─ mocks/                   TEST-ONLY local stand-ins for the official Zama tokens
 ```
+
+### Optional: UMA Optimistic Oracle V3 resolution
+
+Markets can be resolved through **UMA's real OOV3 on Sepolia** instead of a
+trusted EOA oracle — pass the `UmaResolver` address as the `oracle` when creating
+a market. Outcomes are asserted with a bond and resolve optimistically after a
+liveness window. Full design, deploy, and a real-Sepolia end-to-end demo are in
+**[`docs/UMA.md`](docs/UMA.md)** (including the testnet DVM/dispute limitation).
 
 Built on:
 - [`@fhevm/solidity ^0.11.1`](https://docs.zama.org/protocol/solidity-guides)

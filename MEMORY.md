@@ -5,7 +5,7 @@
 > that remain. Update it after each working session so context is never lost
 > between conversations. (See also `CLAUDE.md` for the short operating guide.)
 
-**Last updated:** 2026-06-06 (Session 13)
+**Last updated:** 2026-06-21 (Session 14)
 **Repo:** `hosein-ul/Truth-Market` · **Dev branch:** `claude/loving-meitner-VH1fm`
 **Network:** Ethereum Sepolia (testnet only)
 
@@ -422,3 +422,13 @@ sign + `userDecrypt`.
   - **`scripts/seed-30-markets.ts`** (new): 30 markets across Crypto (8), Politics (7), Sports (6), Science (4), Finance (3), Other (2). Same pattern as `seed-demo-markets.ts` — reads factory address from `deployments/sepolia/addresses.json`, iterates seeds, waits for `MarketCreated` event, saves to `deployments/sepolia/seed-30-markets.json`. Run with `npx hardhat run scripts/seed-30-markets.ts --network sepolia`.
   - **Category filter** already works via `MarketsExplorer` filtering on `m.category` from on-chain data. No changes needed to filter logic.
   - **Image notes:** Unsplash URLs use `crossOrigin="anonymous"` to satisfy Zama's COEP `require-corp` headers. If a photo returns 404, `onError` automatically falls back to the category gradient. After running the seed script, copy new addresses from `seed-30-markets.json` into `MARKET_META` for exact per-address image assignments.
+- **Session 14 (2026-06-21).** Integrated **UMA Optimistic Oracle V3** (real Sepolia deploy) as an optional resolution layer — non-invasive adapter pattern.
+  - **Design decisions (user-confirmed):** standalone adapter (not modifying `ConfidentialMarket`); permissionless asserts with bond (UMA-idiomatic); bond currency = `OOV3.defaultCurrency()` with a configurable floor. Market collateral stays Zama cUSDC — UMA bond is a *separate* whitelisted ERC-20.
+  - **`contracts/UmaResolver.sol`** (new): installed as a market's `oracle`. `assertMarketOutcome(market, YES/NO)` escrows the bond, calls real `OOV3.assertTruth(claim, asserter=msg.sender, callbackRecipient=this, …)`. `assertionResolvedCallback(id, true)` → `market.resolve(outcome)` → market goes `Resolving`. Disputed/false → clears so it can be re-asserted. Constructor takes ONLY the UMA **Finder** and reads live OOV3 + `defaultCurrency` + `defaultIdentifier` from it (no hardcoded oracle). `liveness` + `bondAmount` floor configurable (`setParams`, owner-gated); effective bond = `max(floor, OOV3.getMinimumBond)`.
+  - **`contracts/uma/interfaces/`** (new): vendored minimal `FinderInterface`, `OptimisticOracleV3Interface` (+ `defaultCurrency()`/`defaultLiveness()` getters), `OptimisticOracleV3CallbackRecipientInterface`. AGPL headers preserved.
+  - **`config/uma.ts`** (new): UMA Sepolia addresses — Finder `0xf4C48eDAd256326086AEfbd1A53e1896815F8f13`, OOV3 `0xFd9e2642a170aDD10F53Ee14a93FcF2F31924944` (resolved dynamically from Finder; address here is for logging only). Source: `UMAprotocol/protocol` `networks/11155111.json`.
+  - **`scripts/deploy-uma-resolver.ts`** (new): deploys `UmaResolver(finder, liveness, bondAmount)`, echoes resolved OOV3/currency/effective-bond, writes `deployments/sepolia/uma-resolver.json`, verifies on Etherscan. Env: `UMA_LIVENESS` (default 120s), `UMA_BOND` (default 0 ⇒ OOV3 min).
+  - **`scripts/uma-e2e-demo.ts`** (new): real-Sepolia happy-path demo — create market (oracle=resolver, +90s deadline) → wait deadline → approve+assert (aborts with instructions if asserter lacks bond currency) → wait liveness → `settleAssertion` → assert market is `Resolving` with the asserted outcome. Env `UMA_OUTCOME=YES|NO`.
+  - **`docs/UMA.md`** (new) + README pointer: architecture diagram, design points, deploy/demo steps, and the **Sepolia DVM limitation** — happy path is fully real; disputed assertions can't reach final DVM resolution on testnet (DVM not live), so the market stays Open and re-assertable. Mainnet DVM resolves disputes unchanged.
+  - **Constraint respected:** per user's "no mock oracle unless asked", added NO local mock OOV3 / unit test for the resolver — verification is the real-Sepolia e2e script. `ConfidentialMarket.sol` + `MarketFactory.sol` untouched; existing 9 tests still pass; `npx hardhat compile` ✓; typechain ✓; new TS files typecheck clean under project tsconfig.
+  - **Not yet deployed on-chain** — contracts/scripts ready; run `deploy-uma-resolver.ts` then `uma-e2e-demo.ts` on Sepolia with a funded key + bond currency.
