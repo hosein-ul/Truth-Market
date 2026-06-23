@@ -1,0 +1,18 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployer": "0xC0d1AC70A3A32BceA4a124e65eb22eb5f0d0Adc2",
+  "deployedAt": "2026-06-23T21:16:01.843Z",
+  "contracts": {
+    "UmaResolver": "0x62BB9b5f6bde7eFb1905b1a3d946B1A2875E8F8B",
+    "finder": "0xf4C48eDAd256326086AEfbd1A53e1896815F8f13",
+    "optimisticOracleV3": "0xFd9e2642a170aDD10F53Ee14a93FcF2F31924944",
+    "bondCurrency": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+  },
+  "params": {
+    "liveness": 120,
+    "bondFloor": "0",
+    "effectiveBond": "400000000"
+  },
+  "note": "UmaResolver is the UMA OOV3 adapter. Pass its address as the `oracle` when calling MarketFactory.createMarket() to have markets resolved via UMA."
+}

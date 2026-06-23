@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Lock, TrendingUp } from "lucide-react";
+import { Lock, TrendingUp, ShieldCheck } from "lucide-react";
 import type { MarketSummary } from "@/lib/markets";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
+import { ADDRESSES } from "@/lib/addresses";
 import { CategoryChip } from "./CategoryChip";
 import { MarketStatusBadge } from "./MarketStatusBadge";
 import { Countdown } from "./Countdown";
@@ -19,6 +20,7 @@ export function MarketCard({ m }: { m: MarketSummary }) {
   const isOpen = status === MARKET_STATUS.OPEN;
   const isResolved = status === MARKET_STATUS.RESOLVED;
   const isVoided = status === MARKET_STATUS.VOIDED;
+  const isUmaResolved = m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase();
 
   // Public odds + volume: on-chain truth blended with a stable seeded baseline so
   // every market always shows readable prices. Per-wallet positions stay private.
@@ -56,7 +58,15 @@ export function MarketCard({ m }: { m: MarketSummary }) {
           <div className="flex flex-1 flex-col p-4">
             {/* Header */}
             <div className="flex items-start justify-between gap-2">
-              <CategoryChip category={m.category} />
+              <div className="flex flex-wrap items-center gap-1.5">
+                <CategoryChip category={m.category} />
+                {isUmaResolved && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                    <ShieldCheck className="h-3 w-3" />
+                    UMA
+                  </span>
+                )}
+              </div>
               <MarketStatusBadge status={status} />
             </div>
 

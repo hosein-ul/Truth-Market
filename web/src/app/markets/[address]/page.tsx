@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket } from "lucide-react";
+import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket, ShieldCheck } from "lucide-react";
 import { getMarketDetail } from "@/lib/markets";
 import { getMarketActivity } from "@/lib/activity";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
@@ -10,6 +10,8 @@ import { ProbabilityBar } from "@/components/ProbabilityBar";
 import { BetForm } from "@/components/BetForm";
 import { ClaimCard } from "@/components/ClaimCard";
 import { OraclePanel } from "@/components/OraclePanel";
+import { UmaResolverPanel } from "@/components/UmaResolverPanel";
+import { ADDRESSES } from "@/lib/addresses";
 import { PositionCard } from "@/components/PositionCard";
 import { ActivityChart } from "@/components/ActivityChart";
 import { ActivityList } from "@/components/ActivityList";
@@ -106,6 +108,7 @@ export default async function MarketDetailPage({
   const realNo = isResolved ? m.noPoolFinal : m.noPoolSnapshot;
   const stats = displayStats(m.address, realYes, realNo, m.betCount);
   const yesPct = isResolved ? (m.outcomeYes ? 100 : 0) : stats.yesPct;
+  const isUmaResolved = m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase();
 
   return (
     <div className="container py-6">
@@ -124,6 +127,12 @@ export default async function MarketDetailPage({
             <div className="flex flex-wrap items-center gap-2">
               <CategoryChip category={m.category} />
               <MarketStatusBadge status={status} />
+              {isUmaResolved && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  UMA-resolved
+                </span>
+              )}
               <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                 <Lock className="h-3.5 w-3.5" />
                 {stats.betCount.toLocaleString()} encrypted positions
@@ -226,13 +235,17 @@ export default async function MarketDetailPage({
               />
             )}
             <PositionCard marketAddress={m.address} status={status} deadline={m.deadline} />
-            <OraclePanel
-              marketAddress={m.address}
-              oracle={m.oracle}
-              deadline={m.deadline}
-              disputeWindow={m.disputeWindow}
-              status={status}
-            />
+            {m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase() ? (
+              <UmaResolverPanel marketAddress={m.address} deadline={m.deadline} status={status} />
+            ) : (
+              <OraclePanel
+                marketAddress={m.address}
+                oracle={m.oracle}
+                deadline={m.deadline}
+                disputeWindow={m.disputeWindow}
+                status={status}
+              />
+            )}
           </div>
         </div>
       </div>
