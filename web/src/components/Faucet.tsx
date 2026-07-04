@@ -86,7 +86,7 @@ export function Faucet({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-gradient text-white shadow-orange-glow">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-gradient text-zinc-950 shadow-brand-glow">
               <Droplets className="h-4 w-4" />
             </span>
             Get test USDC

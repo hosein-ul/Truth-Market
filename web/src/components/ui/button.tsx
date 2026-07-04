@@ -13,7 +13,7 @@ const buttonVariants = cva(
         default:
           "bg-primary text-primary-foreground shadow-soft hover:bg-primary/90 hover:shadow-card",
         gradient:
-          "bg-brand-gradient text-white shadow-card hover:shadow-lift hover:brightness-105",
+          "bg-brand-gradient text-zinc-950 shadow-card hover:shadow-lift hover:brightness-105",
         yes: "bg-yes text-white shadow-soft hover:bg-yes/90",
         no: "bg-no text-white shadow-soft hover:bg-no/90",
         destructive:

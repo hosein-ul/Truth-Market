@@ -2,60 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TruthMarket — Solar Burst design system
-   Warm orange + sky blue + white. Light, energetic, premium. */
+/* TruthMarket — Zama design system.
+   Brand palette (Zama guidelines): yellow #FFD208, black #000000,
+   dark gray #2D2D2D, light gray #F4F4F4, white #FFFFFF.
+   Light mode mirrors zama.ai (white surfaces, black type, yellow CTAs);
+   dark mode is the black-card variant of the same brand. */
 
 @layer base {
   :root {
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 100%;         /* #FFFFFF */
+    --foreground: 0 0% 9%;           /* near-black type */
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 25 95% 53%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 49 100% 52%;          /* #FFD208 Zama yellow */
+    --primary-foreground: 0 0% 4%;   /* black text/icon on yellow */
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 20%;
+    --secondary: 0 0% 96%;           /* #F4F4F4 */
+    --secondary-foreground: 0 0% 18%; /* #2D2D2D */
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 199 89% 48%;
+    --accent: 0 0% 9%;               /* black accent (Zama CTA pairing) */
     --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 47 100% 45%;
+
+    --radius: 0.75rem;
+
+    /* Semantic YES / NO (light) */
+    --yes: 160 84% 39%;        /* #10b981 */
+    --yes-fg: 161 94% 24%;     /* #047857 */
+    --yes-bg: 152 81% 96%;     /* #ecfdf5 */
+    --yes-ring: 156 72% 67%;   /* #6ee7b7 */
+    --no: 350 89% 60%;         /* #f43f5e */
+    --no-fg: 343 88% 38%;      /* #be123c */
+    --no-bg: 356 100% 97%;     /* #fff1f2 */
+    --no-ring: 353 96% 82%;    /* #fda4af */
+  }
+
+  html.dark {
+    --background: 0 0% 4%;           /* brand black */
+    --foreground: 0 0% 96%;          /* #F4F4F4 */
+
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 96%;
+
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 96%;
+
+    --primary: 49 100% 52%;          /* yellow stays yellow */
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 62%;
+
+    --accent: 49 100% 52%;
+    --accent-foreground: 0 0% 4%;
 
     --destructive: 350 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 40% 94%;
-    --input: 210 40% 94%;
-    --ring: 25 95% 53%;
+    --border: 0 0% 18%;              /* #2D2D2D */
+    --input: 0 0% 18%;
+    --ring: 49 100% 52%;
 
-    --radius: 0.75rem;
-  }
-
-  /* Dashboard ("zard-dark") theme — light surface, golden-yellow + black controls.
-     Scoped to the app/markets routes so it reads as a distinct product surface
-     from the orange/sky landing page. */
-  .theme-dash {
-    --primary: 43 96% 48%;          /* golden yellow */
-    --primary-foreground: 0 0% 9%;  /* near-black text on yellow */
-    --secondary: 48 33% 95%;
-    --secondary-foreground: 0 0% 12%;
-    --muted: 48 20% 95%;
-    --accent: 0 0% 10%;             /* black accent */
-    --accent-foreground: 0 0% 100%;
-    --ring: 43 96% 48%;
-    --border: 45 25% 90%;
-    --input: 45 25% 90%;
+    /* Semantic YES / NO (dark) — darker surfaces, brighter type */
+    --yes: 160 84% 45%;
+    --yes-fg: 158 64% 62%;
+    --yes-bg: 160 60% 9%;
+    --yes-ring: 160 50% 30%;
+    --no: 350 89% 62%;
+    --no-fg: 351 95% 71%;
+    --no-bg: 350 55% 11%;
+    --no-ring: 350 50% 32%;
   }
 
   * {
@@ -74,15 +107,9 @@
 }
 
 @layer components {
+  /* Black→gold headline sweep (light); gold sweep (dark, below). */
   .text-gradient {
-    background: linear-gradient(120deg, #f97316 0%, #ea580c 60%, #dc2626 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .text-gradient-blue {
-    background: linear-gradient(120deg, #0ea5e9 0%, #3b82f6 100%);
+    background-image: linear-gradient(120deg, #0a0a0a 0%, #6b5900 55%, #c7a400 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -95,25 +122,30 @@
     @apply -translate-y-0.5 shadow-lift;
   }
 
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(49 100% 45% / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(49 100% 45% / 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  /* Soft yellow ambience used behind hero/summary surfaces. */
+  .bg-mesh {
+    background-image:
+      radial-gradient(ellipse 60% 50% at 15% 0%, hsl(49 100% 52% / 0.12), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 10%, hsl(49 100% 52% / 0.07), transparent 60%);
+  }
+
   .glass-card {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 0, 0, 0.06);
   }
-
-  /* In the dashboard theme, shared components that hardcode the brand gradient
-     adopt a black control with the golden-yellow primary used for accents. */
-  .theme-dash .bg-brand-gradient {
-    background: linear-gradient(135deg, #18181b 0%, #000000 100%);
-  }
-  .theme-dash .shadow-orange-glow {
-    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3);
-  }
-  .theme-dash .text-gradient {
-    background: linear-gradient(120deg, #ca8a04 0%, #eab308 55%, #18181b 130%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+  html.dark .glass-card {
+    background: rgba(10, 10, 10, 0.75);
+    border-color: rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -135,104 +167,79 @@
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(210 20% 88%);
+  background: hsl(0 0% 84%);
   border-radius: 6px;
   border: 2px solid white;
 }
-::-webkit-scrollbar-thumb:hover { background: hsl(210 20% 78%); }
+::-webkit-scrollbar-thumb:hover { background: hsl(0 0% 72%); }
+html.dark ::-webkit-scrollbar-thumb { background: hsl(0 0% 24%); border-color: hsl(0 0% 4%); }
 
-::selection { background: hsl(25 95% 53% / 0.15); }
+::selection { background: hsl(49 100% 52% / 0.35); }
+html.dark ::selection { background: hsl(49 100% 52% / 0.3); }
 
+/* Dark-mode variants of the brand utilities. */
+html.dark .text-gradient {
+  background-image: linear-gradient(120deg, #ffd208 0%, #ffe45c 55%, #f4f4f4 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html.dark .bg-grid {
+  background-image:
+    linear-gradient(hsl(49 100% 52% / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(49 100% 52% / 0.05) 1px, transparent 1px);
+}
+html.dark .bg-mesh {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 15% 0%, hsl(49 100% 52% / 0.08), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 90% 10%, hsl(49 100% 52% / 0.05), transparent 60%);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RainbowKit — radii + always-readable wallet modal in both modes
+   ═══════════════════════════════════════════════════════════ */
 [data-rk] {
   --rk-radii-connectButton: 10px;
   --rk-radii-actionButton: 10px;
   --rk-radii-modal: 16px;
-}
 
-/* ═══════════════════════════════════════════════════════════
-   DARK MODE — applied via `html.dark`, default is light.
-   ═══════════════════════════════════════════════════════════ */
-html.dark {
-  --background: 222 47% 6%;          /* near-black */
-  --foreground: 210 40% 96%;         /* near-white */
-  --card: 222 47% 9%;
-  --card-foreground: 210 40% 96%;
-  --popover: 222 47% 9%;
-  --popover-foreground: 210 40% 96%;
-  --primary: 25 95% 58%;             /* vivid orange */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 222 30% 14%;
-  --secondary-foreground: 210 28% 80%;
-  --muted: 222 30% 14%;
-  --muted-foreground: 215 18% 60%;
-  --accent: 199 89% 58%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 350 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 222 30% 17%;
-  --input: 222 30% 17%;
-  --ring: 25 95% 58%;
-}
-html.dark .bg-brand-gradient {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
-}
-html.dark .text-gradient {
-  /* Use background-image (not shorthand) to avoid resetting background-clip. */
-  background-image: linear-gradient(120deg, #fb923c 0%, #f97316 60%, #ef4444 100%) !important;
-  background-color: transparent !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  color: transparent !important;
-}
-html.dark ::-webkit-scrollbar-thumb { background: hsl(222 20% 24%); border-color: hsl(222 47% 6%); }
-html.dark ::selection { background: hsl(25 95% 58% / 0.25); }
-
-/* ═══════════════════════════════════════════════════════════
-   Connect-a-Wallet modal — ALWAYS readable, in every theme.
-   RK provides modal theming via CSS vars; we override the ones
-   that control wallet rows + modal surface + text so the modal
-   surface is always crisp light (or its dark-mode twin).
-   ═══════════════════════════════════════════════════════════ */
-[data-rk] {
   --rk-colors-modalBackground: #ffffff;
-  --rk-colors-modalText: #0f172a;
+  --rk-colors-modalText: #0a0a0a;
   --rk-colors-modalTextDim: #6b7280;
   --rk-colors-modalTextSecondary: #6b7280;
   --rk-colors-modalBorder: rgba(0,0,0,0.08);
-  --rk-colors-menuItemBackground: #f3f4f6;
+  --rk-colors-menuItemBackground: #f4f4f4;
   --rk-colors-actionButtonBorder: rgba(0,0,0,0.08);
   --rk-colors-actionButtonBorderMobile: rgba(0,0,0,0.08);
-  --rk-colors-actionButtonSecondaryBackground: #f3f4f6;
-  --rk-colors-closeButton: #0f172a;
-  --rk-colors-closeButtonBackground: #f3f4f6;
+  --rk-colors-actionButtonSecondaryBackground: #f4f4f4;
+  --rk-colors-closeButton: #0a0a0a;
+  --rk-colors-closeButtonBackground: #f4f4f4;
   --rk-colors-generalBorder: rgba(0,0,0,0.08);
   --rk-colors-generalBorderDim: rgba(0,0,0,0.04);
-  --rk-colors-profileForeground: #f3f4f6;
+  --rk-colors-profileForeground: #f4f4f4;
   --rk-colors-profileAction: #ffffff;
-  --rk-colors-profileActionHover: #f3f4f6;
+  --rk-colors-profileActionHover: #f4f4f4;
 }
 
-/* dark mode wallet modal */
 html.dark [data-rk] {
-  --rk-colors-modalBackground: #0f172a;
-  --rk-colors-modalText: #f3f4f6;
-  --rk-colors-modalTextDim: #94a3b8;
-  --rk-colors-modalTextSecondary: #94a3b8;
+  --rk-colors-modalBackground: #0a0a0a;
+  --rk-colors-modalText: #f4f4f4;
+  --rk-colors-modalTextDim: #9ca3af;
+  --rk-colors-modalTextSecondary: #9ca3af;
   --rk-colors-modalBorder: rgba(255,255,255,0.08);
-  --rk-colors-menuItemBackground: #1e293b;
+  --rk-colors-menuItemBackground: #2d2d2d;
   --rk-colors-actionButtonBorder: rgba(255,255,255,0.08);
-  --rk-colors-actionButtonSecondaryBackground: #1e293b;
-  --rk-colors-closeButton: #f3f4f6;
-  --rk-colors-closeButtonBackground: #1e293b;
+  --rk-colors-actionButtonSecondaryBackground: #2d2d2d;
+  --rk-colors-closeButton: #f4f4f4;
+  --rk-colors-closeButtonBackground: #2d2d2d;
   --rk-colors-generalBorder: rgba(255,255,255,0.08);
-  --rk-colors-profileForeground: #1e293b;
-  --rk-colors-profileAction: #0f172a;
-  --rk-colors-profileActionHover: #1e293b;
+  --rk-colors-profileForeground: #2d2d2d;
+  --rk-colors-profileAction: #0a0a0a;
+  --rk-colors-profileActionHover: #2d2d2d;
 }
 
-/* Belt-and-braces: also force the wallet row background/text in case RK
-   ever changes their CSS-var contract or applies an inline override. */
+/* Belt-and-braces: force wallet row background/text in case RK changes their
+   CSS-var contract or applies an inline override. */
 [data-rk] [data-testid^="rk-wallet-option"],
 [data-rk] button[data-testid^="rk-wallet-option"] {
   background: var(--rk-colors-menuItemBackground) !important;
@@ -244,7 +251,7 @@ html.dark [data-rk] {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   WalletPicker — shine border + rainbow button animations
+   WalletPicker — shine border + brand CTA animations
    ═══════════════════════════════════════════════════════════ */
 
 /* Rotating conic-gradient shine border */
@@ -271,7 +278,7 @@ html.dark [data-rk] {
   background: conic-gradient(
     from var(--card-angle),
     transparent 0deg,
-    rgba(255,255,255,0.6) 60deg,
+    rgba(255, 210, 8, 0.75) 60deg,
     transparent 120deg
   );
   animation: wallet-card-shine 2.8s linear infinite;
@@ -283,7 +290,7 @@ html.dark [data-rk] {
   opacity: 1;
 }
 
-/* Rainbow button */
+/* Brand CTA button (kept class name; now a Zama yellow sweep, black text) */
 @keyframes rainbow-slide {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
@@ -291,22 +298,19 @@ html.dark [data-rk] {
 }
 
 .btn-rainbow {
-  background: linear-gradient(
-    270deg,
-    #ff0080, #ff4d00, #ffcc00, #00ff88, #00cfff, #8b5cf6, #ff0080
-  );
+  background: linear-gradient(270deg, #ffd208, #ffe45c, #f2c000, #ffd208);
   background-size: 300% 300%;
   animation: rainbow-slide 3s ease infinite;
-  color: #fff;
+  color: #0a0a0a;
   font-weight: 700;
   border: none;
-  box-shadow: 0 0 18px rgba(139,92,246,0.35), 0 2px 8px rgba(0,0,0,0.18);
+  box-shadow: 0 0 18px rgba(255, 210, 8, 0.35), 0 2px 8px rgba(0, 0, 0, 0.18);
   transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
 }
 .btn-rainbow:hover {
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 0 28px rgba(139,92,246,0.5), 0 4px 16px rgba(0,0,0,0.22);
-  filter: brightness(1.08);
+  box-shadow: 0 0 28px rgba(255, 210, 8, 0.5), 0 4px 16px rgba(0, 0, 0, 0.22);
+  filter: brightness(1.04);
 }
 .btn-rainbow:active {
   transform: scale(0.98);

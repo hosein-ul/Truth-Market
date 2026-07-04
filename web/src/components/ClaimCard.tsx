@@ -67,7 +67,7 @@ export function ClaimCard({
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient text-white">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient text-zinc-950">
           {voided ? <RotateCcw className="h-4 w-4" /> : <Trophy className="h-4 w-4" />}
         </span>
         <h3 className="font-display text-lg font-bold tracking-tight">

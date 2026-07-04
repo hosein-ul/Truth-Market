@@ -25,32 +25,18 @@ export function Navbar() {
   const { isConnected } = useAccount();
   const walletPicker = useWalletPicker();
 
-  // Design-preview routes are full-bleed; hide the global chrome.
-  if (pathname?.startsWith("/preview")) return null;
-
   const isActive = (href: string) => pathname?.startsWith(href);
-  // The app surface (markets/portfolio/create) carries the golden "zard-dark"
-  // theme; the landing page keeps the orange/sky palette.
-  const isDash =
-    pathname?.startsWith("/markets") ||
-    pathname?.startsWith("/portfolio") ||
-    pathname?.startsWith("/create");
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg",
-        isDash && "theme-dash",
-      )}
-    >
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
       <div className="container flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 group">
           <motion.span
             whileHover={{ scale: 1.06 }}
             transition={{ type: "spring", damping: 12 }}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-orange-glow"
+            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-brand-glow"
           >
-            <Lock className="h-4 w-4 text-white" strokeWidth={2.5} />
+            <Lock className="h-4 w-4 text-zinc-950" strokeWidth={2.5} />
           </motion.span>
           <span className="font-display text-lg font-extrabold tracking-tight">
             Truth<span className="text-gradient">Market</span>

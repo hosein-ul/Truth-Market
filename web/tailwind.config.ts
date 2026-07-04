@@ -44,38 +44,32 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Semantic YES/NO pairs — CSS-var driven so dark mode gets tuned
+        // surfaces instead of glaring light pastels (see globals.css).
         yes: {
-          DEFAULT: "#10b981",
-          fg: "#047857",
-          bg: "#ecfdf5",
-          ring: "#6ee7b7",
+          DEFAULT: "hsl(var(--yes))",
+          fg: "hsl(var(--yes-fg))",
+          bg: "hsl(var(--yes-bg))",
+          ring: "hsl(var(--yes-ring))",
         },
         no: {
-          DEFAULT: "#f43f5e",
-          fg: "#be123c",
-          bg: "#fff1f2",
-          ring: "#fda4af",
+          DEFAULT: "hsl(var(--no))",
+          fg: "hsl(var(--no-fg))",
+          bg: "hsl(var(--no-bg))",
+          ring: "hsl(var(--no-ring))",
         },
-        orange: {
-          50: "#fff7ed",
-          100: "#ffedd5",
-          200: "#fed7aa",
-          300: "#fdba74",
-          400: "#fb923c",
-          500: "#f97316",
-          600: "#ea580c",
-          700: "#c2410c",
-          800: "#9a3412",
-        },
-        sky: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
+        // Zama brand yellow scale (#FFD208 at 400).
+        zama: {
+          50: "#fffbe6",
+          100: "#fff5bf",
+          200: "#ffec80",
+          300: "#ffe045",
+          400: "#ffd208",
+          500: "#f2c000",
+          600: "#d4a800",
+          700: "#a68300",
+          800: "#7a6000",
+          900: "#4d3c00",
         },
       },
       borderRadius: {
@@ -96,13 +90,13 @@ const config: Config = {
         soft: "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
         card: "0 2px 8px -2px rgb(0 0 0 / 0.08), 0 4px 16px -4px rgb(0 0 0 / 0.04)",
         lift: "0 8px 24px -6px rgb(0 0 0 / 0.10), 0 2px 8px -2px rgb(0 0 0 / 0.05)",
-        glow: "0 0 0 4px hsl(25 95% 53% / 0.12)",
-        "orange-glow": "0 4px 14px rgba(249,115,22,0.25)",
+        glow: "0 0 0 4px hsl(49 100% 52% / 0.18)",
+        "brand-glow": "0 4px 14px rgba(255,210,8,0.35)",
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+        "brand-gradient": "linear-gradient(135deg, #ffd208 0%, #f2c000 100%)",
         "hero-mesh":
-          "linear-gradient(160deg, #fff7ed 0%, #ffffff 40%, #f0f9ff 100%)",
+          "linear-gradient(160deg, #fffbe6 0%, #ffffff 45%, #f4f4f4 100%)",
       },
       keyframes: {
         "accordion-down": {

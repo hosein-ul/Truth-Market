@@ -13,8 +13,8 @@ export function SiteFooter() {
       <div className="container flex flex-col gap-6 py-10 md:flex-row md:items-center md:justify-between">
         <div className="max-w-sm">
           <Link href="/" className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-gradient shadow-orange-glow">
-              <Lock className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-gradient shadow-brand-glow">
+              <Lock className="h-3.5 w-3.5 text-zinc-950" strokeWidth={2.5} />
             </span>
             <span className="font-display text-base font-extrabold tracking-tight">
               Truth<span className="text-gradient">Market</span>

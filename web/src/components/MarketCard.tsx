@@ -36,7 +36,7 @@ export function MarketCard({ m }: { m: MarketSummary }) {
 
   return (
     <Link href={`/markets/${m.address}`} className="block h-full">
-      <GlareCard className="h-full" glareColor="rgba(249,115,22,0.08)">
+      <GlareCard className="h-full" glareColor="rgba(255,210,8,0.12)">
         <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-200 group-hover:border-primary/30 group-hover:shadow-card">
           {/* Cover image */}
           <div className="relative h-36 w-full flex-shrink-0">

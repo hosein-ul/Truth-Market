@@ -124,7 +124,7 @@ export function OraclePanel({
   return (
     <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-gradient text-white">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-gradient text-zinc-950">
           <Gavel className="h-4 w-4" />
         </span>
         <h3 className="font-display text-base font-bold tracking-tight text-foreground">
