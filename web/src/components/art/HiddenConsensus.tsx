@@ -142,7 +142,9 @@ export function HiddenConsensus({ className, seed = 42 }: { className?: string; 
         };
 
         p.windowResized = () => {
-          if (!host) return;
+          // The ResizeObserver fires immediately on observe — before p5 has
+          // run setup() and created the renderer. Bail until the canvas exists.
+          if (!host || !p.canvas) return;
           w = host.clientWidth;
           h = host.clientHeight;
           p.resizeCanvas(w, h);
