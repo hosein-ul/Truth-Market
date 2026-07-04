@@ -1,3 +1,5 @@
+"use client";
+
 import { categoryMeta } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 

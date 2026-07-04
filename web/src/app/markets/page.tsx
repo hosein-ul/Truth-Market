@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TrendingUp, Activity, Lock, Plus } from "lucide-react";
+import { TrendingUp, Activity, Lock, Plus } from "@/components/icons";
 import { getMarketSummaries } from "@/lib/markets";
 import { MARKET_STATUS } from "@/lib/abis";
 import { MarketsExplorer } from "@/components/MarketsExplorer";

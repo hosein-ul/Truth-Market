@@ -6,7 +6,7 @@ import {
   Globe,
   TrendingUp,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
 export interface CategoryMeta {
   label: string;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket, ShieldCheck } from "@/components/icons";
 import { getMarketDetail } from "@/lib/markets";
 import { getMarketActivity } from "@/lib/activity";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
