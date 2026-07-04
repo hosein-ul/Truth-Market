@@ -18,17 +18,30 @@ const fadeUp = {
   transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
 };
 
-export function Landing({ featured }: { featured: MarketSummary[] }) {
+export interface LandingStats {
+  markets: number;
+  positions: number;
+  settled: number;
+}
+
+export function Landing({
+  featured,
+  stats,
+}: {
+  featured: MarketSummary[];
+  stats?: LandingStats;
+}) {
   return (
     <div className="overflow-hidden">
       {/* ───────────────────────── HERO ───────────────────────── */}
       <section className="relative isolate border-b border-border">
-        <div className="pointer-events-none absolute inset-0 bg-hero-mesh" />
-        {/* algorithmic art — "Hidden Consensus" encrypted probability field */}
-        <HiddenConsensus className="absolute inset-0 opacity-90 [mask-image:radial-gradient(ellipse_85%_80%_at_50%_40%,#000_60%,transparent_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-hero-mesh dark:hidden" />
+        {/* algorithmic art — "Hidden Consensus" encrypted probability field
+            (painted on a white canvas; the dark theme uses ZamaBackground) */}
+        <HiddenConsensus className="absolute inset-0 opacity-90 [mask-image:radial-gradient(ellipse_85%_80%_at_50%_40%,#000_60%,transparent_100%)] dark:hidden" />
         <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] rounded-full bg-orange-200/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-80 w-80 rounded-full bg-sky-200/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] rounded-full bg-zama-200/40 blur-3xl dark:bg-zama-900/30" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-80 w-80 rounded-full bg-zinc-200/40 blur-3xl dark:bg-zinc-800/40" />
 
         <div className="container relative z-10 py-20 sm:py-28">
           <motion.div
@@ -37,7 +50,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="mx-auto max-w-3xl text-center"
           >
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/70 px-4 py-1.5 text-sm font-semibold text-orange-700 backdrop-blur">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-zama-300 bg-white/70 px-4 py-1.5 text-sm font-semibold text-zama-800 dark:border-zama-700 dark:bg-zinc-900/70 dark:text-zama-300 backdrop-blur">
               <Cpu className="h-3.5 w-3.5" strokeWidth={2.5} />
               Confidential by protocol — powered by Zama FHEVM
             </div>
@@ -70,6 +83,15 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
               <div className="h-9 w-px bg-border" />
               <TrustPill icon={<EyeOff className="h-4 w-4" />} title="Untrackable" sub="no whale-watching" />
             </div>
+
+            {/* Live on-chain stats — real numbers, straight from the factory */}
+            {stats && stats.markets > 0 && (
+              <div className="mx-auto mt-10 grid max-w-lg grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card/80 shadow-soft backdrop-blur">
+                <HeroStat value={stats.markets} label="live markets" />
+                <HeroStat value={stats.positions} label="encrypted positions" />
+                <HeroStat value={stats.settled} label="markets settled" />
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
@@ -78,7 +100,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
       <section className="border-b border-border bg-secondary/30 py-20">
         <div className="container">
           <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-            <span className="text-sm font-bold uppercase tracking-wider text-orange-600">
+            <span className="text-sm font-bold uppercase tracking-wider text-zama-700 dark:text-zama-400">
               The problem with public markets
             </span>
             <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -116,7 +138,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
       <section className="border-b border-border py-20">
         <div className="container">
           <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-            <span className="text-sm font-bold uppercase tracking-wider text-sky-600">
+            <span className="text-sm font-bold uppercase tracking-wider text-zama-700 dark:text-zama-400">
               How TruthMarket is different
             </span>
             <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -165,7 +187,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
             <div className="grid grid-cols-[1.4fr_1fr_1fr] items-center border-b border-border bg-secondary/50 px-5 py-3.5 text-sm font-bold">
               <span className="text-muted-foreground">What others can see</span>
               <span className="text-center text-muted-foreground">Polymarket · Kalshi</span>
-              <span className="text-center text-orange-600">TruthMarket</span>
+              <span className="text-center text-zama-700 dark:text-zama-400">TruthMarket</span>
             </div>
             {COMPARISON.map((row, i) => (
               <div
@@ -185,7 +207,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
       <section id="how" className="scroll-mt-20 border-b border-border py-20">
         <div className="container">
           <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-            <span className="text-sm font-bold uppercase tracking-wider text-orange-600">
+            <span className="text-sm font-bold uppercase tracking-wider text-zama-700 dark:text-zama-400">
               How it works
             </span>
             <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -219,7 +241,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
             ))}
           </div>
 
-          <motion.div {...fadeUp} className="mx-auto mt-8 flex max-w-3xl items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-800">
+          <motion.div {...fadeUp} className="mx-auto mt-8 flex max-w-3xl items-start gap-3 rounded-2xl border border-zama-300 bg-zama-50 px-5 py-4 text-sm text-zama-900 dark:border-zama-800 dark:bg-zama-400/10 dark:text-zama-200">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" />
             <p>
               <strong>Privacy by protocol, not by promise.</strong> Your amount and side
@@ -238,7 +260,7 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
             <motion.div {...fadeUp} className="mb-8 flex items-end justify-between">
               <div>
                 <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                  Open markets
+                  Trending markets
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Public odds you can read at a glance — positions you can&apos;t.
@@ -268,13 +290,13 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
 
       {/* ───────────────────── FINAL CTA ───────────────────── */}
       <section className="relative overflow-hidden py-24">
-        <div className="pointer-events-none absolute inset-0 bg-hero-mesh" />
+        <div className="pointer-events-none absolute inset-0 bg-hero-mesh dark:hidden" />
         <HiddenConsensus
           seed={7}
-          className="absolute inset-0 opacity-70 [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,#000_50%,transparent_100%)]"
+          className="absolute inset-0 opacity-70 [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,#000_50%,transparent_100%)] dark:hidden"
         />
         <motion.div {...fadeUp} className="container relative z-10 text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/70 px-4 py-1.5 text-sm font-semibold text-orange-700 backdrop-blur">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-zama-300 bg-white/70 px-4 py-1.5 text-sm font-semibold text-zama-800 dark:border-zama-700 dark:bg-zinc-900/70 dark:text-zama-300 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
             Sepolia testnet — free to try
           </div>
@@ -303,10 +325,21 @@ export function Landing({ featured }: { featured: MarketSummary[] }) {
   );
 }
 
+function HeroStat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="px-4 py-3.5 text-center">
+      <div className="font-display text-2xl font-extrabold tabular-nums">
+        {value.toLocaleString()}
+      </div>
+      <div className="text-[11px] font-medium text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
 function TrustPill({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border bg-white/70 text-orange-600 backdrop-blur">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border bg-white/70 text-zama-700 backdrop-blur dark:bg-zinc-900/70 dark:text-zama-400">
         {icon}
       </div>
       <div>
@@ -349,19 +382,19 @@ const PROBLEMS = [
 const SOLUTIONS = [
   {
     icon: Lock,
-    tint: "border-sky-200 bg-sky-50 text-sky-600",
+    tint: "border-zama-300 bg-zama-50 text-zama-800 dark:border-zama-800 dark:bg-zama-400/10 dark:text-zama-300",
     title: "Encrypted positions",
     body: "Your amount and side are encrypted in your browser before they ever reach the chain. No order book, event, or balance can be tied back to you.",
   },
   {
     icon: BarChart3,
-    tint: "border-orange-200 bg-orange-50 text-orange-600",
+    tint: "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
     title: "Public, honest odds",
     body: "The aggregate market price stays fully public, so price discovery works exactly like it should — just without exposing a single individual behind it.",
   },
   {
     icon: Trophy,
-    tint: "border-emerald-200 bg-emerald-50 text-emerald-600",
+    tint: "border-yes-ring/40 bg-yes-bg text-yes-fg",
     title: "Confidential payouts",
     body: "Winnings settle privately. Only your wallet can decrypt what you were paid — no one can reverse-engineer your position from the result.",
   },

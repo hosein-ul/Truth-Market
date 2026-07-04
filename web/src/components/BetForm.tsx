@@ -27,9 +27,12 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function BetForm({
   marketAddress,
   deadline,
+  yesPct,
 }: {
   marketAddress: `0x${string}`;
   deadline: number;
+  /** Current implied YES probability (0–100) — enables the payout preview. */
+  yesPct?: number;
 }) {
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -85,6 +88,17 @@ export function BetForm({
   const needsWrap = amountWei > localBal;
   const shortBy = needsWrap ? amountWei - localBal : 0n;
   const canCover = shortBy <= underlyingBal;
+
+  // Parimutuel payout preview at the current implied odds: winners split the
+  // whole pool pro-rata, so payout ≈ stake / P(side). Estimate only — odds
+  // move until the market closes.
+  const sidePct = side === "YES" ? yesPct : yesPct !== undefined ? 100 - yesPct : undefined;
+  const estPayout =
+    sidePct !== undefined && sidePct > 0 && amountWei > 0n
+      ? (amountWei * 100n) / BigInt(Math.max(1, Math.round(sidePct)))
+      : undefined;
+  /** Total spendable: confidential balance + wrappable test USDC. */
+  const maxSpend = localBal + underlyingBal;
 
   async function handleBet() {
     if (!address) return;
@@ -203,7 +217,7 @@ export function BetForm({
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-display text-lg font-bold tracking-tight">Take a position</h3>
-        <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
+        <span className="inline-flex items-center gap-1 rounded-full border border-zama-300 bg-zama-50 px-2 py-0.5 text-xs font-semibold text-zama-800 dark:border-zama-800 dark:bg-zama-400/10 dark:text-zama-300">
           <Lock className="h-3 w-3" strokeWidth={2.5} />
           Encrypted on-chain
         </span>
@@ -264,7 +278,7 @@ export function BetForm({
           />
           <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">USDC</span>
         </div>
-        <div className="mt-2 grid grid-cols-4 gap-2">
+        <div className="mt-2 grid grid-cols-5 gap-2">
           {PRESETS.map((p) => (
             <button
               key={p}
@@ -280,11 +294,31 @@ export function BetForm({
               ${p}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setAmount(formatUSDC(maxSpend, { decimals: 0 }).replace(/,/g, ""))}
+            disabled={maxSpend <= 0n}
+            className="rounded-lg border border-border py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+          >
+            MAX
+          </button>
         </div>
       </div>
 
+      {/* Payout preview — the number every bettor actually cares about */}
+      {estPayout !== undefined && (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2.5">
+          <span className="text-xs font-semibold text-muted-foreground">
+            To win (at {Math.round(sidePct!)}% implied)
+          </span>
+          <span className="font-display text-base font-extrabold tabular-nums text-foreground">
+            ≈ ${formatUSDC(estPayout)}
+          </span>
+        </div>
+      )}
+
       {/* Privacy explainer — emphasise it's the protocol, not just the browser */}
-      <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-800">
+      <div className="mt-4 flex items-start gap-2 rounded-xl bg-zama-50 px-3 py-2.5 text-xs leading-relaxed text-zama-900 dark:bg-zama-400/10 dark:text-zama-200">
         <Cpu className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
         <span>
           Your position stays encrypted end to end. Amount and side are sealed before

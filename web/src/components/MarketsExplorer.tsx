@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Search, SlidersHorizontal, Sparkles, Hourglass, BadgePlus } from "lucide-react";
 import Link from "next/link";
 import type { MarketSummary } from "@/lib/markets";
 import { MARKET_STATUS } from "@/lib/abis";
@@ -32,7 +33,9 @@ const STATUS_TABS = [
 ];
 
 export function MarketsExplorer({ markets }: { markets: MarketSummary[] }) {
-  const [query, setQuery] = useState("");
+  // Seed the search box from ?q= (the navbar search routes here).
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams?.get("q") ?? "");
   const [category, setCategory] = useState("All");
   const [statusTab, setStatusTab] = useState("all");
   const [sort, setSort] = useState<SortKey>("newest");
@@ -62,6 +65,26 @@ export function MarketsExplorer({ markets }: { markets: MarketSummary[] }) {
   }, [markets, query, category, statusTab, sort]);
 
   const sortLabel = SORTS.find((s) => s.key === sort)?.label ?? "Newest";
+
+  // Discovery rails — only on the unfiltered view, Polymarket-style.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const railsVisible = !query.trim() && category === "All" && statusTab === "all";
+  const endingSoon = useMemo(
+    () =>
+      markets
+        .filter((m) => m.status === MARKET_STATUS.OPEN && m.deadline > nowSec)
+        .sort((a, b) => a.deadline - b.deadline)
+        .slice(0, 8),
+    [markets, nowSec],
+  );
+  const newest = useMemo(
+    () =>
+      markets
+        .filter((m) => m.status === MARKET_STATUS.OPEN)
+        .sort((a, b) => b.deadline - a.deadline)
+        .slice(0, 8),
+    [markets],
+  );
 
   return (
     <div>
@@ -135,8 +158,27 @@ export function MarketsExplorer({ markets }: { markets: MarketSummary[] }) {
         </div>
       </div>
 
+      {/* Discovery rails */}
+      {railsVisible && endingSoon.length > 0 && (
+        <Rail
+          title="Ending soon"
+          icon={<Hourglass className="h-4 w-4 text-zama-700 dark:text-zama-400" />}
+          markets={endingSoon}
+        />
+      )}
+      {railsVisible && newest.length > 0 && (
+        <Rail
+          title="New markets"
+          icon={<BadgePlus className="h-4 w-4 text-zama-700 dark:text-zama-400" />}
+          markets={newest}
+        />
+      )}
+
       {/* Results */}
       <div className="mt-6">
+        {railsVisible && (
+          <h2 className="mb-3 font-display text-lg font-bold tracking-tight">All markets</h2>
+        )}
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-16 text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground" />
@@ -157,5 +199,32 @@ export function MarketsExplorer({ markets }: { markets: MarketSummary[] }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** Horizontal scroll rail of market cards (discovery shelf). */
+function Rail({
+  title,
+  icon,
+  markets,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  markets: MarketSummary[];
+}) {
+  return (
+    <section className="mt-6">
+      <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold tracking-tight">
+        {icon}
+        {title}
+      </h2>
+      <div className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-2">
+        {markets.map((m) => (
+          <div key={m.address} className="w-72 flex-shrink-0 snap-start">
+            <MarketCard m={m} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
