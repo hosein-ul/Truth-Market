@@ -46,6 +46,22 @@ export function getLocalPosition(
   return read()[slot(wallet, market)] ?? null;
 }
 
+/** Reconcile the local mirror with an authoritative on-chain reveal. */
+export function setLocalPosition(
+  wallet: string,
+  market: string,
+  yes: bigint,
+  no: bigint,
+) {
+  const store = read();
+  store[slot(wallet, market)] = {
+    yes: yes.toString(),
+    no: no.toString(),
+    updatedAt: Date.now(),
+  };
+  write(store);
+}
+
 /** Add an encrypted bet the user just placed to their local running total. */
 export function recordLocalBet(
   wallet: string,

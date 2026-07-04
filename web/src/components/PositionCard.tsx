@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { useAccount, useReadContract, useSignTypedData, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import { ShieldCheck, BadgeCheck, LogOut } from "lucide-react";
 import { marketAbi, MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
@@ -9,8 +9,9 @@ import { useFhevm } from "@/lib/useFhevm";
 import { formatUSDC } from "@/lib/format";
 import { humanizeError } from "@/lib/errors";
 import { publicClient } from "@/lib/viem";
-import { getLocalPosition } from "@/lib/positions";
+import { getLocalPosition, setLocalPosition } from "@/lib/positions";
 import { addToLocalBalance } from "@/lib/balance";
+import { userDecryptHandles, getClear } from "@/lib/userDecrypt";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -34,6 +35,7 @@ export function PositionCard({
   const { address, isConnected } = useAccount();
   const { instance } = useFhevm();
   const { writeContractAsync } = useWriteContract();
+  const { signTypedDataAsync } = useSignTypedData();
   const [local, setLocal] = useState<{ yes: bigint; no: bigint } | null>(null);
   const [verified, setVerified] = useState<{ yes: bigint; no: bigint } | null>(null);
   const [busy, setBusy] = useState<null | "verify" | "close">(null);
@@ -87,32 +89,22 @@ export function PositionCard({
     const toastId = toast.loading("Sign to decrypt your on-chain stake…");
     try {
       setBusy("verify");
-      const { privateKey, publicKey } = inst.generateKeypair();
-      const startTs = Math.floor(Date.now() / 1000);
-      const durDays = 7;
-      const eip712 = inst.createEIP712(publicKey, [marketAddress], startTs, durDays);
-      const eth = (window as any).ethereum;
-      const sig: string = await eth.request({
-        method: "eth_signTypedData_v4",
-        params: [address, JSON.stringify(eip712)],
-      });
-      const res = (await inst.userDecrypt(
-        [
+      const res = await userDecryptHandles({
+        instance: inst,
+        wallet: address,
+        pairs: [
           { handle: yesHandle as string, contractAddress: marketAddress },
           { handle: noHandle as string, contractAddress: marketAddress },
         ],
-        privateKey,
-        publicKey,
-        sig.replace(/^0x/, ""),
-        [marketAddress],
-        address,
-        startTs,
-        durDays,
-      )) as Record<string, any>;
-      setVerified({
-        yes: BigInt(res[yesHandle as string]),
-        no: BigInt(res[noHandle as string]),
+        signTypedData: signTypedDataAsync as never,
       });
+      const yes = getClear(res, yesHandle as string);
+      const no = getClear(res, noHandle as string);
+      if (yes === undefined || no === undefined) {
+        throw new Error("decryption returned no value");
+      }
+      setVerified({ yes, no });
+      setLocalPosition(address, marketAddress, yes, no); // reconcile the mirror
       toast.success("Verified against the encrypted on-chain stake.", { id: toastId });
     } catch (e) {
       toast.error(humanizeError(e), { id: toastId });
