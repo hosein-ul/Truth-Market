@@ -15,4 +15,8 @@ export const ADDRESSES = {
   umaResolver: "0x62BB9b5f6bde7eFb1905b1a3d946B1A2875E8F8B",
 } as const;
 
+// UMA's OptimisticOracleV3 on Sepolia (resolved live from the UMA Finder at
+// resolver deploy time; mirrored here for read-only display queries).
+export const UMA_OOV3_ADDRESS = "0xFd9e2642a170aDD10F53Ee14a93FcF2F31924944" as const;
+
 export const FACTORY_DEPLOY_BLOCK = 11005800n; // approx — narrows event scans

@@ -4,20 +4,29 @@ import { useEffect, useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import { ShieldCheck, ExternalLink, Hourglass, Gavel } from "lucide-react";
-import { umaResolverAbi, oov3Abi, erc20MintAbi, MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
-import { ADDRESSES } from "@/lib/addresses";
+import {
+  umaResolverAbi,
+  oov3Abi,
+  erc20MintAbi,
+  MARKET_STATUS,
+  type MarketStatusValue,
+} from "@/lib/abis";
+import { ADDRESSES, UMA_OOV3_ADDRESS } from "@/lib/addresses";
 import { humanizeError } from "@/lib/errors";
 import { publicClient } from "@/lib/viem";
 import { formatUSDC, shortAddr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
-const OOV3_ADDRESS = "0xFd9e2642a170aDD10F53Ee14a93FcF2F31924944" as const; // resolved live from the Finder at deploy time; same value here for read-side display.
+const ZERO_BYTES32 = ("0x" + "0".repeat(64)) as `0x${string}`;
 
 /**
  * Shown instead of OraclePanel for any market whose `oracle` is the
- * UmaResolver. Drives the real UMA OOV3 flow: permissionless assert (bond),
- * liveness countdown, then settle — which triggers the on-chain callback that
- * moves the market to Resolving.
+ * UmaResolver. Drives the real UMA OOV3 flow on Sepolia: permissionless
+ * assert (bond), liveness countdown, then settle — which triggers the
+ * on-chain callback that moves the market to Resolving. This is UMA's
+ * optimistic-oracle security model (same as Polymarket's resolution layer):
+ * anyone may assert with a bond at stake, anyone may dispute during the
+ * window, and only an undisputed assertion resolves the market.
  */
 export function UmaResolverPanel({
   marketAddress,
@@ -48,7 +57,7 @@ export function UmaResolverPanel({
     args: [marketAddress],
     query: { enabled: isOpen, refetchInterval: 10_000 },
   });
-  const pending = !!assertionId && assertionId !== ("0x" + "0".repeat(64));
+  const pending = !!assertionId && assertionId !== ZERO_BYTES32;
 
   const { data: assertionInfo } = useReadContract({
     address: ADDRESSES.umaResolver,
@@ -59,7 +68,7 @@ export function UmaResolverPanel({
   });
 
   const { data: oov3Assertion } = useReadContract({
-    address: OOV3_ADDRESS,
+    address: UMA_OOV3_ADDRESS,
     abi: oov3Abi,
     functionName: "getAssertion",
     args: pending ? [assertionId as `0x${string}`] : undefined,
@@ -91,10 +100,10 @@ export function UmaResolverPanel({
     query: { enabled: !!currency && !!address },
   });
 
-  const expirationTime = oov3Assertion ? Number((oov3Assertion as any).expirationTime) : 0;
+  const expirationTime = oov3Assertion ? Number(oov3Assertion.expirationTime) : 0;
   const livenessOver = pending && expirationTime > 0 && now >= expirationTime;
   const secondsLeft = expirationTime > now ? expirationTime - now : 0;
-  const assertedOutcome = assertionInfo ? (assertionInfo as any)[2] as boolean : undefined;
+  const assertedOutcome = assertionInfo ? (assertionInfo[2] as boolean) : undefined;
 
   const needsApproval = !!bond && (allowance ?? 0n) < (bond as bigint);
   const insufficientBalance = !!bond && (balance ?? 0n) < (bond as bigint);
@@ -106,7 +115,7 @@ export function UmaResolverPanel({
     try {
       setBusy(true);
       if (needsApproval && currency && bond) {
-        toast.loading("Approving resolver to pull the UMA bond…", { id: toastId });
+        toast.loading("Approving the resolver to pull the UMA bond…", { id: toastId });
         const approveHash = await writeContractAsync({
           address: currency as `0x${string}`,
           abi: erc20MintAbi,
@@ -116,7 +125,9 @@ export function UmaResolverPanel({
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
         await refetchAllowance();
       }
-      toast.loading(`Asserting ${outcomeYes ? "YES" : "NO"} to UMA Optimistic Oracle V3…`, { id: toastId });
+      toast.loading(`Asserting ${outcomeYes ? "YES" : "NO"} to UMA Optimistic Oracle V3…`, {
+        id: toastId,
+      });
       const hash = await writeContractAsync({
         address: ADDRESSES.umaResolver,
         abi: umaResolverAbi,
@@ -153,35 +164,42 @@ export function UmaResolverPanel({
   }
 
   return (
-    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+    <div className="rounded-2xl border border-zama-300 bg-zama-50 p-5 dark:border-zama-800 dark:bg-zama-400/10">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-600 text-white">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
           <ShieldCheck className="h-4 w-4" />
         </span>
         <div>
           <h3 className="font-display text-base font-bold tracking-tight text-foreground">
             Resolved via UMA Optimistic Oracle V3
           </h3>
-          <p className="text-xs text-sky-700/80">Real OOV3 on Sepolia — not a trusted oracle key</p>
+          <p className="text-xs text-zama-800/80 dark:text-zama-300/80">
+            Real OOV3 on Sepolia — no trusted oracle key
+          </p>
         </div>
       </div>
 
       {!pastDeadline && (
-        <p className="text-sm text-sky-800">
-          Once this market closes, anyone can post a bond and assert the outcome.
-          If nobody disputes it within the liveness window, it settles automatically.
+        <p className="text-sm text-zama-900 dark:text-zama-200">
+          Once this market closes, anyone can post a bond and assert the outcome —
+          that&apos;s UMA&apos;s optimistic-oracle model (the same layer Polymarket uses).
+          If nobody disputes within the liveness window, it settles automatically and
+          resolves this market on-chain.
         </p>
       )}
 
       {pastDeadline && !pending && status === MARKET_STATUS.OPEN && (
         <div className="space-y-3">
-          <p className="text-sm text-sky-800">
-            Market closed. Assert the outcome by posting a bond — permissionless,
-            anyone can do this.
+          <p className="text-sm text-zama-900 dark:text-zama-200">
+            Market closed. Assert the outcome by posting a bond — permissionless, and
+            economically secured: a false assertion can be disputed and the bond slashed.
           </p>
-          <div className="rounded-lg bg-white/70 px-3 py-2 text-xs text-sky-900">
-            Bond required: <span className="font-semibold tabular-nums">${formatUSDC(bond as bigint ?? 0n)} USDC</span>
-            {currency && (
+          <div className="rounded-lg bg-card/70 px-3 py-2 text-xs text-foreground">
+            Bond required:{" "}
+            <span className="font-semibold tabular-nums">
+              ${formatUSDC((bond as bigint) ?? 0n)} USDC
+            </span>
+            {currency ? (
               <>
                 {" "}
                 <a
@@ -193,12 +211,18 @@ export function UmaResolverPanel({
                   ({shortAddr(currency as string)})
                 </a>
               </>
-            )}
+            ) : null}
           </div>
           {insufficientBalance && isConnected && (
-            <p className="text-xs text-amber-700">
-              Your balance is below the required bond. Get Sepolia testnet USDC from{" "}
-              <a href="https://faucet.circle.com" target="_blank" rel="noreferrer" className="underline">
+            <p className="text-xs text-destructive">
+              Your balance of the bond currency is below the requirement. Get Sepolia
+              testnet USDC from{" "}
+              <a
+                href="https://faucet.circle.com"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
                 faucet.circle.com
               </a>
               .
@@ -217,13 +241,15 @@ export function UmaResolverPanel({
 
       {pending && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-sky-900">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Hourglass className="h-4 w-4" />
             Asserted: {assertedOutcome ? "YES" : "NO"}
           </div>
           {!livenessOver ? (
-            <p className="text-sm text-sky-800">
-              Dispute window open — settles in <span className="font-semibold tabular-nums">{secondsLeft}s</span> if unchallenged.
+            <p className="text-sm text-zama-900 dark:text-zama-200">
+              Dispute window open — settles in{" "}
+              <span className="font-semibold tabular-nums">{secondsLeft}s</span> if
+              unchallenged.
             </p>
           ) : (
             <Button onClick={doSettle} disabled={busy} variant="gradient" className="w-full">
@@ -235,7 +261,7 @@ export function UmaResolverPanel({
             href="https://oracle.uma.xyz"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-sky-700 underline"
+            className="inline-flex items-center gap-1 text-xs text-zama-800 underline dark:text-zama-300"
           >
             View or dispute on the UMA Oracle UI <ExternalLink className="h-3 w-3" />
           </a>
@@ -243,8 +269,9 @@ export function UmaResolverPanel({
       )}
 
       {status === MARKET_STATUS.RESOLVING && (
-        <p className="text-sm text-sky-800">
-          UMA resolved this market&apos;s outcome. Pools can now be finalized via the relayer.
+        <p className="text-sm text-zama-900 dark:text-zama-200">
+          UMA resolved this market&apos;s outcome. Pools can now be finalized via the
+          relayer.
         </p>
       )}
     </div>

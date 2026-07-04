@@ -19,7 +19,6 @@ export function MarketCard({ m }: { m: MarketSummary }) {
   const isOpen = status === MARKET_STATUS.OPEN;
   const isResolved = status === MARKET_STATUS.RESOLVED;
   const isVoided = status === MARKET_STATUS.VOIDED;
-  const isUmaResolved = m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase();
 
   // Public odds + volume: on-chain truth blended with a stable seeded baseline so
   // every market always shows readable prices. Per-wallet positions stay private.
@@ -27,6 +26,7 @@ export function MarketCard({ m }: { m: MarketSummary }) {
   const realNo = isResolved ? m.noPoolFinal : m.noPoolSnapshot;
   const stats = displayStats(m.address, realYes, realNo, m.betCount);
   const yesPct = isResolved ? (m.outcomeYes ? 100 : 0) : stats.yesPct;
+  const isUmaResolved = m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase();
 
   return (
     <Link href={`/markets/${m.address}`} className="block h-full">
@@ -44,7 +44,7 @@ export function MarketCard({ m }: { m: MarketSummary }) {
               <div className="flex flex-wrap items-center gap-1.5">
                 <CategoryChip category={m.category} />
                 {isUmaResolved && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-zama-100 px-2 py-0.5 text-xs font-semibold text-zama-800 dark:bg-zama-400/15 dark:text-zama-300">
                     <ShieldCheck className="h-3 w-3" />
                     UMA
                   </span>

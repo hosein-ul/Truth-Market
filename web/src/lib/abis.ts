@@ -310,14 +310,6 @@ export const umaResolverAbi = [
       { name: "assertionId", type: "bytes32", indexed: true },
     ],
   },
-  {
-    type: "event",
-    name: "AssertionDisputedEvent",
-    inputs: [
-      { name: "market", type: "address", indexed: true },
-      { name: "assertionId", type: "bytes32", indexed: true },
-    ],
-  },
 ] as const;
 
 // Minimal read slice of UMA's real OptimisticOracleV3 (Sepolia), used only to
