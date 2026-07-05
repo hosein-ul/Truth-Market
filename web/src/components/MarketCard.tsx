@@ -44,8 +44,8 @@ export function MarketCard({ m }: { m: MarketSummary }) {
               <div className="flex flex-wrap items-center gap-1.5">
                 <CategoryChip category={m.category} />
                 {isUmaResolved && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-zama-100 px-2 py-0.5 text-xs font-semibold text-zama-800 dark:bg-zama-400/15 dark:text-zama-300">
-                    <ShieldCheck className="h-3 w-3" />
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground">
+                    <ShieldCheck className="h-3 w-3 text-primary" />
                     UMA
                   </span>
                 )}

@@ -70,8 +70,8 @@
     --muted: 0 0% 14%;
     --muted-foreground: 0 0% 62%;
 
-    --accent: 49 100% 52%;
-    --accent-foreground: 0 0% 4%;
+    --accent: 0 0% 20%;               /* charcoal — NOT gold; gold stays reserved for --primary CTAs */
+    --accent-foreground: 0 0% 96%;
 
     --destructive: 350 84% 60%;
     --destructive-foreground: 0 0% 100%;

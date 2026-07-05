@@ -28,8 +28,8 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-col gap-3 text-sm">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-orange-700">
-            <ShieldCheck className="h-4 w-4" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1.5 text-foreground">
+            <ShieldCheck className="h-4 w-4 text-primary" />
             <span className="font-semibold">Secured by Zama FHEVM</span>
           </div>
           <div className="flex items-center gap-4 text-muted-foreground">

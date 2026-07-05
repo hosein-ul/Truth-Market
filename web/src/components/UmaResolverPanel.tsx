@@ -164,7 +164,7 @@ export function UmaResolverPanel({
   }
 
   return (
-    <div className="rounded-2xl border border-zama-300 bg-zama-50 p-5 dark:border-zama-800 dark:bg-zama-400/10">
+    <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-3 flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
           <ShieldCheck className="h-4 w-4" />
@@ -173,14 +173,14 @@ export function UmaResolverPanel({
           <h3 className="font-display text-base font-bold tracking-tight text-foreground">
             Resolved via UMA Optimistic Oracle V3
           </h3>
-          <p className="text-xs text-zama-800/80 dark:text-zama-300/80">
+          <p className="text-xs text-muted-foreground">
             Real OOV3 on Sepolia — no trusted oracle key
           </p>
         </div>
       </div>
 
       {!pastDeadline && (
-        <p className="text-sm text-zama-900 dark:text-zama-200">
+        <p className="text-sm text-muted-foreground">
           Once this market closes, anyone can post a bond and assert the outcome —
           that&apos;s UMA&apos;s optimistic-oracle model (the same layer Polymarket uses).
           If nobody disputes within the liveness window, it settles automatically and
@@ -190,7 +190,7 @@ export function UmaResolverPanel({
 
       {pastDeadline && !pending && status === MARKET_STATUS.OPEN && (
         <div className="space-y-3">
-          <p className="text-sm text-zama-900 dark:text-zama-200">
+          <p className="text-sm text-muted-foreground">
             Market closed. Assert the outcome by posting a bond — permissionless, and
             economically secured: a false assertion can be disputed and the bond slashed.
           </p>
@@ -246,7 +246,7 @@ export function UmaResolverPanel({
             Asserted: {assertedOutcome ? "YES" : "NO"}
           </div>
           {!livenessOver ? (
-            <p className="text-sm text-zama-900 dark:text-zama-200">
+            <p className="text-sm text-muted-foreground">
               Dispute window open — settles in{" "}
               <span className="font-semibold tabular-nums">{secondsLeft}s</span> if
               unchallenged.
@@ -261,7 +261,7 @@ export function UmaResolverPanel({
             href="https://oracle.uma.xyz"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-zama-800 underline dark:text-zama-300"
+            className="inline-flex items-center gap-1 text-xs text-primary underline"
           >
             View or dispute on the UMA Oracle UI <ExternalLink className="h-3 w-3" />
           </a>
@@ -269,7 +269,7 @@ export function UmaResolverPanel({
       )}
 
       {status === MARKET_STATUS.RESOLVING && (
-        <p className="text-sm text-zama-900 dark:text-zama-200">
+        <p className="text-sm text-muted-foreground">
           UMA resolved this market&apos;s outcome. Pools can now be finalized via the
           relayer.
         </p>

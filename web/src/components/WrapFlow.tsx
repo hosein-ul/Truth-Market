@@ -67,7 +67,7 @@ export function WrapFlow({
         {/* track */}
         <div className="absolute left-7 right-7 top-7 h-0.5 -translate-y-1/2 rounded-full bg-border">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-sky-400"
+            className="h-full rounded-full bg-gradient-to-r from-zinc-400 to-sky-400"
             initial={false}
             animate={{ width: `${progress * 100}%` }}
             transition={{ type: "spring", damping: 22, stiffness: 120 }}
@@ -85,7 +85,7 @@ export function WrapFlow({
           <motion.div
             className={cn(
               "grid h-6 w-6 place-items-center rounded-full text-white shadow-lg",
-              converting ? "bg-sky-500" : finished ? "bg-emerald-500" : "bg-orange-500",
+              converting ? "bg-sky-500" : finished ? "bg-emerald-500" : "bg-zinc-500",
             )}
             animate={converting ? { rotate: 360, scale: [1, 1.15, 1] } : { rotate: 0, scale: 1 }}
             transition={converting ? { duration: 1.1, repeat: Infinity, ease: "linear" } : {}}
@@ -105,7 +105,7 @@ export function WrapFlow({
           sublabel="public"
           icon={<Coins className="h-5 w-5" />}
           active={progress > 0}
-          tone="orange"
+          tone="neutral"
         />
         <Node
           label="Encrypt"
@@ -169,10 +169,10 @@ function Node({
   icon: React.ReactNode;
   active: boolean;
   pulse?: boolean;
-  tone: "orange" | "sky" | "emerald";
+  tone: "neutral" | "sky" | "emerald";
 }) {
   const tones = {
-    orange: "border-orange-200 bg-orange-50 text-orange-600",
+    neutral: "border-border bg-secondary text-foreground",
     sky: "border-sky-200 bg-sky-50 text-sky-600",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-600",
   } as const;

@@ -122,9 +122,9 @@ export function OraclePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
+    <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-gradient text-zinc-950">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
           <Gavel className="h-4 w-4" />
         </span>
         <h3 className="font-display text-base font-bold tracking-tight text-foreground">
@@ -149,7 +149,7 @@ export function OraclePanel({
               <KeyRound className="h-4 w-4" />
               {busy ? "Working…" : "Finalize via KMS proof"}
             </Button>
-            <p className="text-xs text-orange-700/80">
+            <p className="text-xs text-muted-foreground">
               Permissionless — anyone can submit. Pulls the cleartext pools from the
               Zama relayer with a KMS signature; the contract verifies it.
             </p>
@@ -162,7 +162,7 @@ export function OraclePanel({
           </Button>
         )}
         {isOracle && status === MARKET_STATUS.OPEN && now < deadline && (
-          <p className="text-xs text-orange-700">
+          <p className="text-xs text-muted-foreground">
             The outcome can be recorded once the market deadline passes.
           </p>
         )}

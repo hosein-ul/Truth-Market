@@ -6,8 +6,8 @@ export function MarketStatusBadge({ status }: { status: MarketStatusValue }) {
   switch (status) {
     case MARKET_STATUS.OPEN:
       return (
-        <Badge variant="outline" className="gap-1 border-orange-200 bg-orange-50 text-orange-700">
-          <Radio className="h-3 w-3" strokeWidth={2.5} />
+        <Badge variant="outline" className="gap-1 border-border bg-secondary text-foreground">
+          <Radio className="h-3 w-3 text-primary" strokeWidth={2.5} />
           Live
         </Badge>
       );

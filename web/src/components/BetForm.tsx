@@ -217,8 +217,8 @@ export function BetForm({
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-display text-lg font-bold tracking-tight">Take a position</h3>
-        <span className="inline-flex items-center gap-1 rounded-full border border-zama-300 bg-zama-50 px-2 py-0.5 text-xs font-semibold text-zama-800 dark:border-zama-800 dark:bg-zama-400/10 dark:text-zama-300">
-          <Lock className="h-3 w-3" strokeWidth={2.5} />
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground">
+          <Lock className="h-3 w-3 text-primary" strokeWidth={2.5} />
           Encrypted on-chain
         </span>
       </div>
@@ -318,8 +318,8 @@ export function BetForm({
       )}
 
       {/* Privacy explainer — emphasise it's the protocol, not just the browser */}
-      <div className="mt-4 flex items-start gap-2 rounded-xl bg-zama-50 px-3 py-2.5 text-xs leading-relaxed text-zama-900 dark:bg-zama-400/10 dark:text-zama-200">
-        <Cpu className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+      <div className="mt-4 flex items-start gap-2 rounded-xl bg-secondary/60 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+        <Cpu className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={2.25} />
         <span>
           Your position stays encrypted end to end. Amount and side are sealed before
           leaving your device — the contract operates on ciphertext only. No node,

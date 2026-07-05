@@ -125,8 +125,8 @@ export default async function MarketDetailPage({
                 <CategoryChip category={m.category} />
                 <MarketStatusBadge status={status} />
                 {isUmaResolved && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-zama-100 px-2 py-0.5 text-xs font-semibold text-zama-800 dark:bg-zama-400/15 dark:text-zama-300">
-                    <ShieldCheck className="h-3.5 w-3.5" />
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                     UMA-resolved
                   </span>
                 )}

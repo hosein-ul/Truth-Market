@@ -101,8 +101,8 @@ export default function CreatePage() {
     <div className="container py-8">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-700">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-sm font-semibold text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
             New market
           </div>
           <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight">
@@ -222,7 +222,7 @@ export default function CreatePage() {
                 <h3 className="mt-3 min-h-[48px] font-display text-[15px] font-bold leading-snug tracking-tight">
                   {question || "Your question will appear here…"}
                 </h3>
-                <div className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-orange-200 bg-orange-50/50 px-3 py-3 text-sm text-orange-700">
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-border bg-secondary/40 px-3 py-3 text-sm text-muted-foreground">
                   <BarChart3 className="h-4 w-4 shrink-0" />
                   Odds appear once the first bet lands
                 </div>
