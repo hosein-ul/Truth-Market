@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
 export default async function HomePage() {
-  const markets = await getMarketSummaries();
+  let markets: any[] = [];
+  try {
+    markets = await getMarketSummaries();
+  } catch (error) {
+    console.error("Failed to fetch market summaries:", error);
+  }
   const open = markets.filter((m) => m.status === MARKET_STATUS.OPEN);
   // Trending = most positions first (real on-chain bet counts).
   const featured = [...(open.length > 0 ? open : markets)]

@@ -20,9 +20,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // The relayer-sdk WASM lives inside the package; we serve it as-is.
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
+    
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        "pino-pretty": false,
+        "@react-native-async-storage/async-storage": false,
+      };
+    }
+    config.externals.push("pino-pretty", "lokijs", "encoding");
+    
     return config;
   },
 };

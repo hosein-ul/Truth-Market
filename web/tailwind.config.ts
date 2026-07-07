@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -60,16 +61,10 @@ const config: Config = {
         },
         // Zama brand yellow scale (#FFD208 at 400).
         zama: {
-          50: "#fffbe6",
-          100: "#fff5bf",
-          200: "#ffec80",
-          300: "#ffe045",
-          400: "#ffd208",
-          500: "#f2c000",
-          600: "#d4a800",
-          700: "#a68300",
-          800: "#7a6000",
-          900: "#4d3c00",
+          400: "#FCD34D",
+          500: "#F59E0B",
+          600: "#D97706",
+          700: "#B45309",
         },
       },
       borderRadius: {
@@ -80,11 +75,9 @@ const config: Config = {
         "2xl": "calc(var(--radius) + 8px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],
-        serif: ["var(--font-serif)", "Georgia", "serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
-        ceremony: ["var(--font-ceremony)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"],
       },
       boxShadow: {
         soft: "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
@@ -129,7 +122,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;
