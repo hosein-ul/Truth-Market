@@ -25,6 +25,8 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "TruthMarket — Public Odds, Private Positions",
   description:
