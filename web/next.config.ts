@@ -7,19 +7,6 @@ const nextConfig: NextConfig = {
   // markets.ts in RSC. Mark it as a server-external so Next leaves it alone
   // instead of bundling its native/WASM pieces.
   serverExternalPackages: ["@zama-fhe/relayer-sdk"],
-  // Zama relayer-sdk uses WebAssembly + Web Workers; SharedArrayBuffer needs
-  // these headers cross-origin. Required even for `next dev`.
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
-        ],
-      },
-    ];
-  },
   webpack: (config, { isServer }) => {
     // The relayer-sdk WASM lives inside the package; we serve it as-is.
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
