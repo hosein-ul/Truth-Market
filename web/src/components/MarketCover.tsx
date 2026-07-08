@@ -1,10 +1,11 @@
 import { CSSProperties } from "react";
+import Image from "next/image";
+import { getMarketImage } from "@/lib/market-images";
 
 /**
- * Deterministic generative market cover — pure inline SVG, zero external
- * requests (COEP-safe, works offline, never repeats). The market address
- * seeds a PRNG; the category picks a motif; the Zama palette (yellow #FFD208,
- * black, grays) keeps every cover on-brand. Same market → same cover, always.
+ * Market cover with real images when available, falling back to deterministic
+ * generative SVG. The market address seeds a PRNG; the category picks a motif;
+ * the Zama palette (yellow #FFD208, black, grays) keeps every cover on-brand.
  */
 
 const YELLOW = "#FFD208";
@@ -246,14 +247,36 @@ const MOTIFS: Record<string, (rand: () => number, s: Surface) => React.ReactNode
 export function MarketCover({
   address,
   category,
+  question,
   className,
   style,
 }: {
   address: string;
   category: string;
+  question?: string;
   className?: string;
   style?: CSSProperties;
 }) {
+  // Try to get a real image for this market
+  const imagePath = question ? getMarketImage(question) : undefined;
+
+  // If we have a real image, use it
+  if (imagePath) {
+    return (
+      <div className={className} style={{ position: "relative", width: "100%", height: "100%", ...style }}>
+        <Image
+          src={imagePath}
+          alt={`${category} market cover`}
+          fill
+          style={{ objectFit: "cover" }}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          priority={false}
+        />
+      </div>
+    );
+  }
+
+  // Otherwise fall back to generative SVG
   const seed = fnv1a(address.toLowerCase());
   const rand = mulberry32(seed);
   const surface = SURFACES[seed % SURFACES.length];

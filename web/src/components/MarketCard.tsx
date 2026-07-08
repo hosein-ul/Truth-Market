@@ -32,9 +32,9 @@ export function MarketCard({ m }: { m: MarketSummary }) {
     <Link href={`/markets/${m.address}`} className="block h-full">
       <GlareCard className="h-full" glareColor="rgba(255,210,8,0.12)">
         <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-200 group-hover:border-primary/30 group-hover:shadow-card">
-          {/* Generative cover — deterministic per market, Zama palette */}
+          {/* Cover image — uses real image when available, otherwise generative SVG */}
           <div className="relative h-36 w-full flex-shrink-0">
-            <MarketCover address={m.address} category={m.category} />
+            <MarketCover address={m.address} category={m.category} question={m.question} />
           </div>
 
           {/* Card content */}

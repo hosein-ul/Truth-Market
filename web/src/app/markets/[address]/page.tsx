@@ -50,9 +50,9 @@ export default async function MarketDetailPage({
         </Link>
 
         <div className="mx-auto max-w-2xl">
-          {/* Generative cover */}
+          {/* Cover image — uses real image when available, otherwise generative SVG */}
           <div className="relative mb-6 h-48 overflow-hidden rounded-2xl">
-            <MarketCover address={sm.address} category={sm.category} />
+            <MarketCover address={sm.address} category={sm.category} question={sm.question} />
             <div className="absolute bottom-4 left-4">
               <CategoryChip category={sm.category} />
             </div>
@@ -116,9 +116,9 @@ export default async function MarketDetailPage({
         {/* LEFT — market info */}
         <div className="space-y-6 lg:col-span-2">
           <div className="flex items-start gap-4">
-            {/* Generative thumbnail — same art as the card, Polymarket-style */}
+            {/* Thumbnail — same art as the card, Polymarket-style */}
             <div className="hidden h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border border-border sm:block">
-              <MarketCover address={m.address} category={m.category} />
+              <MarketCover address={m.address} category={m.category} question={m.question} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

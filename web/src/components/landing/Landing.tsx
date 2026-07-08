@@ -176,9 +176,9 @@ function HeroSection({ stats }: { stats?: LandingStats }) {
             variants={itemVariants}
             className="mx-auto mt-12 flex max-w-md items-center justify-center gap-6 text-left"
           >
-            <TrustPill icon={<Lock className="h-4 w-4" />} title="Encrypted" sub="amount + side" />
+            <TrustPill icon={<Lock className="h-4 w-4" />} title="Encrypted bet amounts" sub="amount + side" />
             <div className="h-9 w-px bg-border" />
-            <TrustPill icon={<BarChart3 className="h-4 w-4" />} title="Public odds" sub="real price discovery" />
+            <TrustPill icon={<BarChart3 className="h-4 w-4" />} title="K-anonymous public odds" sub="real price discovery" />
             <div className="h-9 w-px bg-border" />
             <TrustPill icon={<EyeOff className="h-4 w-4" />} title="Untrackable" sub="no whale-watching" />
           </motion.div>
@@ -793,8 +793,8 @@ const SOLUTIONS = [
   {
     icon: BarChart3,
     tint: "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-    title: "Public, honest odds",
-    body: "The aggregate market price stays fully public, so price discovery works exactly like it should — just without exposing a single individual behind it.",
+    title: "K-anonymous odds",
+    body: "Aggregate odds stay publicly readable — but only released as batched snapshots gated by a K-anonymity threshold, so no single bet can be reverse-engineered from a snapshot diff.",
   },
   {
     icon: Trophy,
@@ -808,9 +808,9 @@ const COMPARISON: { label: string; them: "yes" | "no" | string; us: "yes" | "no"
   { label: "Live public odds", them: "yes", us: "yes" },
   { label: "Your bet size", them: "Public", us: "Encrypted" },
   { label: "Which side you took", them: "Public", us: "Encrypted" },
-  { label: "Whale-watching & copy-trading", them: "Trivial", us: "Impossible" },
+  { label: "Bet amount & side on-chain", them: "Public", us: "Encrypted" },
+  { label: "Copy-trading & front-running", them: "Common", us: "Blinded" },
   { label: "Front-running your position", them: "Common", us: "Eliminated" },
-  { label: "Your betting history exposed", them: "Forever", us: "Never" },
   { label: "Payout amount", them: "Public", us: "Confidential" },
 ];
 
@@ -827,8 +827,8 @@ const STEPS = [
   },
   {
     icon: Trophy,
-    title: "Watch the odds",
-    body: "The market moves as volume comes in, but no one can see who is driving the action or by how much.",
+    title: "Watch the signal",
+    body: "Odds refresh via K-anonymous snapshots — released only after ≥3 new bets — so no snapshot diff maps to a single trader.",
   },
   {
     icon: ShieldCheck,
