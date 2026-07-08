@@ -1,12 +1,13 @@
 <div align="center">
 
-<img src="./docs/banner.png" alt="TruthMarket — Confidential Prediction Markets on Zama FHEVM" width="100%" />
 
 # TruthMarket
 
 **Confidential Prediction Markets on Zama FHEVM**
+<img width="1919" height="999" alt="image" src="https://github.com/user-attachments/assets/20a3bae6-260c-4c9a-9320-749e452089a2" />
 
-Encrypted bets · K-anonymous odds · Non-custodial settlement
+
+**Encrypted bets · K-anonymous odds · Non-custodial settlement**
 
 [![Live](https://img.shields.io/badge/live-truth--market--five.vercel.app-000?style=flat-square&logo=vercel&logoColor=white)](https://truth-market-five.vercel.app/)
 [![Zama FHEVM](https://img.shields.io/badge/zama-fhevm-FFD208?style=flat-square&labelColor=000)](https://docs.zama.org/protocol)
@@ -15,7 +16,7 @@ Encrypted bets · K-anonymous odds · Non-custodial settlement
 
 <br />
 
-[**Open the app →**](https://truth-market-five.vercel.app/) &nbsp;·&nbsp; [3-min demo](https://your-demo-link) &nbsp;·&nbsp; [X thread](https://your-thread-link)
+[**Open the app →**](https://truthmarket-v1.vercel.app/) &nbsp;·&nbsp; [3-min demo](https://your-demo-link) &nbsp;·&nbsp; [X thread](https://your-thread-link)
 
 <sub>Submission — Zama Developer Program Mainnet Season 3 · Builder Track</sub>
 
