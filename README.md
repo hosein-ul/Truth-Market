@@ -1,9 +1,24 @@
-# TruthMarket — Confidential Prediction Markets on Zama FHEVM
+<div align="center">
 
-A binary prediction market where **bet amount and side are encrypted on-chain**
-for the entire market lifecycle, while aggregate market metadata stays public.
-Built on Zama Protocol's FHEVM and Ethereum Sepolia.
+   
+# TruthMarket -  **Confidential Prediction Markets on Zama FHEVM**
 
+<img width="1919" height="1005" alt="image" src="https://github.com/user-attachments/assets/f6acbb33-97d3-4c09-acc1-7ee583fedd52" />
+
+   
+Encrypted bets · K-anonymous odds · Non-custodial settlement · Live on Sepolia
+
+<br />
+
+[**Open the app →**](https://truthmarket-v1.vercel.app/) &nbsp;·&nbsp; [Watch 3-min demo](https://your-demo-link) &nbsp;·&nbsp; [X thread](https://your-thread-link)
+
+<sub>Submission — Zama Developer Program Mainnet Season 3 · Builder Track</sub>
+
+</div>
+
+---
+
+A binary prediction market where **bet amount and side are encrypted on-chain**...
 The privacy boundary is explicit and documented at the protocol level:
 
 | Layer                    | Visible to everyone           | Visible to the bettor (off-chain decrypt) | Never visible                                                              |
