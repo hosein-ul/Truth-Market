@@ -1,10 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAccount, useSignTypedData, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Eye, Wallet, Lock, Trophy, Inbox, LogOut } from "lucide-react";
+import {
+  Eye,
+  Wallet,
+  Lock,
+  Trophy,
+  Inbox,
+  LogOut,
+  Hourglass,
+  BadgeCheck,
+  PieChart,
+} from "lucide-react";
 import { useWalletPicker } from "@/components/WalletPicker";
 import { publicClient } from "@/lib/viem";
 import { ADDRESSES } from "@/lib/addresses";
@@ -12,8 +22,15 @@ import { marketFactoryAbi, marketAbi, erc7984Abi, MARKET_STATUS } from "@/lib/ab
 import { useFhevm } from "@/lib/useFhevm";
 import { formatUSDC } from "@/lib/format";
 import { humanizeError } from "@/lib/errors";
-import { getLocalPosition } from "@/lib/positions";
-import { getLocalBalance, addToLocalBalance } from "@/lib/balance";
+import { getLocalPosition, setLocalPosition } from "@/lib/positions";
+import { getLocalBalance, addToLocalBalance, setLocalBalance } from "@/lib/balance";
+import {
+  userDecryptHandles,
+  getClear,
+  isZeroHandle,
+  hasCachedSession,
+  type DecryptPair,
+} from "@/lib/userDecrypt";
 import { SealedValue } from "@/components/Sealed";
 import { CategoryChip } from "@/components/CategoryChip";
 import { MarketStatusBadge } from "@/components/MarketStatusBadge";
@@ -30,21 +47,26 @@ interface Position {
   claimed: boolean;
   yesHandle: `0x${string}`;
   noHandle: `0x${string}`;
+  /** Cleartext stakes — from the local mirror instantly, then verified on-chain. */
   yesClear?: bigint;
   noClear?: bigint;
+  verified: boolean;
 }
 
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const { instance, status: fhevmStatus } = useFhevm();
   const { writeContractAsync } = useWriteContract();
+  const { signTypedDataAsync } = useSignTypedData();
   const walletPicker = useWalletPicker();
 
   const [positions, setPositions] = useState<Position[] | null>(null);
   const [balHandle, setBalHandle] = useState<`0x${string}` | null>(null);
   const [bal, setBal] = useState<bigint | null>(null);
+  const [balVerified, setBalVerified] = useState(false);
   const [busyClaim, setBusyClaim] = useState<string | null>(null);
   const [busyClose, setBusyClose] = useState<string | null>(null);
+  const [busyReveal, setBusyReveal] = useState(false);
 
   const load = useCallback(async () => {
     if (!address) return;
@@ -118,6 +140,7 @@ export default function PortfolioPage() {
         noHandle: details[i * 5 + 4] as `0x${string}`,
         yesClear: lp ? BigInt(lp.yes) : undefined,
         noClear: lp ? BigInt(lp.no) : undefined,
+        verified: false,
       };
     });
     setPositions(result);
@@ -127,93 +150,107 @@ export default function PortfolioPage() {
     if (!address) {
       setPositions(null);
       setBal(null);
+      setBalVerified(false);
       return;
     }
     // The browser composed every wrap/bet/claim — show the cleartext mirror
     // immediately. On-chain ciphertext remains the authoritative source.
     setBal(getLocalBalance(address));
+    setBalVerified(false);
     load().catch((e) => {
       console.error(e);
       setPositions([]);
     });
   }, [address, load]);
 
-  async function revealBalance() {
-    if (!instance || !address || !balHandle) {
-      toast.error("Give it a second — preparing your secure reveal.");
-      return;
-    }
-    const toastId = toast.loading("Sign in your wallet to reveal your balance…");
-    try {
-      const { privateKey, publicKey } = instance.generateKeypair();
-      const startTs = Math.floor(Date.now() / 1000);
-      const durDays = 7;
-      const eip712 = instance.createEIP712(publicKey, [ADDRESSES.confidentialUSDC], startTs, durDays);
-      const eth = (window as any).ethereum;
-      const sig: string = await eth.request({
-        method: "eth_signTypedData_v4",
-        params: [address, JSON.stringify(eip712)],
-      });
-      const res = (await instance.userDecrypt(
-        [{ handle: balHandle, contractAddress: ADDRESSES.confidentialUSDC }],
-        privateKey,
-        publicKey,
-        sig.replace(/^0x/, ""),
-        [ADDRESSES.confidentialUSDC],
-        address,
-        startTs,
-        durDays,
-      )) as Record<string, any>;
-      setBal(BigInt(res[balHandle]));
-      toast.success("Balance revealed — visible only to you.", { id: toastId });
-    } catch (e) {
-      toast.error(humanizeError(e), { id: toastId });
-    }
-  }
+  /** Contracts a full reveal touches: cUSDC (balance) + every market with a bet. */
+  const revealContracts = useMemo(() => {
+    const list: `0x${string}`[] = [];
+    if (balHandle && !isZeroHandle(balHandle)) list.push(ADDRESSES.confidentialUSDC);
+    for (const p of positions ?? []) list.push(p.market);
+    return list;
+  }, [balHandle, positions]);
 
-  async function revealPosition(p: Position) {
-    if (!instance || !address) {
-      toast.error("Give it a second — preparing your secure reveal.");
-      return;
-    }
-    const toastId = toast.loading("Sign in your wallet to reveal this position…");
-    try {
-      const { privateKey, publicKey } = instance.generateKeypair();
-      const startTs = Math.floor(Date.now() / 1000);
-      const durDays = 7;
-      const eip712 = instance.createEIP712(publicKey, [p.market], startTs, durDays);
-      const eth = (window as any).ethereum;
-      const sig: string = await eth.request({
-        method: "eth_signTypedData_v4",
-        params: [address, JSON.stringify(eip712)],
-      });
-      const res = (await instance.userDecrypt(
-        [
-          { handle: p.yesHandle, contractAddress: p.market },
-          { handle: p.noHandle, contractAddress: p.market },
-        ],
-        privateKey,
-        publicKey,
-        sig.replace(/^0x/, ""),
-        [p.market],
-        address,
-        startTs,
-        durDays,
-      )) as Record<string, any>;
-      setPositions((prev) =>
-        prev
-          ? prev.map((x) =>
-              x.market === p.market
-                ? { ...x, yesClear: BigInt(res[p.yesHandle]), noClear: BigInt(res[p.noHandle]) }
-                : x,
-            )
-          : prev,
-      );
-      toast.success("Position revealed.", { id: toastId });
-    } catch (e) {
-      toast.error(humanizeError(e), { id: toastId });
-    }
-  }
+  /**
+   * Reveal EVERYTHING (balance + all positions) with a single wallet
+   * signature — the EIP-712 request covers the whole contract list at once.
+   */
+  const revealAll = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!instance || !address) {
+        if (!opts?.silent) toast.error("Give it a second — preparing your secure reveal.");
+        return;
+      }
+      const pairs: DecryptPair[] = [];
+      if (balHandle && !isZeroHandle(balHandle)) {
+        pairs.push({ handle: balHandle, contractAddress: ADDRESSES.confidentialUSDC });
+      }
+      for (const p of positions ?? []) {
+        if (!isZeroHandle(p.yesHandle)) pairs.push({ handle: p.yesHandle, contractAddress: p.market });
+        if (!isZeroHandle(p.noHandle)) pairs.push({ handle: p.noHandle, contractAddress: p.market });
+      }
+      if (pairs.length === 0) {
+        if (!opts?.silent) toast.info("Nothing to reveal yet — place a bet or deposit first.");
+        return;
+      }
+      const toastId = opts?.silent
+        ? undefined
+        : toast.loading("One signature reveals your balance and every position…");
+      try {
+        setBusyReveal(true);
+        const res = await userDecryptHandles({
+          instance,
+          wallet: address,
+          pairs,
+          signTypedData: signTypedDataAsync as never,
+        });
+        const balClear = getClear(res, balHandle);
+        if (balClear !== undefined) {
+          setBal(balClear);
+          setBalVerified(true);
+          setLocalBalance(address, balClear); // reconcile the mirror
+        }
+        setPositions((prev) =>
+          prev
+            ? prev.map((p) => {
+                const yes = getClear(res, p.yesHandle);
+                const no = getClear(res, p.noHandle);
+                if (yes === undefined && no === undefined) return p;
+                const next = {
+                  ...p,
+                  yesClear: yes ?? p.yesClear,
+                  noClear: no ?? p.noClear,
+                  verified: true,
+                };
+                if (yes !== undefined && no !== undefined) {
+                  setLocalPosition(address, p.market, yes, no);
+                }
+                return next;
+              })
+            : prev,
+        );
+        if (toastId) toast.success("Verified on-chain — visible only to you.", { id: toastId });
+      } catch (e) {
+        if (toastId) toast.error(humanizeError(e), { id: toastId });
+      } finally {
+        setBusyReveal(false);
+      }
+    },
+    [instance, address, balHandle, positions, signTypedDataAsync],
+  );
+
+  // If a still-valid reveal session is cached (same tab), refresh silently —
+  // no popup, and the user lands on verified numbers instead of the mirror.
+  const canSilentReveal =
+    fhevmStatus === "ready" &&
+    !!address &&
+    positions !== null &&
+    revealContracts.length > 0 &&
+    hasCachedSession(address, revealContracts);
+  useEffect(() => {
+    if (canSilentReveal) void revealAll({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSilentReveal]);
 
   async function closePosition(p: Position) {
     if (!address) return;
@@ -237,6 +274,7 @@ export default function PortfolioPage() {
       await publicClient.waitForTransactionReceipt({ hash });
       addToLocalBalance(address, stake);
       setBal(getLocalBalance(address));
+      setBalVerified(false);
       toast.success(`Position closed. $${formatUSDC(stake)} returned to your balance.`, {
         id: toastId,
       });
@@ -271,7 +309,7 @@ export default function PortfolioPage() {
     return (
       <div className="container py-16">
         <div className="mx-auto max-w-md text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-gradient text-white shadow-card">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-card">
             <Wallet className="h-6 w-6" />
           </div>
           <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight">
@@ -294,49 +332,88 @@ export default function PortfolioPage() {
     (p) =>
       (p.status === MARKET_STATUS.RESOLVED || p.status === MARKET_STATUS.VOIDED) && !p.claimed,
   );
-  const active = (positions ?? []).filter(
-    (p) => p.status === MARKET_STATUS.OPEN,
-  );
+  const active = (positions ?? []).filter((p) => p.status === MARKET_STATUS.OPEN);
+  const resolving = (positions ?? []).filter((p) => p.status === MARKET_STATUS.RESOLVING);
   const settled = (positions ?? []).filter(
     (p) =>
       (p.status === MARKET_STATUS.RESOLVED || p.status === MARKET_STATUS.VOIDED) && p.claimed,
   );
 
+  // Summary strip totals — only from known (mirrored or verified) cleartexts.
+  const knownStake = (list: Position[]) =>
+    list.reduce((acc, p) => acc + (p.yesClear ?? 0n) + (p.noClear ?? 0n), 0n);
+  const inPositions = knownStake(active) + knownStake(resolving);
+  const unknownCount = (positions ?? []).filter((p) => p.yesClear === undefined).length;
+
   return (
     <div className="container py-8">
-      <h1 className="font-display text-3xl font-extrabold tracking-tight">Portfolio</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Portfolio</h1>
+        <Button
+          onClick={() => revealAll()}
+          disabled={fhevmStatus !== "ready" || busyReveal || positions === null}
+          variant="outline"
+          size="sm"
+        >
+          <Eye className="h-4 w-4" />
+          {busyReveal ? "Verifying…" : "Verify everything on-chain"}
+        </Button>
+      </div>
 
-      {/* Balance card — always shows cleartext mirror; verify decrypts on-chain */}
-      <Card className="mt-5 overflow-hidden">
-        <div className="bg-mesh">
-          <CardContent className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
-            <div>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                <Lock className="h-4 w-4 text-sky-600" />
-                Confidential balance
-              </div>
-              <div className="mt-1.5">
-                <span className="font-display text-4xl font-extrabold tabular-nums">
-                  ${formatUSDC(bal ?? 0n)}{" "}
-                  <span className="text-lg font-bold text-muted-foreground">USDC</span>
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Encrypted on-chain · only your wallet can decrypt
-              </p>
+      {/* Summary strip */}
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card className="overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <Lock className="h-4 w-4" />
+              Confidential balance
             </div>
-            <Button
-              onClick={revealBalance}
-              disabled={fhevmStatus !== "ready" || !balHandle}
-              variant="outline"
-              size="sm"
-            >
-              <Eye className="h-4 w-4" />
-              Verify on-chain
-            </Button>
+            <div className="mt-1.5 font-display text-3xl font-extrabold tabular-nums">
+              ${formatUSDC(bal ?? 0n)}
+            </div>
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              {balVerified ? (
+                <>
+                  <BadgeCheck className="h-3.5 w-3.5 text-yes-fg" />
+                  Verified against on-chain ciphertext
+                </>
+              ) : (
+                <>Local estimate — encrypted on-chain</>
+              )}
+            </p>
           </CardContent>
-        </div>
-      </Card>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <PieChart className="h-4 w-4" />
+              In positions
+            </div>
+            <div className="mt-1.5 font-display text-3xl font-extrabold tabular-nums">
+              ${formatUSDC(inPositions)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {unknownCount > 0
+                ? `${unknownCount} position${unknownCount > 1 ? "s" : ""} still sealed — verify to include`
+                : `${active.length + resolving.length} live position${active.length + resolving.length === 1 ? "" : "s"}`}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <Trophy className="h-4 w-4" />
+              Claimable
+            </div>
+            <div className="mt-1.5 font-display text-3xl font-extrabold tabular-nums">
+              {claimable.length}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {claimable.length > 0 ? "Markets with payouts waiting" : "Nothing waiting to claim"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Loading */}
       {positions === null && (
@@ -368,7 +445,7 @@ export default function PortfolioPage() {
             <PositionRow
               key={p.market}
               p={p}
-              onReveal={() => revealPosition(p)}
+              onReveal={() => revealAll()}
               action={
                 <Button
                   onClick={() => claim(p)}
@@ -390,12 +467,12 @@ export default function PortfolioPage() {
 
       {/* Active */}
       {active.length > 0 && (
-        <Section title="Active positions" icon={<Lock className="h-4 w-4 text-sky-600" />}>
+        <Section title="Active positions" icon={<Lock className="h-4 w-4 text-muted-foreground" />}>
           {active.map((p) => (
             <PositionRow
               key={p.market}
               p={p}
-              onReveal={() => revealPosition(p)}
+              onReveal={() => revealAll()}
               action={
                 p.yesClear !== undefined ? (
                   <Button
@@ -415,11 +492,20 @@ export default function PortfolioPage() {
         </Section>
       )}
 
+      {/* Resolving — outcome recorded, pools being finalized */}
+      {resolving.length > 0 && (
+        <Section title="Resolving" icon={<Hourglass className="h-4 w-4 text-muted-foreground" />}>
+          {resolving.map((p) => (
+            <PositionRow key={p.market} p={p} onReveal={() => revealAll()} />
+          ))}
+        </Section>
+      )}
+
       {/* History */}
       {settled.length > 0 && (
         <Section title="History" icon={<Inbox className="h-4 w-4 text-muted-foreground" />}>
           {settled.map((p) => (
-            <PositionRow key={p.market} p={p} onReveal={() => revealPosition(p)} />
+            <PositionRow key={p.market} p={p} onReveal={() => revealAll()} />
           ))}
         </Section>
       )}
@@ -463,7 +549,13 @@ function PositionRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <CategoryChip category={p.category} />
-            <MarketStatusBadge status={p.status as any} />
+            <MarketStatusBadge status={p.status as never} />
+            {p.verified && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-yes-fg">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                Verified
+              </span>
+            )}
           </div>
           <Link
             href={`/markets/${p.market}`}

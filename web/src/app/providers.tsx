@@ -18,15 +18,15 @@ const queryClient = new QueryClient({
 });
 
 const lightRainbow = lightTheme({
-  accentColor: "#f97316",
-  accentColorForeground: "#ffffff",
+  accentColor: "#FFD208",
+  accentColorForeground: "#0a0a0a",
   borderRadius: "large",
   fontStack: "system",
 });
 
 const darkRainbow = darkTheme({
-  accentColor: "#f97316",
-  accentColorForeground: "#ffffff",
+  accentColor: "#FFD208",
+  accentColorForeground: "#0a0a0a",
   borderRadius: "large",
   fontStack: "system",
 });

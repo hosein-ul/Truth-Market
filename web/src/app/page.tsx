@@ -1,25 +1,28 @@
 import { getMarketSummaries } from "@/lib/markets";
 import { MARKET_STATUS } from "@/lib/abis";
-import { ACTIVE_THEME } from "@/theme.config";
-import { LandingNoir } from "@/components/landing/LandingNoir";
-import { LandingQuantum } from "@/components/landing/LandingQuantum";
-import { LandingLattice } from "@/components/landing/LandingLattice";
-import { LandingPremium } from "@/components/landing/LandingPremium";
+import { Landing } from "@/components/landing/Landing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
 
-const LANDING_MAP = {
-  premium: LandingPremium,
-  noir: LandingNoir,
-  quantum: LandingQuantum,
-  lattice: LandingLattice,
-} as const;
-
 export default async function HomePage() {
-  const markets = await getMarketSummaries();
+  let markets: any[] = [];
+  try {
+    markets = await getMarketSummaries();
+  } catch (error) {
+    console.error("Failed to fetch market summaries:", error);
+  }
   const open = markets.filter((m) => m.status === MARKET_STATUS.OPEN);
-  const featured = (open.length > 0 ? open : markets).slice(0, 3);
-  const LandingComponent = LANDING_MAP[ACTIVE_THEME];
-  return <LandingComponent featured={featured} />;
+  // Trending = most positions first (real on-chain bet counts).
+  const featured = [...(open.length > 0 ? open : markets)]
+    .sort((a, b) => b.betCount - a.betCount)
+    .slice(0, 3);
+  const stats = {
+    markets: open.length,
+    positions: markets.reduce((acc, m) => acc + m.betCount, 0),
+    settled: markets.filter(
+      (m) => m.status === MARKET_STATUS.RESOLVED || m.status === MARKET_STATUS.VOIDED,
+    ).length,
+  };
+  return <Landing featured={featured} stats={stats} />;
 }

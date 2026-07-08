@@ -1,40 +1,145 @@
-# TruthMarket — Confidential Prediction Markets on Zama FHEVM
+<div align="center">
 
-A binary prediction market where **bet amount and side are encrypted on-chain**
-for the entire market lifecycle, while aggregate market metadata stays public.
-Built on Zama Protocol's FHEVM and Ethereum Sepolia.
 
-The privacy boundary is explicit and documented at the protocol level:
+# TruthMarket
 
-| Layer                    | Visible to everyone           | Visible to the bettor (off-chain decrypt) | Never visible                                                              |
-|--------------------------|-------------------------------|-------------------------------------------|----------------------------------------------------------------------------|
-| Market metadata          | question, description, category, deadline, status, K-anon parameter | —                                | —                                                                          |
-| Public counters          | `betCount`, `lastSnapshotBetCount`, `snapshotCounter` | —                          | —                                                                          |
-| Aggregate odds           | K-anonymous snapshot (released only after ≥K=3 new bets) | —                  | live per-bet pool delta                                                    |
-| Bet input                | —                              | own bet                                   | bet amount, bet side, per-wallet cumulative stake                          |
-| Per-user stake           | —                              | self (via EIP-712 user decryption)        | other wallets' stakes                                                      |
+**Confidential Prediction Markets on Zama FHEVM**
+<img width="1919" height="999" alt="image" src="https://github.com/user-attachments/assets/20a3bae6-260c-4c9a-9320-749e452089a2" />
+
+
+**Encrypted bets · K-anonymous odds · Non-custodial settlement**
+
+[![Live](https://img.shields.io/badge/live-truth--market--five.vercel.app-000?style=flat-square&logo=vercel&logoColor=white)](https://truth-market-five.vercel.app/)
+[![Zama FHEVM](https://img.shields.io/badge/zama-fhevm-FFD208?style=flat-square&labelColor=000)](https://docs.zama.org/protocol)
+[![Sepolia](https://img.shields.io/badge/sepolia-verified-627EEA?style=flat-square&logo=ethereum&logoColor=white)](https://sepolia.etherscan.io/address/0x69Dbcf4426dF9f6AD16c035b005635efF22579F6#code)
+[![License: MIT](https://img.shields.io/badge/license-MIT-black?style=flat-square)](./LICENSE)
+
+<br />
+
+[**Open the app →**](https://truthmarket-v1.vercel.app/) &nbsp;·&nbsp; [3-min demo](https://your-demo-link) &nbsp;·&nbsp; [X thread](https://your-thread-link)
+
+<sub>Submission — Zama Developer Program Mainnet Season 3 · Builder Track</sub>
+
+</div>
+
+---
+
+## What it is
+
+A binary prediction market where **bet amount and side are encrypted on-chain** for the entire market lifecycle, while aggregate market metadata stays public. Built on Zama Protocol's FHEVM and Ethereum Sepolia.
+
+Every other prediction market broadcasts your position, direction, and history — tied to your wallet forever. TruthMarket encrypts what should have always been private (your edge) and leaves what makes markets useful (aggregate odds) public.
+
+---
+
+## Table of contents
+
+- [Privacy boundaries](#privacy-boundaries)
+- [Architecture](#architecture)
+- [How it works](#how-it-works)
+  - [1. Encrypted bet](#1-encrypted-bet)
+  - [2. K-anonymous odds](#2-k-anonymous-odds)
+  - [3. Resolve → Finalize → Claim](#3-resolve--finalize--claim)
+- [Deployment (Sepolia)](#deployment-sepolia)
+- [Tech stack](#tech-stack)
+- [Frontend](#frontend)
+- [Local development](#local-development)
+- [Testing](#testing)
+- [Security notes](#security-notes)
+- [Known limitations & roadmap](#known-limitations--roadmap)
+- [License](#license)
+
+---
+
+## Privacy boundaries
+
+The privacy boundary is explicit and enforced at the protocol level:
+
+| Layer                        | Public                                                                | Bettor (self, off-chain decrypt)         | Never revealed                                        |
+| ---------------------------- | --------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------- |
+| Market metadata              | Question, description, category, deadline, status, K-anon parameter   | —                                        | —                                                     |
+| Public counters              | `betCount`, `lastSnapshotBetCount`, `snapshotCounter`                 | —                                        | —                                                     |
+| Aggregate odds               | K-anonymous snapshot (released only after ≥K=3 new bets)              | —                                        | Live per-bet pool delta                               |
+| Bet input                    | —                                                                     | Own bet only                             | Bet amount, bet side, per-wallet cumulative stake     |
+| Per-user stake               | —                                                                     | Self (via EIP-712 user-decryption)       | Other wallets' stakes                                 |
+| Payout                       | —                                                                     | Self (encrypted cUSDC credit)            | Payout amount                                         |
+| Final pools (post-settle)    | Cleartext (needed for claim math)                                     | —                                        | —                                                     |
+| ERC-20 deposit (`wrap()`)    | Public USDC top-up amount                                             | —                                        | Decoupled from per-bet amounts                        |
+
+> **Note on identity:** the *transaction sender* is still public at the L1 layer
+> (that's unavoidable for any Ethereum tx). What's hidden is everything about the
+> *bet's content* — amount, direction, per-wallet totals, and payout.
 | Payout                   | —                              | self (encrypted cUSDC credit)             | payout amount                                                              |
 | Final pools (post-settle)| cleartext (needed for claim math) | —                                      | —                                                                          |
 | ERC-20 deposit (`wrap()`)| public USDC top-up amount     | —                                         | — (decoupled from per-bet amounts)                                         |
 
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    U[User Browser<br/>Zama Relayer SDK] -->|encrypted bet| M[ConfidentialMarket.sol]
+    U -->|wrap USDC → cUSDC| Z[cUSDCMock<br/>Zama ERC-7984]
+    M -->|confidentialTransferFrom| Z
+    F[MarketFactory.sol] -->|deploys| M
+    K[Zama KMS + Relayer] <-->|reencrypt / publicDecrypt| M
+    K -.->|EIP-712 user-decrypt| U
+    O[Oracle EOA] -->|resolve outcome| M
+    style U fill:#000,stroke:#FFD208,color:#fff
+    style M fill:#FFD208,stroke:#000,color:#000
+    style Z fill:#FFD208,stroke:#000,color:#000
+    style F fill:#f4f4f4,stroke:#000,color:#000
+    style K fill:#627EEA,stroke:#000,color:#fff
+    style O fill:#f4f4f4,stroke:#000,color:#000
+```
+
+**Components:**
+
+| Component | Role | Trust |
+|---|---|---|
+| **User Browser** | Encrypts `(amount, side)` client-side via Zama SDK; holds decryption keys | Trusted for own keys |
+| **MarketFactory** | Deploys and indexes markets | On-chain, immutable |
+| **ConfidentialMarket** | Per-market: encrypted bet, K-anon snapshot, resolve, finalize, claim | On-chain, immutable |
+| **cUSDCMock (ERC-7984)** | Confidential wrapped USDC — Zama's official collateral token | Zama-audited |
+| **KMS + Relayer** | Threshold key management for FHE decryption | Zama-operated |
+| **Oracle** | Off-chain outcome reporter (per market) | Market-specific EOA |
+
+---
+
 ## How it works
 
-### Encrypted bet
-1. The user has wrapped some plain USDC into Zama's confidential **cUSDC** once
-   ("top up") and granted the market operator status on the wrapper.
-2. The browser uses the Zama relayer SDK to encrypt `(amount, side)`:
-   ```
-   createEncryptedInput(market, user).add64(amount).addBool(side).encrypt()
-   ```
-3. `placeBet(externalEuint64 amount, bytes amountProof, externalEbool side, bytes sideProof)`
-   binds the ciphertexts via `FHE.fromExternal`, calls `confidentialTransferFrom`
-   on cUSDC (returns the encrypted actually-transferred amount), splits it with
-   `FHE.select`, and accumulates into encrypted pools + per-user stakes.
-4. The emitted `BetPlaced()` event has **no arguments** — no amount, no side, no address.
+### 1. Encrypted bet
 
-### K-anonymous odds
-Pools are stored as `euint64`. They are only revealed publicly through a
-**snapshot** that's gated by a K-anonymity threshold:
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User Browser
+    participant C as cUSDCMock
+    participant M as ConfidentialMarket
+    participant K as Zama KMS
+    U->>U: encrypt(amount, side) via SDK
+    U->>K: submit input proof
+    K-->>U: bind proof to (user, market)
+    U->>M: placeBet(encAmount, amountProof, encSide, sideProof)
+    M->>M: FHE.fromExternal → euint64 amount, ebool side
+    M->>C: confidentialTransferFrom(user, market, amount)
+    C-->>M: encrypted actual transferred (euint64)
+    M->>M: yesPool += FHE.select(side, transferred, 0)
+    M->>M: noPool += FHE.select(side, 0, transferred)
+    M->>M: userStake[user] += ...
+    M-->>U: BetPlaced() (no args — signal only)
+```
+
+**What's on-chain, what leaks:**
+
+- The transaction **sender** is public.
+- The **`BetPlaced()`** event carries **no arguments** — no amount, no side, no address in the payload.
+- Every `FHE.add` produces a **new ciphertext handle**. The old handle's ACL doesn't carry over, which is precisely what makes step 2 possible.
+
+### 2. K-anonymous odds
+
+Pools are stored as `euint64` and are only revealed via a **snapshot** gated by a K-anonymity threshold:
 
 ```solidity
 function refreshOdds() external {
@@ -94,8 +199,18 @@ post-K-anon snapshot, available at
 contracts/
 ├─ ConfidentialMarket.sol   per-market: encrypted bet, K-anon snapshot, resolve, finalize, claim
 ├─ MarketFactory.sol        deploys + indexes markets
+├─ UmaResolver.sol          optional UMA Optimistic Oracle V3 resolution adapter (see docs/UMA.md)
+├─ uma/interfaces/          vendored minimal UMA interfaces
 └─ mocks/                   TEST-ONLY local stand-ins for the official Zama tokens
 ```
+
+### Optional: UMA Optimistic Oracle V3 resolution
+
+Markets can be resolved through **UMA's real OOV3 on Sepolia** instead of a
+trusted EOA oracle — pass the `UmaResolver` address as the `oracle` when creating
+a market. Outcomes are asserted with a bond and resolve optimistically after a
+liveness window. Full design, deploy, and a real-Sepolia end-to-end demo are in
+**[`docs/UMA.md`](docs/UMA.md)** (including the testnet DVM/dispute limitation).
 
 Built on:
 - [`@fhevm/solidity ^0.11.1`](https://docs.zama.org/protocol/solidity-guides)

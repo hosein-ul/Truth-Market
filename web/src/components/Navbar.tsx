@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Lock, Menu, X } from "lucide-react";
+import { Lock, Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 import { useAccount } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,41 +21,47 @@ const NAV = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const { isConnected } = useAccount();
   const walletPicker = useWalletPicker();
 
-  // Design-preview routes are full-bleed; hide the global chrome.
-  if (pathname?.startsWith("/preview")) return null;
-
   const isActive = (href: string) => pathname?.startsWith(href);
-  // The app surface (markets/portfolio/create) carries the golden "zard-dark"
-  // theme; the landing page keeps the orange/sky palette.
-  const isDash =
-    pathname?.startsWith("/markets") ||
-    pathname?.startsWith("/portfolio") ||
-    pathname?.startsWith("/create");
+
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = search.trim();
+    router.push(q ? `/markets?q=${encodeURIComponent(q)}` : "/markets");
+    setOpen(false);
+  }
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg",
-        isDash && "theme-dash",
-      )}
-    >
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
       <div className="container flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 group">
           <motion.span
             whileHover={{ scale: 1.06 }}
             transition={{ type: "spring", damping: 12 }}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-orange-glow"
+            className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient shadow-brand-glow"
           >
-            <Lock className="h-4 w-4 text-white" strokeWidth={2.5} />
+            <Lock className="h-4 w-4 text-zinc-950" strokeWidth={2.5} />
           </motion.span>
           <span className="font-display text-lg font-extrabold tracking-tight">
             Truth<span className="text-gradient">Market</span>
           </span>
         </Link>
+
+        {/* Inline market search — jumps to /markets with the query applied */}
+        <form onSubmit={submitSearch} className="relative hidden max-w-xs flex-1 lg:block">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search markets…"
+            className="h-9 w-full rounded-lg border border-border bg-secondary/60 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:bg-card"
+          />
+        </form>
 
         <nav className="hidden items-center gap-0.5 md:flex">
           {NAV.map((item) => (

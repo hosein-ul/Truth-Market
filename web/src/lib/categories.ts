@@ -6,7 +6,7 @@ import {
   Globe,
   TrendingUp,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
 export interface CategoryMeta {
   label: string;
@@ -17,7 +17,7 @@ export interface CategoryMeta {
 }
 
 const MAP: Record<string, CategoryMeta> = {
-  crypto:   { label: "Crypto",   icon: Bitcoin,      text: "text-orange-700", bg: "bg-orange-50",  dot: "bg-orange-500" },
+  crypto:   { label: "Crypto",   icon: Bitcoin,      text: "text-stone-700",  bg: "bg-stone-100",  dot: "bg-stone-500" },
   politics: { label: "Politics", icon: Landmark,     text: "text-sky-700",    bg: "bg-sky-50",     dot: "bg-sky-500" },
   sports:   { label: "Sports",   icon: Trophy,       text: "text-emerald-700",bg: "bg-emerald-50", dot: "bg-emerald-500" },
   science:  { label: "Science",  icon: FlaskConical, text: "text-violet-700", bg: "bg-violet-50",  dot: "bg-violet-500" },

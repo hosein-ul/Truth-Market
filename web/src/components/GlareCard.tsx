@@ -13,7 +13,7 @@ interface GlareCardProps {
 export function GlareCard({
   children,
   className,
-  glareColor = "rgba(59,130,246,0.10)",
+  glareColor = "rgba(255,210,8,0.14)",
 }: GlareCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0.5);

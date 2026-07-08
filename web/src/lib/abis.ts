@@ -246,6 +246,101 @@ export const marketAbi = [
   { type: "event", name: "PositionClosed", inputs: [] },
 ] as const;
 
+// UmaResolver — UMA Optimistic Oracle V3 adapter. Installed as a market's
+// `oracle`; markets with oracle === ADDRESSES.umaResolver are resolved through
+// this contract instead of a trusted EOA.
+export const umaResolverAbi = [
+  { type: "function", name: "currency", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "liveness", stateMutability: "view", inputs: [], outputs: [{ type: "uint64" }] },
+  { type: "function", name: "bondAmount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "effectiveBond", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  {
+    type: "function",
+    name: "marketAssertion",
+    stateMutability: "view",
+    inputs: [{ name: "market", type: "address" }],
+    outputs: [{ type: "bytes32" }],
+  },
+  {
+    type: "function",
+    name: "assertions",
+    stateMutability: "view",
+    inputs: [{ name: "assertionId", type: "bytes32" }],
+    outputs: [
+      { name: "asserter", type: "address" },
+      { name: "market", type: "address" },
+      { name: "outcomeYes", type: "bool" },
+      { name: "resolved", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "assertMarketOutcome",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "market", type: "address" },
+      { name: "outcomeYes", type: "bool" },
+    ],
+    outputs: [{ type: "bytes32" }],
+  },
+  {
+    type: "function",
+    name: "settleAssertion",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "assertionId", type: "bytes32" }],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "MarketAsserted",
+    inputs: [
+      { name: "market", type: "address", indexed: true },
+      { name: "outcomeYes", type: "bool" },
+      { name: "assertionId", type: "bytes32", indexed: true },
+      { name: "asserter", type: "address", indexed: true },
+      { name: "bond", type: "uint256" },
+    ],
+  },
+  {
+    type: "event",
+    name: "MarketResolvedViaUma",
+    inputs: [
+      { name: "market", type: "address", indexed: true },
+      { name: "outcomeYes", type: "bool" },
+      { name: "assertionId", type: "bytes32", indexed: true },
+    ],
+  },
+] as const;
+
+// Minimal read slice of UMA's real OptimisticOracleV3 (Sepolia), used only to
+// show the live dispute-window countdown for a pending assertion.
+export const oov3Abi = [
+  {
+    type: "function",
+    name: "getAssertion",
+    stateMutability: "view",
+    inputs: [{ name: "assertionId", type: "bytes32" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "asserter", type: "address" },
+          { name: "assertionTime", type: "uint64" },
+          { name: "settled", type: "bool" },
+          { name: "currency", type: "address" },
+          { name: "expirationTime", type: "uint64" },
+          { name: "settlementResolution", type: "bool" },
+          { name: "domainId", type: "bytes32" },
+          { name: "identifier", type: "bytes32" },
+          { name: "bond", type: "uint256" },
+          { name: "callbackRecipient", type: "address" },
+          { name: "disputer", type: "address" },
+        ],
+      },
+    ],
+  },
+] as const;
+
 export const MARKET_STATUS = {
   OPEN: 0,
   RESOLVING: 1,

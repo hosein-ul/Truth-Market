@@ -177,13 +177,13 @@ function PickerDialog({ onClose }: { onClose: () => void }) {
               "bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-900",
               "border border-white/10 transition-all duration-300",
               w3aConnector && !busy
-                ? "cursor-pointer hover:border-amber-400/40 hover:shadow-[0_0_24px_rgba(251,191,36,0.15)]"
+                ? "cursor-pointer hover:border-primary/40 hover:shadow-[0_0_24px_rgba(255,210,8,0.15)]"
                 : "cursor-not-allowed opacity-60",
             )}
             onClick={w3aConnector && !busy ? handleEmbedded : undefined}
           >
             {/* icon */}
-            <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30">
+            <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-brand-gradient text-zinc-950 shadow-lg shadow-primary/30">
               <Zap className="h-5 w-5" />
             </div>
 

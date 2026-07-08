@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket } from "lucide-react";
+import { ChevronLeft, Lock, CheckCircle2, Clock, Rocket, ShieldCheck } from "lucide-react";
 import { getMarketDetail } from "@/lib/markets";
 import { getMarketActivity } from "@/lib/activity";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
@@ -10,6 +10,8 @@ import { ProbabilityBar } from "@/components/ProbabilityBar";
 import { BetForm } from "@/components/BetForm";
 import { ClaimCard } from "@/components/ClaimCard";
 import { OraclePanel } from "@/components/OraclePanel";
+import { UmaResolverPanel } from "@/components/UmaResolverPanel";
+import { ADDRESSES } from "@/lib/addresses";
 import { PositionCard } from "@/components/PositionCard";
 import { ActivityChart } from "@/components/ActivityChart";
 import { ActivityList } from "@/components/ActivityList";
@@ -18,7 +20,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { displayStats } from "@/lib/demo";
 import { formatUSDC } from "@/lib/format";
 import { STATIC_MARKETS, STATIC_MARKET_ADDRESSES } from "@/lib/static-markets";
-import { getMarketMeta, CATEGORY_GRADIENTS } from "@/lib/market-metadata";
+import { MarketCover } from "@/components/MarketCover";
+import { ShareButton } from "@/components/ShareButton";
 
 export const revalidate = 15;
 
@@ -35,8 +38,6 @@ export default async function MarketDetailPage({
     const sm = STATIC_MARKETS.find(
       (m) => m.address.toLowerCase() === addr.toLowerCase(),
     )!;
-    const meta = getMarketMeta(sm.address, sm.question);
-    const gradient = CATEGORY_GRADIENTS[sm.category] ?? CATEGORY_GRADIENTS.Other;
 
     return (
       <div className="container py-6">
@@ -49,16 +50,9 @@ export default async function MarketDetailPage({
         </Link>
 
         <div className="mx-auto max-w-2xl">
-          {/* Cover image */}
-          <div className={`relative mb-6 h-48 overflow-hidden rounded-2xl bg-gradient-to-br ${gradient}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={meta.imageUrl}
-              alt=""
-              className="h-full w-full object-cover"
-              crossOrigin="anonymous"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          {/* Cover image — uses real image when available, otherwise generative SVG */}
+          <div className="relative mb-6 h-48 overflow-hidden rounded-2xl">
+            <MarketCover address={sm.address} category={sm.category} question={sm.question} />
             <div className="absolute bottom-4 left-4">
               <CategoryChip category={sm.category} />
             </div>
@@ -106,6 +100,7 @@ export default async function MarketDetailPage({
   const realNo = isResolved ? m.noPoolFinal : m.noPoolSnapshot;
   const stats = displayStats(m.address, realYes, realNo, m.betCount);
   const yesPct = isResolved ? (m.outcomeYes ? 100 : 0) : stats.yesPct;
+  const isUmaResolved = m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase();
 
   return (
     <div className="container py-6">
@@ -120,18 +115,33 @@ export default async function MarketDetailPage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* LEFT — market info */}
         <div className="space-y-6 lg:col-span-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <CategoryChip category={m.category} />
-              <MarketStatusBadge status={status} />
-              <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                <Lock className="h-3.5 w-3.5" />
-                {stats.betCount.toLocaleString()} encrypted positions
-              </span>
+          <div className="flex items-start gap-4">
+            {/* Thumbnail — same art as the card, Polymarket-style */}
+            <div className="hidden h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border border-border sm:block">
+              <MarketCover address={m.address} category={m.category} question={m.question} />
             </div>
-            <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
-              {m.question}
-            </h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <CategoryChip category={m.category} />
+                <MarketStatusBadge status={status} />
+                {isUmaResolved && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    UMA-resolved
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                  <Lock className="h-3.5 w-3.5" />
+                  {stats.betCount.toLocaleString()} encrypted positions
+                </span>
+                <span className="ml-auto">
+                  <ShareButton question={m.question} />
+                </span>
+              </div>
+              <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
+                {m.question}
+              </h1>
+            </div>
           </div>
 
           {/* Hero: public odds */}
@@ -217,7 +227,9 @@ export default async function MarketDetailPage({
         {/* RIGHT — actions */}
         <div className="lg:col-span-1">
           <div className="space-y-4 lg:sticky lg:top-20">
-            {isOpen && <BetForm marketAddress={m.address} deadline={m.deadline} />}
+            {isOpen && (
+              <BetForm marketAddress={m.address} deadline={m.deadline} yesPct={yesPct} />
+            )}
             {(isResolved || isVoided) && (
               <ClaimCard
                 marketAddress={m.address}
@@ -226,13 +238,21 @@ export default async function MarketDetailPage({
               />
             )}
             <PositionCard marketAddress={m.address} status={status} deadline={m.deadline} />
-            <OraclePanel
-              marketAddress={m.address}
-              oracle={m.oracle}
-              deadline={m.deadline}
-              disputeWindow={m.disputeWindow}
-              status={status}
-            />
+            {isUmaResolved ? (
+              <UmaResolverPanel
+                marketAddress={m.address}
+                deadline={m.deadline}
+                status={status}
+              />
+            ) : (
+              <OraclePanel
+                marketAddress={m.address}
+                oracle={m.oracle}
+                deadline={m.deadline}
+                disputeWindow={m.disputeWindow}
+                status={status}
+              />
+            )}
           </div>
         </div>
       </div>

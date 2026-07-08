@@ -16,6 +16,9 @@ const RULES: { match: RegExp; message: string }[] = [
   { match: /timeout|timed out|network error|failed to fetch/i, message: "Network issue — please check your connection and try again." },
   { match: /relayer|gateway|kms|decryption/i, message: "The encryption service is busy. Please try again in a moment." },
   { match: /acl|not allowed|allowtransient/i, message: "Permission step failed. Please retry the action." },
+  { match: /assertionpending/i, message: "An outcome has already been asserted for this market — waiting on the dispute window." },
+  { match: /beforedeadline/i, message: "This market hasn't closed yet — wait until the deadline to assert an outcome." },
+  { match: /unknownassertion|alreadyresolved/i, message: "This assertion has already been settled." },
 ];
 
 export function humanizeError(e: unknown): string {

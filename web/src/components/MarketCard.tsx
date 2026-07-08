@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { Lock, TrendingUp } from "lucide-react";
+import { Lock, TrendingUp, ShieldCheck } from "lucide-react";
 import type { MarketSummary } from "@/lib/markets";
 import { MARKET_STATUS, type MarketStatusValue } from "@/lib/abis";
+import { ADDRESSES } from "@/lib/addresses";
 import { CategoryChip } from "./CategoryChip";
 import { MarketStatusBadge } from "./MarketStatusBadge";
 import { Countdown } from "./Countdown";
 import { ProbabilityBar } from "./ProbabilityBar";
 import { GlareCard } from "./GlareCard";
+import { MarketCover } from "./MarketCover";
 import { formatUSDC } from "@/lib/format";
 import { displayStats } from "@/lib/demo";
-import { getMarketMeta, CATEGORY_GRADIENTS } from "@/lib/market-metadata";
 
 export function MarketCard({ m }: { m: MarketSummary }) {
   const status = m.status as MarketStatusValue;
@@ -26,37 +26,30 @@ export function MarketCard({ m }: { m: MarketSummary }) {
   const realNo = isResolved ? m.noPoolFinal : m.noPoolSnapshot;
   const stats = displayStats(m.address, realYes, realNo, m.betCount);
   const yesPct = isResolved ? (m.outcomeYes ? 100 : 0) : stats.yesPct;
-
-  const meta = getMarketMeta(m.address, m.question);
-  const gradient = CATEGORY_GRADIENTS[m.category] ?? CATEGORY_GRADIENTS.Other;
-  const [imgError, setImgError] = useState(false);
-  const showImage = !!meta.imageUrl && !imgError;
+  const isUmaResolved = m.oracle.toLowerCase() === ADDRESSES.umaResolver.toLowerCase();
 
   return (
     <Link href={`/markets/${m.address}`} className="block h-full">
-      <GlareCard className="h-full" glareColor="rgba(249,115,22,0.08)">
+      <GlareCard className="h-full" glareColor="rgba(255,210,8,0.12)">
         <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-200 group-hover:border-primary/30 group-hover:shadow-card">
-          {/* Cover image */}
+          {/* Cover image — uses real image when available, otherwise generative SVG */}
           <div className="relative h-36 w-full flex-shrink-0">
-            {showImage ? (
-              <img
-                src={meta.imageUrl}
-                alt=""
-                className="h-full w-full object-cover"
-                loading="lazy"
-                crossOrigin="anonymous"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div className={`h-full w-full bg-gradient-to-br ${gradient}`} />
-            )}
+            <MarketCover address={m.address} category={m.category} question={m.question} />
           </div>
 
           {/* Card content */}
           <div className="flex flex-1 flex-col p-4">
             {/* Header */}
             <div className="flex items-start justify-between gap-2">
-              <CategoryChip category={m.category} />
+              <div className="flex flex-wrap items-center gap-1.5">
+                <CategoryChip category={m.category} />
+                {isUmaResolved && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground">
+                    <ShieldCheck className="h-3 w-3 text-primary" />
+                    UMA
+                  </span>
+                )}
+              </div>
               <MarketStatusBadge status={status} />
             </div>
 

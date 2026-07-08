@@ -86,7 +86,7 @@ export function Faucet({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-gradient text-white shadow-orange-glow">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-gradient text-zinc-950 shadow-brand-glow">
               <Droplets className="h-4 w-4" />
             </span>
             Get test USDC
@@ -99,7 +99,7 @@ export function Faucet({
         {/* balance */}
         <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/40 px-4 py-3">
           <span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Coins className="h-4 w-4 text-orange-500" />
+            <Coins className="h-4 w-4 text-muted-foreground" />
             Your balance
           </span>
           <span className="font-display text-lg font-extrabold tabular-nums">
@@ -111,7 +111,7 @@ export function Faucet({
         <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-4 py-3">
           <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sky-800">
             <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 shadow-soft">
-              <Coins className="h-3.5 w-3.5 text-orange-500" /> USDC
+              <Coins className="h-3.5 w-3.5 text-muted-foreground" /> USDC
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-sky-400" />
             <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 shadow-soft">

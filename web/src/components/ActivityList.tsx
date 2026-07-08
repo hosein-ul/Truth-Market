@@ -11,7 +11,7 @@ const META: Record<ActivityKind, { label: string; icon: React.ReactNode; cls: st
   snapshot: {
     label: "Odds snapshot refreshed",
     icon: <RefreshCw className="h-3.5 w-3.5" strokeWidth={2.5} />,
-    cls: "bg-orange-50 text-orange-700",
+    cls: "bg-primary/10 text-primary",
   },
   resolving: {
     label: "Oracle resolved — pools being decrypted",

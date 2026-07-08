@@ -1,0 +1,23 @@
+[
+  {
+    "question": "Will Bitcoin close above $110,000 on June 30, 2026?",
+    "address": "0x9FD175bDbe42A6eD6153038BCCe33bA9525362D2",
+    "tx": "0x7b7f346dbdb5de7bd4abe983696cebef095c51bd8e7746696e615f07ec054e85",
+    "deadline": "2026-06-30T23:59:00.000Z",
+    "oracle": "0x62BB9b5f6bde7eFb1905b1a3d946B1A2875E8F8B"
+  },
+  {
+    "question": "Will OpenAI announce a new flagship model before July 31, 2026?",
+    "address": "0xC4d8D6D4Cb1f5d28e4c047aec64EdA48b7117E45",
+    "tx": "0xf4d11cb8471786537d5d201fae7d5bbaadc212d65c76f834d38834deb421cdee",
+    "deadline": "2026-07-31T23:59:00.000Z",
+    "oracle": "0x62BB9b5f6bde7eFb1905b1a3d946B1A2875E8F8B"
+  },
+  {
+    "question": "Will the US 10-year Treasury yield close below 4% on Aug 31, 2026?",
+    "address": "0x092b5a5D68F05e836bB1Da9D652B2E48aC30a7E2",
+    "tx": "0x7d0eb4bfbdc1fcdacfd36fdf1b68bef04de3d2d4fdeb60895b7d542271a7569f",
+    "deadline": "2026-08-31T23:59:00.000Z",
+    "oracle": "0x62BB9b5f6bde7eFb1905b1a3d946B1A2875E8F8B"
+  }
+]
