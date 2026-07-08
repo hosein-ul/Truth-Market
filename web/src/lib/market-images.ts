@@ -46,16 +46,16 @@ export const MARKET_IMAGES: Record<string, string> = {
   "Will GTA VI be released before end of 2026?": "/images/markets/gta6.jpg",
   "Will Taylor Swift announce a 2027 world tour?": "/images/markets/taylor-tour.jpg",
   
-  // Demo Markets
-  "Will BTC close above $150,000 on June 30, 2026?": "/images/markets/btc-150k-june.jpg",
-  "Will the Fed cut rates at the July 30, 2026 FOMC meeting?": "/images/markets/fed-july.jpg",
-  "Will SpaceX complete a crewed Starship orbital flight by Aug 31, 2026?": "/images/markets/spacex-starship.jpg",
-  "Will Apple announce a foldable iPhone at the Sep 2026 event?": "/images/markets/apple-foldable.jpg",
-  "Will ETH/BTC ratio close above 0.06 on July 15, 2026?": "/images/markets/eth-btc-ratio.jpg",
-  "Will Manchester City win the 2026/27 Premier League title?": "/images/markets/man-city.jpg",
-  "Will ETH close above $5,000 on August 31, 2026?": "/images/markets/eth-5k.jpg",
-  "Will a spot SOL ETF be approved in the US by December 31, 2026?": "/images/markets/sol-etf.jpg",
-  "Will Bitcoin dominance fall below 40% by Sep 30, 2026?": "/images/markets/btc-dom-40.jpg",
+  // Demo Markets (using Unsplash CDN)
+  "Will BTC close above $150,000 on June 30, 2026?": "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&q=80",
+  "Will the Fed cut rates at the July 30, 2026 FOMC meeting?": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80",
+  "Will SpaceX complete a crewed Starship orbital flight by Aug 31, 2026?": "https://images.unsplash.com/photo-1516849841032-87cbac4d88f7?w=800&q=80",
+  "Will Apple announce a foldable iPhone at the Sep 2026 event?": "https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=800&q=80",
+  "Will ETH/BTC ratio close above 0.06 on July 15, 2026?": "https://images.unsplash.com/photo-1622630998477-20aa696ecb05?w=800&q=80",
+  "Will Manchester City win the 2026/27 Premier League title?": "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80",
+  "Will ETH close above $5,000 on August 31, 2026?": "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=800&q=80",
+  "Will a spot SOL ETF be approved in the US by December 31, 2026?": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&q=80",
+  "Will Bitcoin dominance fall below 40% by Sep 30, 2026?": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80",
 };
 
 /**

@@ -3,6 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        port: "",
+        pathname: "/**",
+      },
+    ],
+  },
   // The Node build of the Zama relayer SDK is dynamically imported by
   // markets.ts in RSC. Mark it as a server-external so Next leaves it alone
   // instead of bundling its native/WASM pieces.
